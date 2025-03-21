@@ -71,6 +71,64 @@ function closeBackConfirm() {
   document.getElementById("backConfirmModal").style.display = "none";
 }
 
+function showStep(step) {
+  document.querySelectorAll(".step").forEach((s) => (s.style.display = "none"));
+  document.getElementById(`step${step}`).style.display = "block";
+  currentStep = step;
+  clearError();
+}
+
+function showHistory() {
+  document.querySelectorAll(".step").forEach((s) => (s.style.display = "none"));
+  document.getElementById("history").style.display = "block";
+  fetchHistory();
+}
+
+function clearHistory() {
+  localStorage.removeItem("billHistory");
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("bill:"))
+    .forEach((key) => localStorage.removeItem(key));
+  fetchHistory();
+}
+
+function fetchHistory() {
+  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
+  const historyList = document.getElementById("historyList");
+  historyList.innerHTML = "Loading...";
+
+  Promise.all(
+    billIds.map((id) =>
+      fetch(`/result/${id}`)
+        .then((res) => res.text())
+        .then((html) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const total = doc.querySelector("h2").textContent.replace("Total: $", "");
+          const timestamp = JSON.parse(localStorage.getItem(`bill:${id}`) || "{}").timestamp || "Unknown";
+          return { id, total, timestamp };
+        })
+        .catch(() => null)
+    )
+  )
+    .then((bills) => {
+      historyList.innerHTML = "";
+      bills
+        .filter((bill) => bill)
+        .forEach((bill) => {
+          const li = document.createElement("li");
+          li.innerHTML = `
+        <a href="/result/${bill.id}" target="_blank">
+          ${new Date(bill.timestamp).toLocaleString()} - Total: $${bill.total}
+        </a>
+      `;
+          historyList.appendChild(li);
+        });
+      if (bills.length === 0) historyList.textContent = "No history yet.";
+    })
+    .catch((err) => showError("Error loading history. Please try again."));
+}
+
 function resetToHome(step) {
   dishes = [];
   members = [];
@@ -79,9 +137,7 @@ function resetToHome(step) {
   closeSummary();
   document.getElementById("dishMembers").innerHTML = "";
   document.getElementById("next3").disabled = true;
-  document.getElementById(`step${step}`).style.display = "none";
-  currentStep = 1;
-  document.getElementById("step1").style.display = "block";
+  showStep(1);
   document.getElementById("groupSelect").value = "";
   document.getElementById("next1").disabled = true;
   clearError();
@@ -433,6 +489,13 @@ function calculateBill() {
   })
     .then((response) => response.json())
     .then((result) => {
+      // Store bill ID in localStorage
+      const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
+      if (!billIds.includes(result.id)) {
+        billIds.push(result.id);
+        localStorage.setItem("billHistory", JSON.stringify(billIds));
+        localStorage.setItem(`bill:${result.id}`, JSON.stringify({ timestamp: new Date().toISOString() }));
+      }
       document.getElementById("result").innerHTML = `
         <p>Share this link: <a href="${result.link}" target="_blank">${result.link}</a></p>
         <p>(Opens in a new tab)</p>

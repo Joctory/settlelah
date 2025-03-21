@@ -9,6 +9,8 @@
   <body>
     <h1>Bill Splitter</h1>
     <button onclick="showSettings()" class="settings-btn">Settings</button>
+    <button onclick="showHistory()">View History</button>
+    <button onclick="clearHistory()">Clear History</button>
     <p id="error" style="color: red"></p>
 
     <!-- Step 1: Group Selection -->
@@ -147,6 +149,13 @@
         <button onclick="confirmBack()">Yes</button>
         <button onclick="closeBackConfirm()">No</button>
       </div>
+    </div>
+
+    <!-- History Screen -->
+    <div id="history" class="step" style="display: none">
+      <h1>Bill History</h1>
+      <ul id="historyList"></ul>
+      <button onclick="showStep(1)">Back to Home</button>
     </div>
 
     <script src="script.js"></script>

@@ -5,7 +5,7 @@ app.use(express.json());
 app.use(express.static("public"));
 
 async function saveBill(id, data) {
-  await kv.set(`bill:${id}`, JSON.stringify(data));
+  await kv.set(`bill:${id}`, JSON.stringify({ ...data, timestamp: new Date().toISOString() }));
 }
 
 async function getBill(id) {
@@ -15,7 +15,7 @@ async function getBill(id) {
 app.post("/calculate", async (req, res) => {
   const { members, dishes, discount, applyServiceCharge, applyGst, taxProfile } = req.body;
   const id = Math.random().toString(36).substring(2, 8);
-  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
+  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3001";
 
   let total = dishes.reduce((sum, dish) => sum + dish.cost, 0);
   const discountAmount = parseFloat(discount) || 0;
@@ -38,7 +38,7 @@ app.post("/calculate", async (req, res) => {
   const billData = { members, dishes, total, split, discount, serviceCharge, gst };
   await saveBill(id, billData);
   const link = `${baseUrl}/result/${id}`;
-  res.json({ link });
+  res.json({ link, id }); // Return ID explicitly
 });
 
 app.get("/result/:id", async (req, res) => {
@@ -72,4 +72,4 @@ app.get("/result/:id", async (req, res) => {
   res.send(html);
 });
 
-app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+app.listen(3001, () => console.log("Server running on http://localhost:3001"));
