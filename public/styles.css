@@ -1,0 +1,108 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+input,
+button {
+  margin: 5px;
+  padding: 5px;
+}
+small {
+  color: #666;
+  font-size: 12px;
+}
+#error {
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+.step {
+  max-width: 600px;
+}
+#groupSelect,
+#taxProfile {
+  padding: 5px;
+  width: 250px;
+}
+#dishList,
+.member-list {
+  list-style-type: none;
+  padding: 0;
+}
+#dishList button,
+.member-list button {
+  margin-left: 10px;
+  font-size: 12px;
+}
+#summaryPanel {
+  position: fixed;
+  top: 20px;
+  right: -400px;
+  width: 350px;
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+  transition: right 0.3s ease;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.2);
+}
+#summaryPanel h2 {
+  margin-top: 0;
+}
+.close-btn {
+  float: right;
+}
+#summaryTotal {
+  font-weight: bold;
+}
+.settings-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+#groupActions {
+  margin-bottom: 10px;
+}
+.drag-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 10px 0;
+}
+.drag-area {
+  width: 45%;
+  background: #f0f0f0;
+  padding: 10px;
+  border-radius: 5px;
+}
+.drag-area h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+.sortable-list {
+  min-height: 50px;
+  padding: 0;
+}
+.sortable-list li {
+  background: white;
+  padding: 5px;
+  margin: 5px 0;
+  border: 1px solid #ddd;
+  cursor: move;
+}
+.popup {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+}
+.popup-content {
+  background: white;
+  margin: 15% auto;
+  padding: 20px;
+  width: 300px;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}

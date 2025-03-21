@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bill Splitter</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+  </head>
+  <body>
+    <h1>Bill Splitter</h1>
+    <button onclick="showSettings()" class="settings-btn">Settings</button>
+    <p id="error" style="color: red"></p>
+
+    <!-- Step 1: Group Selection -->
+    <div id="step1" class="step">
+      <h2>Step 1: Select Group</h2>
+      <label>Select a Group:</label><br />
+      <select id="groupSelect">
+        <option value="">-- Select a Group --</option></select
+      ><br /><br />
+      <button onclick="nextStep(1, 'new')">New Split Group</button><br /><br />
+      <button onclick="nextStep(1, 'select')" id="next1" disabled>Next</button>
+    </div>
+
+    <!-- Step 2: Add Members (New Group) -->
+    <div id="step2" class="step" style="display: none">
+      <h2>Step 2: Add Members</h2>
+      <ul id="memberList" class="member-list"></ul>
+      <button onclick="addMemberPopup()">Add Member</button><br /><br />
+      <button onclick="backStep(2)">Back</button>
+      <button onclick="nextStep(2)" id="next2" disabled>Next</button>
+    </div>
+
+    <!-- Step 3: Add Dishes -->
+    <div id="step3" class="step" style="display: none">
+      <h2>Step 3: Add Dishes</h2>
+      <div id="groupActions">
+        <button id="editGroupBtn" onclick="editGroupMembers()" style="display: none">Edit Group Members</button>
+        <button id="saveGroupBtn" onclick="saveAsGroup()" style="display: none">Save as Group</button>
+      </div>
+      <label>Dish Name:</label><br />
+      <input type="text" id="dishName" placeholder="Pizza" /><br />
+      <label>Dish Cost:</label><br />
+      <input type="number" id="dishCost" placeholder="20.00" step="0.01" /><br />
+      <div class="drag-container">
+        <div id="availableMembers" class="drag-area">
+          <h3>Available Members</h3>
+          <ul id="memberPool" class="sortable-list"></ul>
+        </div>
+        <div id="assignedMembers" class="drag-area">
+          <h3>Assigned to Dish</h3>
+          <ul id="dishMembers" class="sortable-list"></ul>
+        </div>
+      </div>
+      <small>Drag members to assign them to the dish</small><br /><br />
+      <button onclick="addDish()">Add Dish</button><br /><br />
+      <button onclick="backStep(3)">Back</button>
+      <button onclick="nextStep(3)" id="next3" disabled>Next</button>
+    </div>
+
+    <!-- Step 4: Discount and Calculate -->
+    <div id="step4" class="step" style="display: none">
+      <h2>Step 4: Finalize</h2>
+      <label>Discount (e.g., 5 for $5, 10% for 10%):</label><br />
+      <input type="text" id="discount" placeholder="0" /><br /><br />
+      <label
+        ><input type="checkbox" id="serviceCharge" checked /> Add <span id="serviceRate">10%</span> Service
+        Charge</label
+      ><br />
+      <label><input type="checkbox" id="gst" checked /> Add <span id="gstRate">9%</span> GST</label><br /><br />
+      <button onclick="backStep(4)">Back</button>
+      <button onclick="calculateBill()">Calculate & Generate Link</button><br /><br />
+      <div id="result"></div>
+    </div>
+
+    <!-- Sliding Summary Panel -->
+    <div id="summaryPanel" class="summary-panel">
+      <h2>Summary</h2>
+      <button onclick="closeSummary()" class="close-btn">Close</button>
+      <ul id="dishList"></ul>
+      <p id="summaryTotal"></p>
+    </div>
+
+    <!-- Settings Popup -->
+    <div id="settingsPopup" class="popup">
+      <div class="popup-content">
+        <h2>Settings</h2>
+        <label>Tax Profile:</label><br />
+        <select id="taxProfile">
+          <option value="singapore">Singapore (10% Service + 9% GST)</option>
+          <option value="malaysia">Malaysia (10% Service + 6% GST)</option></select
+        ><br /><br />
+        <button onclick="saveSettings()">Save</button>
+        <button onclick="closeSettings()">Close</button>
+      </div>
+    </div>
+
+    <!-- Add Member Popup -->
+    <div id="addMemberPopup" class="popup">
+      <div class="popup-content">
+        <h2>Add Member</h2>
+        <input type="text" id="newMemberName" placeholder="Enter name" /><br />
+        <button onclick="saveNewMember()">Add</button>
+        <button onclick="closeAddMember()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Edit Group Members Popup -->
+    <div id="editGroupPopup" class="popup">
+      <div class="popup-content">
+        <h2>Edit Group Members</h2>
+        <p>Warning: Changing members will clear all dishes!</p>
+        <ul id="editGroupList" class="member-list"></ul>
+        <button onclick="addMemberPopup('edit')">Add Member</button><br /><br />
+        <button onclick="saveEditedGroup()">Save</button>
+        <button onclick="closeEditGroup()">Close</button>
+      </div>
+    </div>
+
+    <!-- Edit Member Popup -->
+    <div id="editMemberPopup" class="popup">
+      <div class="popup-content">
+        <h2>Edit Member Name</h2>
+        <input type="text" id="editMemberName" placeholder="Enter new name" /><br />
+        <button onclick="saveEditedMember()">Save</button>
+        <button onclick="closeEditMember()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Save as Group Popup -->
+    <div id="saveGroupPopup" class="popup">
+      <div class="popup-content">
+        <h2>Save as Group</h2>
+        <label>Group Name:</label><br />
+        <input type="text" id="groupName" placeholder="e.g., Friends" /><br />
+        <p>Members: <span id="groupMembersPreview"></span></p>
+        <button onclick="confirmSaveGroup()">Save</button>
+        <button onclick="closeSaveGroup()">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Back Confirmation Modal -->
+    <div id="backConfirmModal" class="popup">
+      <div class="popup-content">
+        <h2>Confirm Back</h2>
+        <p>Going back will clear all current dishes and members. Continue?</p>
+        <button onclick="confirmBack()">Yes</button>
+        <button onclick="closeBackConfirm()">No</button>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>
