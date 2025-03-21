@@ -15,7 +15,7 @@ async function getBill(id) {
 app.post("/calculate", async (req, res) => {
   const { members, dishes, discount, applyServiceCharge, applyGst, taxProfile } = req.body;
   const id = Math.random().toString(36).substring(2, 8);
-  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3001";
+  const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
 
   let total = dishes.reduce((sum, dish) => sum + dish.cost, 0);
   const discountAmount = parseFloat(discount) || 0;
@@ -72,4 +72,4 @@ app.get("/result/:id", async (req, res) => {
   res.send(html);
 });
 
-app.listen(3001, () => console.log("Server running on http://localhost:3001"));
+app.listen(3000, () => console.log("Server running on http://localhost:3000"));
