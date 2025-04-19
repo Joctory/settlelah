@@ -1,0 +1,23 @@
+<svg width="120" height="160" viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg">
+  <style>
+    .receipt { fill: none; stroke: #ffffff; stroke-width: 3; }
+    .line { fill: none; stroke: #ffffff; stroke-width: 2; stroke-linecap: round; }
+  </style>
+  
+  <!-- Receipt outline -->
+  <rect class="receipt" x="20" y="10" width="80" height="140" rx="5" ry="5" />
+  
+  <!-- Receipt cutout at top -->
+  <path class="receipt" d="M20,25 L100,25" />
+  
+  <!-- Receipt content lines -->
+  <path class="line" d="M35,45 L85,45" />
+  <path class="line" d="M35,60 L85,60" />
+  <path class="line" d="M35,75 L75,75" />
+  <path class="line" d="M35,90 L85,90" />
+  <path class="line" d="M35,105 L65,105" />
+  
+  <!-- Total line -->
+  <path class="receipt" d="M35,120 L85,120" />
+  <path class="line" d="M50,135 L85,135" />
+</svg> 

@@ -1,0 +1,127 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>SettleLah</title>
+    <link rel="stylesheet" type="text/css" href="/result.css" />
+  </head>
+  <body>
+    <!-- Loading State -->
+    <div id="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Loading your settle details...</p>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-container" class="error-container">
+      <div class="error-icon">
+        <img src="/assets/error-icon.svg" alt="Error" onerror="this.src='/assets/close-circle.svg'" />
+      </div>
+      <p id="error-message" class="error-message">Error loading data</p>
+      <button id="error-retry-btn" class="action-button secondary-button">Try Again</button>
+    </div>
+
+    <div id="bill-content" class="result-container bill-content">
+      <!-- Success Screen -->
+      <div id="successScreen" class="success-screen">
+        <img class="terminal-img" src="/assets/terminal.svg" alt="terminal" />
+        <img class="terminal-img-top" src="/assets/terminaltop.svg" alt="terminal" />
+        <div id="successReceipt" class="success-details">
+          <div class="success-icon-container">
+            <div class="success-icon">
+              <div class="checkmark">
+                <img class="checkmark-img" src="/assets/tick-circle.svg" alt="loading" />
+              </div>
+            </div>
+          </div>
+          <h1 class="success-title">Settle Success!</h1>
+          <div class="success-details-liner">
+            <div class="notch-left"></div>
+            <div class="success-details-liner-line"></div>
+            <div class="notch-right"></div>
+          </div>
+          <div class="detail-row-container">
+            <div class="detail-row">
+              <span class="detail-label">Settle Matter</span>
+              <span class="detail-value successSettleMatter"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Date</span>
+              <span class="detail-value successDate"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Time</span>
+              <span class="detail-value successTime"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Total Settle Item</span>
+              <span class="detail-value successItemCount"></span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Subtotal</span>
+              <span class="detail-value successSubtotal"></span>
+            </div>
+            <div class="detail-row serviceChargeRow" style="display: none">
+              <span class="detail-label">Service Charge (<span class="serviceChargeRate"></span>)</span>
+              <span class="detail-value successServiceCharge"></span>
+            </div>
+            <div class="detail-row afterServiceRow" style="display: none">
+              <span class="detail-label">After Service Charge</span>
+              <span class="detail-value successAfterService"></span>
+            </div>
+            <div class="detail-row discountRow" style="display: none">
+              <span class="detail-label">Discount</span>
+              <span class="detail-value successDiscount"></span>
+            </div>
+            <div class="detail-row afterDiscountRow" style="display: none">
+              <span class="detail-label">After Discount</span>
+              <span class="detail-value successAfterDiscount"></span>
+            </div>
+            <div class="detail-row gstRow" style="display: none">
+              <span class="detail-label">GST (<span class="gstRate"></span>)</span>
+              <span class="detail-value successGST"></span>
+            </div>
+            <div class="detail-row amount-row">
+              <span class="detail-label">Total Amount</span>
+              <span class="detail-value successAmount"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="group-members-container">
+        <div class="favourite-group-section">
+          <div class="favourite-group-title">Settle Members</div>
+          <div id="groupMembers" class="group-members"></div>
+          <div class="drag-instructions">Click your name to view the bill</div>
+        </div>
+      </div>
+      <div class="success-footer">
+        <div class="success-footer-text">
+          <span class="success-footer-text-title">SettleLah</span>
+          <div class="settings-footer">
+            <p>
+              App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span>
+              <a href="https://www.joasisweb.com" target="_blank">Joasis Web</a>
+            </p>
+            <p>Developed with 💗 by Joel Lee.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Share Bill Modal -->
+    <div id="memberbillOverlay" class="modal-overlay"></div>
+    <div id="memberbillModal" class="member-bill-modal">
+      <div class="modal-content member-bill-modal-content">
+        <div class="modal-header">
+          <h2>Settle Detail</h2>
+          <button class="member-close-modal">&times;</button>
+        </div>
+        <div class="modal-body member-bill-modal-body">
+          <!-- Modal content will be dynamically populated with JavaScript -->
+        </div>
+      </div>
+    </div>
+  </body>
+  <script type="text/javascript" src="/result.js"></script>
+</html>

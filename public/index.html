@@ -1,163 +1,987 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
-    <meta charset="UTF-8" />
-    <title>Bill Splitter</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>SettleLah</title>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
+    <style>
+      /* Preloader styles */
+      #preloader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #ffffff;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+      }
+
+      #preloader.fade-out {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .preloader-content {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+
+      .preloader-spinner {
+        width: 60px;
+        height: 60px;
+        border: 5px solid rgba(0, 0, 0, 0.1);
+        border-radius: 50%;
+        border-top-color: #4f46e5;
+        animation: spin 1s ease-in-out infinite;
+      }
+
+      .preloader-text {
+        font-size: 18px;
+        color: #4f46e5;
+        font-weight: 500;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body>
-    <h1>Bill Splitter</h1>
-    <button onclick="showSettings()" class="settings-btn">Settings</button>
-    <button onclick="showHistory()">View History</button>
-    <button onclick="clearHistory()">Clear History</button>
-    <p id="error" style="color: red"></p>
-
-    <!-- Step 1: Group Selection -->
-    <div id="step1" class="step">
-      <h2>Step 1: Select Group</h2>
-      <label>Select a Group:</label><br />
-      <select id="groupSelect">
-        <option value="">-- Select a Group --</option></select
-      ><br /><br />
-      <button onclick="nextStep(1, 'new')">New Split Group</button><br /><br />
-      <button onclick="nextStep(1, 'select')" id="next1" disabled>Next</button>
-    </div>
-
-    <!-- Step 2: Add Members (New Group) -->
-    <div id="step2" class="step" style="display: none">
-      <h2>Step 2: Add Members</h2>
-      <ul id="memberList" class="member-list"></ul>
-      <button onclick="addMemberPopup()">Add Member</button><br /><br />
-      <button onclick="backStep(2)">Back</button>
-      <button onclick="nextStep(2)" id="next2" disabled>Next</button>
-    </div>
-
-    <!-- Step 3: Add Dishes -->
-    <div id="step3" class="step" style="display: none">
-      <h2>Step 3: Add Dishes</h2>
-      <div id="groupActions">
-        <button id="editGroupBtn" onclick="editGroupMembers()" style="display: none">Edit Group Members</button>
-        <button id="saveGroupBtn" onclick="saveAsGroup()" style="display: none">Save as Group</button>
+    <!-- Preloader -->
+    <div id="preloader">
+      <div class="preloader-content">
+        <div class="preloader-spinner"></div>
+        <div class="preloader-text">Loading SettleLah...</div>
       </div>
-      <label>Dish Name:</label><br />
-      <input type="text" id="dishName" placeholder="Pizza" /><br />
-      <label>Dish Cost:</label><br />
-      <input type="number" id="dishCost" placeholder="20.00" step="0.01" /><br />
-      <div class="drag-container">
-        <div id="availableMembers" class="drag-area">
-          <h3>Available Members</h3>
-          <ul id="memberPool" class="sortable-list"></ul>
+    </div>
+
+    <div id="navbarContainer">
+      <!-- Home Page Container -->
+      <div id="homeContainer" class="page-container active">
+        <!-- Welcome Section -->
+        <div class="welcome-section">
+          <h1>Welcome back, Joel!</h1>
         </div>
-        <div id="assignedMembers" class="drag-area">
-          <h3>Assigned to Dish</h3>
-          <ul id="dishMembers" class="sortable-list"></ul>
+
+        <!-- Weather Card -->
+        <div class="weather-card card-widget">
+          <div class="weather-location">
+            <h2>Singapore</h2>
+            <p>Cloudy</p>
+          </div>
+          <div class="weather-temp">
+            <h1>32°</h1>
+          </div>
+          <div class="weather-icon">
+            <div class="sun-cloud-icon"></div>
+          </div>
+        </div>
+
+        <!-- Settle Card -->
+        <div id="startSettleCard" class="settle-card card-widget">
+          <div class="settle-header">
+            <h3>SETTLE LAH</h3>
+          </div>
+          <div class="settle-content">
+            <div class="cat-image">
+              <img class="start-cat-image" src="assets/start-card.svg" alt="cat" />
+            </div>
+            <div class="settle-message">
+              <p>Don't only know how to talk, settle now lah!</p>
+              <button class="settle-now-btn">Settle Now <span class="arrow">→</span></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Last Created Group -->
+        <div class="group-card card-widget">
+          <div class="card-header">
+            <h3>Last Created Group</h3>
+            <p>Friends</p>
+          </div>
+          <div class="avatar-group"></div>
+        </div>
+
+        <!-- Last Settle -->
+        <a id="lastSettle" href="result.html" target="_blank" class="group-card card-widget">
+          <div class="card-header">
+            <h3>Last settle</h3>
+            <span class="arrow-icon">→</span>
+          </div>
+          <div class="settle-item">
+            <div class="settle-top">
+              <div class="settle-info">
+                <p class="settle-info-amount"></p>
+                <p class="settle-info-matter"></p>
+                <p class="settle-info-group"></p>
+              </div>
+            </div>
+            <div class="settle-bottom">
+              <div class="settle-info-date">
+                <span></span>
+              </div>
+              <div class="settle-avatar">
+                <div class="avatar-group"></div>
+              </div>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <!-- History Page Container -->
+      <div id="historyContainer" class="page-container inactive">
+        <div class="welcome-section">
+          <h1>Settlement History</h1>
+          <button id="clearHistoryBtn" class="clear-history-btn">
+            <img class="group-action-btn-img" src="assets/bin.svg" alt="Delete" />
+          </button>
+        </div>
+
+        <!-- Add loading indicator for history -->
+        <div class="history-container">
+          <div class="history-loading">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Loading your history...</p>
+          </div>
+          <div class="history-list">
+            <!-- History items will be loaded here dynamically -->
+          </div>
         </div>
       </div>
-      <small>Drag members to assign them to the dish</small><br /><br />
-      <button onclick="addDish()">Add Dish</button><br /><br />
-      <button onclick="backStep(3)">Back</button>
-      <button onclick="nextStep(3)" id="next3" disabled>Next</button>
-    </div>
 
-    <!-- Step 4: Discount and Calculate -->
-    <div id="step4" class="step" style="display: none">
-      <h2>Step 4: Finalize</h2>
-      <label>Discount (e.g., 5 for $5, 10% for 10%):</label><br />
-      <input type="text" id="discount" placeholder="0" /><br /><br />
-      <label
-        ><input type="checkbox" id="serviceCharge" checked /> Add <span id="serviceRate">10%</span> Service
-        Charge</label
-      ><br />
-      <label><input type="checkbox" id="gst" checked /> Add <span id="gstRate">9%</span> GST</label><br /><br />
-      <button onclick="backStep(4)">Back</button>
-      <button onclick="calculateBill()">Calculate & Generate Link</button><br /><br />
-      <div id="result"></div>
-    </div>
+      <!-- Settings Page Container -->
+      <div id="settingsContainer" class="page-container inactive">
+        <div class="welcome-section">
+          <h1>Settings</h1>
+        </div>
 
-    <!-- Sliding Summary Panel -->
-    <div id="summaryPanel" class="summary-panel">
-      <h2>Summary</h2>
-      <button onclick="closeSummary()" class="close-btn">Close</button>
-      <ul id="dishList"></ul>
-      <p id="summaryTotal"></p>
-    </div>
+        <div class="group-card">
+          <div class="card-header">
+            <h3>Account Settings</h3>
+          </div>
+          <div class="settings-list">
+            <div class="settings-item">
+              <!-- <div class="settings-icon"></div> -->
+              <div class="settings-info">
+                <p>Tax Profile</p>
+              </div>
+              <div class="settings-action">
+                <select id="taxProfile" class="settings-select">
+                  <option value="singapore" selected>Singapore</option>
+                  <option value="malaysia">Malaysia</option>
+                </select>
+              </div>
+            </div>
 
-    <!-- Settings Popup -->
-    <div id="settingsPopup" class="popup">
-      <div class="popup-content">
-        <h2>Settings</h2>
-        <label>Tax Profile:</label><br />
-        <select id="taxProfile">
-          <option value="singapore">Singapore (10% Service + 9% GST)</option>
-          <option value="malaysia">Malaysia (10% Service + 6% GST)</option></select
-        ><br /><br />
-        <button onclick="saveSettings()">Save</button>
-        <button onclick="closeSettings()">Close</button>
+            <div class="settings-item tax-info">
+              <div class="settings-info tax-rates">
+                <div class="tax-rate-item">
+                  <span class="tax-label">Service Charge:</span>
+                  <span id="serviceRate" class="tax-value">10%</span>
+                </div>
+                <div class="tax-rate-item">
+                  <span class="tax-label">GST/VAT:</span>
+                  <span id="gstRate" class="tax-value">9%</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-item">
+              <!-- <div class="settings-icon"></div> -->
+              <div class="settings-info">
+                <p>Dark Mode</p>
+              </div>
+              <div class="settings-action">
+                <label class="toggle-switch">
+                  <input type="checkbox" id="darkModeToggle" onclick="toggleDarkMode()" />
+                  <span class="slider round"></span>
+                </label>
+              </div>
+            </div>
+
+            <a href="https://www.joasisweb.com" target="_blank" class="settings-item">
+              <!-- <div class="settings-icon"></div> -->
+              <div class="settings-info">
+                <p>Visit My Website</p>
+              </div>
+            </a>
+          </div>
+        </div>
+        <div class="settings-footer">
+          <p>
+            App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span>
+            <a href="https://www.joasisweb.com" target="_blank">Joasis Web</a>
+          </p>
+          <p>Developed with 💗 by Joel Lee.</p>
+        </div>
+      </div>
+
+      <!-- Settle Now Screen -->
+      <div id="settleNowScreen" class="page-container inactive">
+        <div class="settle-now-header">
+          <button class="back-button">
+            <img src="assets/back.svg" alt="back" />
+          </button>
+          <h1>Settle Now?</h1>
+        </div>
+
+        <div class="white-slide-container">
+          <!-- Initial settle choice view -->
+          <div id="settleChoiceView" class="settle-view active">
+            <div class="settle-choice-container">
+              <h2>Settle among?</h2>
+
+              <div class="settle-choice-error">
+                <p>Please select an option to continue.</p>
+              </div>
+
+              <div class="saved-group-option">
+                <img class="saved-group-bg" src="assets/saved-group-img.svg" alt="saved group" />
+                <div class="group-label">Saved Group</div>
+              </div>
+
+              <div class="or-divider">
+                <span class="divider-line"></span>
+                <span class="divider-text">OR</span>
+                <span class="divider-line"></span>
+              </div>
+
+              <div class="new-group-option">
+                <img class="new-group-bg" src="assets/new-group-img.svg" alt="new group" />
+                <div class="group-label">New Group</div>
+              </div>
+              <div class="btn-container">
+                <button class="get-started-btn">Get Started</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- New group members view -->
+          <div id="newGroupMembersView" class="settle-view">
+            <div class="new-group-members-container">
+              <h2>Settle With New Group</h2>
+              <div class="new-group-error-message">
+                <p>Please add at least two members.</p>
+              </div>
+              <div class="add-member-button">
+                <div class="add-member-icon">
+                  <img class="add-member-icon-img" src="assets/add-member-img.svg" alt="add member" />
+                </div>
+                <div class="add-member-label">New Member</div>
+              </div>
+
+              <div class="member-list"></div>
+
+              <div class="btn-container">
+                <button class="next-btn new-group-next-btn">Next</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Saved Groups View -->
+          <div id="savedGroupsView" class="settle-view">
+            <div class="saved-groups-container">
+              <h2>Settle With Saved Group</h2>
+              <div class="saved-group-error">
+                <p>Please select a group or click "New Split Group".</p>
+              </div>
+              <div class="saved-groups-list-container">
+                <!-- Groups will be added dynamically -->
+              </div>
+
+              <div class="no-saved-groups">
+                <p>No saved groups found</p>
+                <p>Create a new group first</p>
+              </div>
+
+              <div class="btn-container">
+                <button class="next-btn saved-groups-next-btn">Next</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add Member Modal -->
+          <div id="addMemberModal" class="modal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h2>Add Member</h2>
+                <button class="close-modal">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div class="input-field">
+                  <label for="memberName">Member name</label>
+                  <input type="text" id="memberName" placeholder="Name" />
+                  <div class="error-message">Please enter member's name</div>
+                </div>
+                <button class="add-member-submit">Add</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Edit Member Modal -->
+          <div id="editMemberModal" class="modal">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h2>Edit Member</h2>
+                <button class="close-modal">&times;</button>
+              </div>
+              <div class="modal-body">
+                <div class="member-avatar-container">
+                  <div class="edit-member-avatar"></div>
+                </div>
+                <div class="input-field">
+                  <label for="editMemberName">Member name</label>
+                  <input type="text" id="editMemberName" placeholder="Name" />
+                  <div class="error-message">Please enter member's name</div>
+                </div>
+                <button class="remove-member-btn">Remove</button>
+                <button class="save-member-btn">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Add Settle Item view -->
+        <div id="addSettleItemView" class="settle-view">
+          <div class="add-settle-item-container">
+            <div class="favourite-group-section">
+              <button class="new-favourite-group-btn">
+                New favourite group?<span class="arrow"><img src="assets/arrow.svg" alt="arrow" /></span>
+              </button>
+              <div class="group-success-message">
+                <span class="success-icon">
+                  <img class="checkmark-img" src="assets/tick-circle.svg" alt="loading" />
+                </span>
+                <span class="group-name-display"></span>
+              </div>
+              <div id="groupMembers" class="group-members"></div>
+              <div class="drag-instructions">Drag members to assign them to the dish</div>
+            </div>
+
+            <div class="item-details-section">
+              <button class="scan-item-btn">
+                Scan Item from Receipt<span class="arrow"><img src="assets/arrow.svg" alt="arrow" /></span>
+              </button>
+              <div class="input-field">
+                <label for="itemName">Item Name</label>
+                <input
+                  type="text"
+                  id="itemName"
+                  placeholder="Item Name"
+                  value="KFC"
+                  autocomplete="off"
+                  inputmode="text"
+                />
+                <div id="itemNameError" class="error-message">Please enter item's name</div>
+              </div>
+
+              <div class="input-field">
+                <label for="itemPrice">Item Price</label>
+                <input
+                  type="text"
+                  id="itemPrice"
+                  placeholder="Item Price"
+                  value="10"
+                  autocomplete="off"
+                  inputmode="decimal"
+                />
+                <div id="itemPriceError" class="error-message">Please enter item's price</div>
+              </div>
+            </div>
+
+            <div class="split-section">
+              <div class="split-header">Split Among</div>
+              <div class="split-members">
+                <div class="split-option">
+                  <input type="checkbox" id="settleEqually" />
+                  <label for="settleEqually">Settle equally?</label>
+                </div>
+                <div id="assignedMembers" class="assigned-members"></div>
+                <div class="remove-instructions">Double tap to remove member</div>
+              </div>
+              <div class="member-required-message">Please don't forget your member</div>
+            </div>
+
+            <button class="add-item-btn">Add Item</button>
+            <div class="swipe-instructions">Swipe up to open bill summary</div>
+          </div>
+        </div>
+
+        <!-- Finalise Settle Bill Screen -->
+        <div id="finaliseSettleBillScreen" class="page-container inactive">
+          <div class="finalise-bill-container">
+            <div class="input-section">
+              <div class="input-field">
+                <label for="settleMatter">Settle Matter</label>
+                <input type="text" id="settleMatter" placeholder="Enter settle matter" value="Group Lunch" />
+              </div>
+
+              <div class="input-field">
+                <label for="discountValue">Discount</label>
+                <input type="text" id="discountValue" placeholder="Enter discount value" value="" />
+                <p class="helper-text">Enter discount value (5 for $5, 10% for 10%)</p>
+              </div>
+
+              <hr class="divider" />
+
+              <div class="checkbox-field">
+                <input type="checkbox" id="serviceChargeCheckbox" />
+                <label for="serviceChargeCheckbox"
+                  >Add <input type="text" id="serviceChargeValue" value="10" class="inline-input" />% Service
+                  Charge</label
+                >
+              </div>
+
+              <div class="checkbox-field">
+                <input type="checkbox" id="gstCheckbox" />
+                <label for="gstCheckbox">Add 9% GST</label>
+              </div>
+              <p class="helper-text">GST profile can change at Setting</p>
+
+              <hr class="divider" />
+
+              <div class="input-field">
+                <label for="paynowName">PayNow Name</label>
+                <input type="text" id="paynowName" placeholder="Enter name" value="Joel" />
+                <p class="helper-text">Enter the name of PayNow account</p>
+              </div>
+
+              <div class="input-field">
+                <label for="paynowPhone">PayNow Phone Number</label>
+                <input type="text" id="paynowPhone" placeholder="Enter phone number" value="87011228" />
+                <p class="helper-text">Enter the payer phone number to generate PayNow QR</p>
+              </div>
+            </div>
+          </div>
+          <button class="settle-lah-btn">Settle Lah</button>
+          <p class="swipe-instructions">Swipe up to open bill summary</p>
+        </div>
+      </div>
+
+      <!-- Loading Screen -->
+      <div id="loadingScreen" class="loading-screen">
+        <div class="loading-footer">
+          <p>Sit back and relax while we are settling</p>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
+        </div>
+        <div class="loading-top">
+          <div id="loadingReceipt" class="success-details loading-receipt">
+            <div class="success-icon-container">
+              <div class="success-icon">
+                <div class="checkmark">
+                  <img class="checkmark-img" src="assets/tick-circle.svg" alt="loading" />
+                </div>
+              </div>
+            </div>
+            <h1 class="success-title">SettleLah Receipt</h1>
+            <div class="success-details-liner">
+              <div class="notch-left"></div>
+              <div class="success-details-liner-line"></div>
+              <div class="notch-right"></div>
+            </div>
+            <div class="detail-row-container">
+              <div class="detail-row">
+                <span class="detail-label">Settle Matter</span>
+                <span class="detail-value successSettleMatter"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Date</span>
+                <span class="detail-value successDate"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Time</span>
+                <span class="detail-value successTime"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Total Settle Item</span>
+                <span class="detail-value successItemCount"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Subtotal</span>
+                <span class="detail-value successSubtotal"></span>
+              </div>
+              <div class="detail-row serviceChargeRow" style="display: none">
+                <span class="detail-label">Service Charge (<span class="serviceChargeRate"></span>)</span>
+                <span class="detail-value successServiceCharge"></span>
+              </div>
+              <div class="detail-row afterServiceRow" style="display: none">
+                <span class="detail-label">After Service Charge</span>
+                <span class="detail-value successAfterService"></span>
+              </div>
+              <div class="detail-row discountRow" style="display: none">
+                <span class="detail-label">Discount</span>
+                <span class="detail-value successDiscount"></span>
+              </div>
+              <div class="detail-row afterDiscountRow" style="display: none">
+                <span class="detail-label">After Discount</span>
+                <span class="detail-value successAfterDiscount"></span>
+              </div>
+              <div class="detail-row gstRow" style="display: none">
+                <span class="detail-label">GST (<span class="gstRate"></span>)</span>
+                <span class="detail-value successGST"></span>
+              </div>
+              <div class="detail-row amount-row">
+                <span class="detail-label">Total Amount</span>
+                <span class="detail-value successAmount"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success Screen -->
+      <div id="successScreen" class="success-screen">
+        <div class="success-content">
+          <div id="successReceipt" class="success-details">
+            <div class="success-icon-container">
+              <div class="success-icon">
+                <div class="checkmark">
+                  <img class="checkmark-img" src="assets/tick-circle.svg" alt="loading" />
+                </div>
+              </div>
+            </div>
+            <h1 class="success-title">Settle Success!</h1>
+            <div class="success-details-liner">
+              <div class="notch-left"></div>
+              <div class="success-details-liner-line"></div>
+              <div class="notch-right"></div>
+            </div>
+            <div class="detail-row-container">
+              <div class="detail-row">
+                <span class="detail-label">Settle Matter</span>
+                <span class="detail-value successSettleMatter"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Date</span>
+                <span class="detail-value successDate"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Time</span>
+                <span class="detail-value successTime"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Total Settle Item</span>
+                <span class="detail-value successItemCount"></span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Subtotal</span>
+                <span class="detail-value successSubtotal"></span>
+              </div>
+              <div class="detail-row serviceChargeRow" style="display: none">
+                <span class="detail-label">Service Charge (<span class="serviceChargeRate"></span>)</span>
+                <span class="detail-value successServiceCharge"></span>
+              </div>
+              <div class="detail-row afterServiceRow" style="display: none">
+                <span class="detail-label">After Service Charge</span>
+                <span class="detail-value successAfterService"></span>
+              </div>
+              <div class="detail-row discountRow" style="display: none">
+                <span class="detail-label">Discount</span>
+                <span class="detail-value successDiscount"></span>
+              </div>
+              <div class="detail-row afterDiscountRow" style="display: none">
+                <span class="detail-label">After Discount</span>
+                <span class="detail-value successAfterDiscount"></span>
+              </div>
+              <div class="detail-row gstRow" style="display: none">
+                <span class="detail-label">GST (<span class="gstRate"></span>)</span>
+                <span class="detail-value successGST"></span>
+              </div>
+              <div class="detail-row amount-row">
+                <span class="detail-label">Total Amount</span>
+                <span class="detail-value successAmount"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="success-footer">
+          <h2>Settle Completed</h2>
+          <p>Share the bill to your friend or open the link to reveal the bill</p>
+          <div class="avatar-group"></div>
+          <div class="share-action-buttons">
+            <button class="share-bill-btn">Share Bill</button>
+            <button class="reveal-bill-btn">Reveal Bill</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bill Summary Modal -->
+      <div id="billSummaryOverlay" class="modal-overlay"></div>
+      <div id="billSummaryModal" class="modal bill-summary-modal">
+        <div class="bill-summary-drag-handle"></div>
+        <div class="modal-content bill-summary-modal-content">
+          <div class="modal-header">
+            <h2>Bill Summary</h2>
+            <button class="summary-close-modal">&times;</button>
+          </div>
+          <div class="modal-body bill-summary-body">
+            <div id="dishSummaryContainer">
+              <!-- Items will be added dynamically here -->
+            </div>
+            <div class="bill-summary-footer">
+              <button class="add-more-items-btn">Add More Items</button>
+              <button class="confirm-bill-btn">Confirm Bill</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saved Groups Modal -->
+      <div id="savedGroupsModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Select a Group</h2>
+            <button class="close-modal">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div class="saved-groups-list">
+              <!-- Groups will be added dynamically -->
+            </div>
+            <div class="no-groups-message">
+              <p>No saved groups found.</p>
+              <p>Please create a new group first.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Group Modal -->
+      <div id="createGroupModal" class="modal">
+        <div class="modal-content create-group-modal">
+          <div class="modal-header">
+            <h2>Create new group?</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="group-save-message">Would you like to save these members as a group for future use?</p>
+
+            <div class="input-field">
+              <label for="groupName">Group name</label>
+              <input type="text" id="groupName" placeholder="Group name" />
+              <div class="error-message">Please enter group's name</div>
+            </div>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn cancel-btn">Cancel</button>
+              <button class="modal-action-btn confirm-btn">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scan Receipt Modal -->
+      <div id="scanReceiptModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Scan Receipt</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="scan-receipt-helper-text">Upload a receipt image to scan for items:</p>
+            <div class="input-field file-upload-container">
+              <input type="file" id="receiptImage" accept="image/*" capture="environment" class="hidden-file-input" />
+              <label for="receiptImage" class="file-upload-button">
+                <span class="upload-icon">📤</span>
+                <span class="upload-text">Choose Receipt Image</span>
+              </label>
+              <div class="scan-error-message"></div>
+            </div>
+            <p class="helper-text">Supported formats: JPG, PNG, PDF</p>
+            <div class="scan-receipt-error-message"></div>
+
+            <!-- Scan overlay that appears during processing -->
+            <div class="scan-receipt-overlay">
+              <div class="scanning-animation">
+                <div class="scanner-line"></div>
+                <img
+                  src="assets/receipt-icon.svg"
+                  alt="Receipt"
+                  class="receipt-icon"
+                  onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cpath%20d%3D%22M0%200h48v48H0z%22%2F%3E%3Cpath%20d%3D%22M10%204h28a2%202%200%20012%202v36a2%202%200%2001-2%202H10a2%202%200%2001-2-2V6a2%202%200%20012-2z%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M16%2016h16M16%2024h16M16%2032h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E';"
+                />
+              </div>
+              <p class="scanning-text">Scanning your receipt...</p>
+            </div>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn confirm-btn" id="scanReceiptBtn">Scan Receipt</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Group Updated Modal -->
+      <div id="groupUpdatedModal" class="modal">
+        <div class="modal-content create-group-modal">
+          <div class="modal-header">
+            <h2>Group Updated</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="group-save-message">The group has been successfully updated.</p>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn confirm-btn group-updated-confirm-btn">OK</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Delete Group Modal -->
+      <div id="deleteGroupModal" class="modal">
+        <div class="modal-content create-group-modal">
+          <div class="modal-header">
+            <h2>Delete Group?</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="group-save-message">Are you sure you want to delete this group?</p>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn cancel-btn">Cancel</button>
+              <button class="modal-action-btn delete-confirm-btn">Delete</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clear History Confirmation Modal -->
+      <div id="clearHistoryConfirmModal" class="modal">
+        <div class="modal-content create-group-modal">
+          <div class="modal-header">
+            <h2>Clear History?</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="group-save-message">
+              Are you sure you want to clear all settlement history? This action cannot be undone.
+            </p>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn cancel-btn">Cancel</button>
+              <button class="modal-action-btn delete-confirm-btn" id="confirmClearHistoryBtn">Clear All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Back Confirm Modal -->
+      <div id="backConfirmModal" class="modal">
+        <div class="modal-content create-group-modal">
+          <div class="modal-header">
+            <h2>Alert</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="group-save-message">Going back will clear all current dishes and members. Continue?</p>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn cancel-btn">Cancel</button>
+              <button class="modal-action-btn confirm-btn back-confirm-btn">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Share Bill Modal -->
+      <div id="shareBillOverlay" class="modal-overlay"></div>
+      <div id="shareBillModal" class="share-bill-modal">
+        <div class="modal-content share-bill-modal-content">
+          <div class="modal-header">
+            <h2>Share with your settle buddy</h2>
+            <button class="share-close-modal">&times;</button>
+          </div>
+          <div class="modal-body share-bill-modal-body">
+            <div id="shareOptionList" class="share-option-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="navbar">
+        <div id="bubbleWrapper">
+          <div id="bubble1" class="bubble">
+            <span class="icon"><img class="nav-icon" src="assets/nav_history.svg" /></span>
+          </div>
+          <div id="bubble2" class="bubble bubble-home">
+            <span class="icon"><img class="nav-icon" src="assets/nav_home_active.svg" /></span>
+          </div>
+          <div id="bubble3" class="bubble">
+            <span class="icon"><img class="nav-icon" src="assets/nav_setting.svg" /></span>
+          </div>
+        </div>
+        <div id="menuWrapper">
+          <div id="menu1" class="menuElement" onclick="moveWithCalc(1)">
+            <img class="nav-icon" src="assets/nav_history.svg" />
+          </div>
+          <div id="menu2" class="menuElement" onclick="moveWithCalc(2)">
+            <img class="nav-icon" src="assets/nav_home.svg" />
+          </div>
+          <div id="menu3" class="menuElement" onclick="moveWithCalc(3)">
+            <img class="nav-icon" src="assets/nav_setting.svg" />
+          </div>
+        </div>
+      </div>
+      <div id="navbgWrapper">
+        <div id="navbg"></div>
+        <div id="navbgBubble"></div>
+      </div>
+
+      <!-- Success toast notification -->
+      <div id="scanSuccessToast" class="success-toast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-message">
+          <p class="toast-title">Receipt Scanned!</p>
+          <p class="toast-count">0 items added</p>
+        </div>
+        <button class="view-items-btn">View Items</button>
+      </div>
+
+      <!-- Error toast notification -->
+      <div id="scanErrorToast" class="error-toast">
+        <div class="toast-icon">!</div>
+        <div class="toast-message">
+          <p class="toast-title">Scan Failed</p>
+          <p class="toast-error-message">Unable to process receipt</p>
+        </div>
+        <button class="try-again-btn">Try Again</button>
+      </div>
+
+      <!-- Missing members toast notification -->
+      <div id="missingMembersToast" class="error-toast">
+        <div class="toast-icon">!</div>
+        <div class="toast-message">
+          <p class="toast-title">Missing Members</p>
+          <p class="toast-error-message">Some items have no members assigned</p>
+        </div>
+      </div>
+
+      <!-- History cleared toast notification -->
+      <div id="historyClearedToast" class="success-toast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-message">
+          <p class="toast-title">History Cleared</p>
+          <p class="toast-count">All history items have been removed</p>
+        </div>
       </div>
     </div>
 
-    <!-- Add Member Popup -->
-    <div id="addMemberPopup" class="popup">
-      <div class="popup-content">
-        <h2>Add Member</h2>
-        <input type="text" id="newMemberName" placeholder="Enter name" /><br />
-        <button onclick="saveNewMember()">Add</button>
-        <button onclick="closeAddMember()">Cancel</button>
-      </div>
-    </div>
+    <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.3.3/gsap.min.js"></script> -->
+    <script src="https://cdn.jsdelivr.net/npm/mindee@3.9.1/dist/mindee.min.js"></script>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+      // Enhanced preloader logic
+      document.addEventListener("DOMContentLoaded", function () {
+        // Create an array of all images to track
+        const images = Array.from(document.images);
+        let loadedImagesCount = 0;
+        let resourcesLoaded = false;
 
-    <!-- Edit Group Members Popup -->
-    <div id="editGroupPopup" class="popup">
-      <div class="popup-content">
-        <h2>Edit Group Members</h2>
-        <p>Warning: Changing members will clear all dishes!</p>
-        <ul id="editGroupList" class="member-list"></ul>
-        <button onclick="addMemberPopup('edit')">Add Member</button><br /><br />
-        <button onclick="saveEditedGroup()">Save</button>
-        <button onclick="closeEditGroup()">Close</button>
-      </div>
-    </div>
+        // Handle image loading
+        function trackImageLoading() {
+          if (images.length === 0) {
+            return true; // No images to load
+          }
 
-    <!-- Edit Member Popup -->
-    <div id="editMemberPopup" class="popup">
-      <div class="popup-content">
-        <h2>Edit Member Name</h2>
-        <input type="text" id="editMemberName" placeholder="Enter new name" /><br />
-        <button onclick="saveEditedMember()">Save</button>
-        <button onclick="closeEditMember()">Cancel</button>
-      </div>
-    </div>
+          images.forEach((img) => {
+            // If image is already loaded or has no src
+            if (img.complete || !img.src) {
+              loadedImagesCount++;
+            } else {
+              img.addEventListener("load", imageLoaded);
+              img.addEventListener("error", imageLoaded); // Count errors as loaded too
+            }
+          });
 
-    <!-- Save as Group Popup -->
-    <div id="saveGroupPopup" class="popup">
-      <div class="popup-content">
-        <h2>Save as Group</h2>
-        <label>Group Name:</label><br />
-        <input type="text" id="groupName" placeholder="e.g., Friends" /><br />
-        <p>Members: <span id="groupMembersPreview"></span></p>
-        <button onclick="confirmSaveGroup()">Save</button>
-        <button onclick="closeSaveGroup()">Cancel</button>
-      </div>
-    </div>
+          return loadedImagesCount >= images.length;
+        }
 
-    <!-- Back Confirmation Modal -->
-    <div id="backConfirmModal" class="popup">
-      <div class="popup-content">
-        <h2>Confirm Back</h2>
-        <p>Going back will clear all current dishes and members. Continue?</p>
-        <button onclick="confirmBack()">Yes</button>
-        <button onclick="closeBackConfirm()">No</button>
-      </div>
-    </div>
+        function imageLoaded() {
+          loadedImagesCount++;
+          if (loadedImagesCount >= images.length) {
+            checkAllResourcesLoaded();
+          }
+        }
 
-    <!-- History Screen -->
-    <div id="history" class="step" style="display: none">
-      <h1>Bill History</h1>
-      <ul id="historyList"></ul>
-      <button onclick="showStep(1)">Back to Home</button>
-    </div>
+        // Check if all resources are loaded
+        function checkAllResourcesLoaded() {
+          if (trackImageLoading() && document.readyState === "complete") {
+            resourcesLoaded = true;
+            hidePreloaderWithDelay();
+          }
+        }
 
-    <script src="script.js"></script>
+        // Hide preloader with a minimum display time
+        function hidePreloaderWithDelay() {
+          // Ensure preloader shows for at least 800ms for smoother UX
+          const minimumLoadingTime = 800;
+          const loadingStartTime = window.performance.timing.navigationStart;
+          const currentTime = new Date().getTime();
+          const timeElapsed = currentTime - loadingStartTime;
+
+          const timeToWait = Math.max(0, minimumLoadingTime - timeElapsed);
+
+          setTimeout(hidePreloader, timeToWait);
+        }
+
+        // Actually hide the preloader
+        function hidePreloader() {
+          const preloader = document.getElementById("preloader");
+          if (preloader) {
+            preloader.classList.add("fade-out");
+
+            // Remove from DOM after animation completes
+            setTimeout(() => {
+              if (preloader && preloader.parentNode) {
+                preloader.parentNode.removeChild(preloader);
+              }
+            }, 500);
+          }
+        }
+
+        // Initial check
+        checkAllResourcesLoaded();
+
+        // Final fallback
+        window.addEventListener("load", function () {
+          if (!resourcesLoaded) {
+            resourcesLoaded = true;
+            hidePreloaderWithDelay();
+          }
+        });
+
+        // Fallback timeout (in case something goes wrong)
+        setTimeout(function () {
+          if (!resourcesLoaded) {
+            console.warn("Preloader fallback triggered");
+            resourcesLoaded = true;
+            hidePreloader();
+          }
+        }, 5000); // 5 second maximum loading time
+      });
+    </script>
   </body>
 </html>
