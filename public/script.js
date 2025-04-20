@@ -1,3 +1,64 @@
+// Authentication check
+function checkAuthentication() {
+  const isAuthenticated = sessionStorage.getItem("settlelah_authenticated") === "true";
+  const authExpiry = parseInt(sessionStorage.getItem("settlelah_auth_expiry") || "0");
+
+  // If not authenticated or token expired, redirect to login
+  if (!isAuthenticated || authExpiry <= Date.now()) {
+    // Clear any existing auth data
+    sessionStorage.removeItem("settlelah_authenticated");
+    sessionStorage.removeItem("settlelah_auth_expiry");
+
+    // Redirect to login page
+    window.location.href = "/login";
+    return false;
+  }
+
+  return true;
+}
+
+// Run auth check when script loads (unless we're on a result page)
+if (!window.location.pathname.startsWith("/result")) {
+  checkAuthentication();
+}
+
+// Extend auth session when user interacts with the page
+document.addEventListener("click", extendAuthSession);
+document.addEventListener("keydown", extendAuthSession);
+
+function extendAuthSession() {
+  if (sessionStorage.getItem("settlelah_authenticated") === "true") {
+    // Extend session by another 24 hours from now
+    const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+    sessionStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
+  }
+}
+
+// Logout function
+function logout() {
+  // Show confirmation
+  const confirmLogout = confirm("Are you sure you want to log out?");
+
+  if (confirmLogout) {
+    // Clear auth data
+    sessionStorage.removeItem("settlelah_authenticated");
+    sessionStorage.removeItem("settlelah_auth_expiry");
+
+    // Show short feedback message
+    const logoutToast = document.createElement("div");
+    logoutToast.className = "logout-toast";
+    logoutToast.textContent = "Logging out...";
+    document.body.appendChild(logoutToast);
+
+    // Short delay for visual feedback
+    setTimeout(() => {
+      // Redirect to login page
+      window.location.href = "/login";
+    }, 500);
+  }
+}
+
+// Original script begins here
 let dishes = [];
 let members = []; // Initialize as empty array
 let currentStep = 1;
@@ -63,65 +124,6 @@ function switchPage(pageId) {
     }
   }
 }
-
-function nextStep(step, action) {
-  if (step === 1) {
-    const selectedRadio = document.querySelector('input[name="group"]:checked'); // Get the selected radio button
-    const groupSelect = selectedRadio ? selectedRadio.value : ""; // Get its value or set to empty if none selected
-
-    if (!groupSelect && action !== "new") {
-      showError('Please select a group or click "New Split Group".');
-      return;
-    }
-    if (action === "select") {
-      currentGroup = groupSelect;
-      members = groups[groupSelect];
-      loadMembersForDrag();
-      currentStep = 2; // Skip to Step 3 (Add Dishes)
-      document.getElementById("step1").style.display = "none";
-      document.getElementById("step3").style.display = "block";
-      updateGroupActions();
-      dishes = [];
-      updateDishList();
-      document.getElementById("dishMembers").innerHTML = "";
-      document.getElementById("next3").disabled = true;
-      closeSummary();
-      return;
-    } else {
-      members = [];
-      currentGroup = "";
-    }
-  } else if (step === 2) {
-    if (members.length === 0) {
-      showError("Please add at least one member.");
-      return;
-    }
-    loadMembersForDrag();
-  }
-
-  clearError();
-  document.getElementById(`step${step}`).style.display = "none";
-  currentStep = step + 1;
-  document.getElementById(`step${currentStep}`).style.display = "block";
-  updateGroupActions();
-}
-
-function backStep(step) {
-  if (step > 1 && (dishes.length > 0 || members.length > 0)) {
-    document.getElementById("backConfirmModal").style.display = "block";
-    return;
-  }
-  resetToHome(step);
-}
-
-// function confirmBack() {
-//   resetToHome(currentStep);
-//   closeBackConfirm();
-// }
-
-// function closeBackConfirm() {
-//   document.getElementById("backConfirmModal").style.display = "none";
-// }
 
 function showStep(step) {
   document.querySelectorAll(".step").forEach((s) => (s.style.display = "none"));
@@ -528,9 +530,11 @@ function toggleBillSummaryVisibility(show) {
       if (!modal.classList.contains("fully-open") && !modal.classList.contains("half-open")) {
         modal.classList.add("peeking");
       }
+      document.querySelector(".bill-summary-footer").style.display = "none";
     } else {
       modal.classList.add("peeking");
       modal.classList.remove("fully-open", "half-open");
+      document.querySelector(".bill-summary-footer").style.display = "flex";
     }
 
     overlay.classList.remove("active");
@@ -549,7 +553,14 @@ function updateDishSummary() {
   container.innerHTML = "";
 
   if (!dishes || dishes.length === 0) {
-    container.innerHTML = "<p>No items added yet.</p>";
+    // Show toast notification using showToast function
+    showToast("noItemsAddedToast");
+
+    // Clear the subtotal
+    const subtotalElement = document.getElementById("billSubtotal");
+    if (subtotalElement) {
+      subtotalElement.textContent = "$0.00";
+    }
 
     // Disable confirm button if no dishes
     const confirmButton = document.querySelector(".confirm-bill-btn");
@@ -559,6 +570,15 @@ function updateDishSummary() {
     return;
   }
 
+  // Hide the confirm button if no dishes or if on finalise screen
+  const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
+  const isFinaliseBillActive = finaliseScreen && finaliseScreen.classList.contains("active");
+
+  if (isFinaliseBillActive) {
+    billSummaryModal.classList.add("is-finalise-bill");
+  } else {
+    billSummaryModal.classList.remove("is-finalise-bill");
+  }
   // Loop through the dishes and create a dish summary item for each one
   dishes.forEach((dish, index) => {
     const dishItem = document.createElement("div");
@@ -593,7 +613,11 @@ function updateDishSummary() {
     dish.members.forEach((member) => {
       const memberPill = document.createElement("div");
       memberPill.className = "dish-member-pill";
-      memberPill.textContent = member;
+
+      // Check if member is an object (new format) or string (old format)
+      const memberName = typeof member === "object" ? member.name : member;
+      memberPill.textContent = memberName;
+
       dishMembers.appendChild(memberPill);
     });
 
@@ -624,6 +648,13 @@ function updateDishSummary() {
 
     container.appendChild(dishItem);
   });
+
+  // Calculate and update the subtotal
+  const subtotal = dishes.reduce((sum, dish) => sum + parseFloat(dish.cost), 0);
+  const subtotalElement = document.getElementById("billSubtotal");
+  if (subtotalElement) {
+    subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+  }
 
   // Enable confirm button and add click handler with validation
   const confirmButton = document.querySelector(".confirm-bill-btn");
@@ -1167,7 +1198,6 @@ function hideFinaliseSettleBillScreen() {
   showSettleView("addSettleItemView");
 
   showSummary();
-  // Navigate to add settle item view
 }
 
 // Initialize drag functionality for the bill summary modal
@@ -1332,6 +1362,9 @@ function showSettings() {
   // Original code
   const popup = document.getElementById("settingsPopup");
   popup.style.display = "block";
+
+  // Initialize settings with logout button
+  initializeSettings();
 }
 
 function closeSettings() {
@@ -1990,9 +2023,9 @@ function showSettleView(viewId) {
 
   const loadingScreen = document.getElementById("loadingScreen");
   if (viewId === "successScreen") {
+    showSuccessScreen();
     loadingScreen.classList.remove("active");
     loadingScreen.classList.add("inactive");
-    showSuccessScreen();
   }
 
   // Update header text based on current view
@@ -2449,6 +2482,7 @@ function addNewMember() {
   if (!memberName) {
     inputField.classList.add("error");
     errorMessage.classList.add("visible");
+    errorMessage.textContent = "Please enter a name";
     return;
   }
 
@@ -2460,8 +2494,21 @@ function addNewMember() {
     return;
   }
 
-  // Generate a random avatar number (1-12)
-  const avatarNumber = Math.floor(Math.random() * 12) + 1;
+  // Get all used avatar numbers
+  const usedAvatars = members
+    .filter((member) => typeof member === "object" && member.avatar)
+    .map((member) => member.avatar);
+
+  // Generate a list of available avatars (1-12)
+  const allAvatars = Array.from({ length: 12 }, (_, i) => i + 1);
+  const availableAvatars = allAvatars.filter((num) => !usedAvatars.includes(num));
+
+  // If all avatars are used, just pick a random one
+  // Otherwise, use an avatar that hasn't been used yet
+  const avatarNumber =
+    availableAvatars.length > 0
+      ? availableAvatars[Math.floor(Math.random() * availableAvatars.length)]
+      : Math.floor(Math.random() * 12) + 1;
 
   // Add the member to the array as an object with name and avatar
   members.push({
@@ -2471,6 +2518,11 @@ function addNewMember() {
 
   // Create and add the member to the UI
   addMemberToUI(memberName, avatarNumber);
+
+  // Clear the input field
+  memberNameInput.value = "";
+  inputField.classList.remove("error");
+  errorMessage.classList.remove("visible");
 
   // Hide the modal
   hideModal("addMemberModal");
@@ -3086,9 +3138,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Initialize the tax profile dropdown
   initTaxProfileDropdown();
-
-  // Initialize the navigation
-  initPageNavigation();
 
   // Initialize the theme toggle
   initThemeToggle();

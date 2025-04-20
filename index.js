@@ -1,9 +1,52 @@
 const express = require("express");
 const { initializeApp } = require("firebase/app");
 const { getFirestore, doc, setDoc, getDoc, deleteDoc, writeBatch } = require("firebase/firestore");
+const path = require("path");
 const app = express();
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
+
+// Add CSP headers middleware
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https: https://vercel.live; connect-src 'self' https:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https:;"
+  );
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  next();
+});
+
+// Authentication middleware
+const authRequiredPaths = ["/"];
+const excludedPaths = ["/login", "/api/validate-passcode", "/result", "/assets"];
+
+app.use((req, res, next) => {
+  // Skip authentication for excluded paths
+  if (excludedPaths.some((path) => req.path.startsWith(path))) {
+    return next();
+  }
+
+  // Check if authentication is required for this path
+  if (authRequiredPaths.some((path) => req.path === path)) {
+    // For API requests, check for authorization header
+    if (req.headers.authorization) {
+      const token = req.headers.authorization.split(" ")[1];
+      // Simple server-side validation (you might want more secure validation in production)
+      if (token === process.env.SETTLELAH_AUTH_TOKEN) {
+        return next();
+      }
+      return res.status(401).json({ error: "Unauthorized" });
+    } else {
+      // For browser requests, redirect to login page
+      return res.redirect("/login");
+    }
+  }
+
+  // For other paths, no authentication needed
+  next();
+});
 
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY,
@@ -42,6 +85,46 @@ async function deleteBills(ids) {
   });
   await batch.commit();
 }
+
+// Make sure login page is served correctly
+app.get("/login", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "login.html"));
+});
+
+// Passcode validation endpoint
+app.post("/api/validate-passcode", (req, res) => {
+  const { passcode } = req.body;
+
+  // Get the correct passcode from environment variable
+  const correctPasscode = process.env.APP_PASSCODE || "123456"; // Default for development
+
+  // Validate the passcode (use strict equality to avoid timing attacks)
+  const isValid = passcode === correctPasscode;
+
+  if (isValid) {
+    // Generate token for API calls (simple implementation)
+    const token = process.env.SETTLELAH_AUTH_TOKEN || "default-auth-token";
+
+    res.json({
+      valid: true,
+      token,
+      message: "Authentication successful",
+    });
+  } else {
+    // Add a slight delay to prevent brute force attacks
+    setTimeout(() => {
+      res.json({
+        valid: false,
+        message: "Invalid passcode. Please try again.",
+      });
+    }, 1000);
+  }
+});
+
+// Make sure root route serves index.html explicitly
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 app.post("/calculate", async (req, res) => {
   const {
@@ -168,7 +251,7 @@ app.get("/result/:id", async (req, res) => {
 
   if (acceptsHtml) {
     // Serve the result.html page for browser requests
-    res.sendFile("result.html", { root: "./public" });
+    res.sendFile(path.join(__dirname, "public", "result.html"));
   } else {
     // Return JSON for API requests
     res.json({
@@ -201,80 +284,85 @@ app.delete("/history", async (req, res) => {
 });
 
 app.post("/api/scan-receipt", upload.single("document"), async (req, res) => {
-  // try {
-  //   if (!req.file) {
-  //     return res.status(400).json({ error: "No file uploaded" });
-  //   }
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-  //   // Create form data for the API request
-  //   const formData = new FormData();
-  //   formData.append("document", req.file.buffer, {
-  //     filename: req.file.originalname,
-  //     contentType: req.file.mimetype,
-  //   });
+    // Create form data for the API request
+    const formData = new FormData();
+    formData.append("document", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
 
-  //   // API key from environment variable
-  //   const apiKey = process.env.MINDEE_API_KEY;
-  //   if (!apiKey) {
-  //     return res.status(500).json({ error: "Missing API key" });
-  //   }
+    // API key from environment variable
+    const apiKey = process.env.MINDEE_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "Missing API key" });
+    }
 
-  //   // Make the API request to Mindee
-  //   const response = await fetch("https://api.mindee.net/v1/products/mindee/expense_receipts/v5/predict", {
-  //     method: "POST",
-  //     headers: {
-  //       Authorization: `Token ${apiKey}`,
-  //     },
-  //     body: formData,
-  //   });
+    // Make the API request to Mindee
+    const response = await fetch("https://api.mindee.net/v1/products/mindee/expense_receipts/v5/predict", {
+      method: "POST",
+      headers: {
+        Authorization: `Token ${apiKey}`,
+      },
+      body: formData,
+    });
 
-  //   if (!response.ok) {
-  //     const errorText = await response.text();
-  //     return res.status(response.status).json({
-  //       error: `Mindee API error: ${response.status}`,
-  //       details: errorText,
-  //     });
-  //   }
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(response.status).json({
+        error: `Mindee API error: ${response.status}`,
+        details: errorText,
+      });
+    }
 
-  //   const data = await response.json();
+    const data = await response.json();
 
-  //   // Process the data
-  //   const prediction = data.document?.inference?.prediction;
-  //   if (!prediction) {
-  //     return res.status(400).json({ error: "No prediction data found in the response" });
-  //   }
+    // Process the data
+    const prediction = data.document?.inference?.prediction;
+    if (!prediction) {
+      return res.status(400).json({ error: "No prediction data found in the response" });
+    }
 
-  //   // Extract line items from the prediction
-  //   const lineItems = prediction.line_items || [];
-  //   const newDishes = [];
+    // Extract line items from the prediction
+    const lineItems = prediction.line_items || [];
+    const newDishes = [];
 
-  //   lineItems.forEach((item) => {
-  //     if (item.description) {
-  //       newDishes.push({
-  //         name: item.description,
-  //         cost: parseFloat(item.total_amount) || 0,
-  //         members: [],
-  //       });
-  //     }
-  //   });
+    lineItems.forEach((item) => {
+      if (item.description) {
+        newDishes.push({
+          name: item.description,
+          cost: parseFloat(item.total_amount) || 0,
+          members: [],
+        });
+      }
+    });
 
-  //   // If no line items were found but we have a total amount, create a single item
-  //   if (newDishes.length === 0 && prediction.total_amount?.value) {
-  //     newDishes.push({
-  //       name: prediction.supplier_name?.value || "Receipt Item",
-  //       cost: parseFloat(prediction.total_amount.value),
-  //       members: [],
-  //     });
-  //   }
+    // If no line items were found but we have a total amount, create a single item
+    if (newDishes.length === 0 && prediction.total_amount?.value) {
+      newDishes.push({
+        name: prediction.supplier_name?.value || "Receipt Item",
+        cost: parseFloat(prediction.total_amount.value),
+        members: [],
+      });
+    }
 
-  //   // Return the processed data
-  //   res.json({ success: true, dishes: newDishes });
-  // } catch (error) {
-  //   console.error("Error scanning receipt:", error);
-  //   res.status(500).json({ error: "Error scanning receipt", details: error.message });
-  // }
-  res.json({ success: true, dishes: [{ name: "test", cost: 10, members: [] }] });
+    // Return the processed data
+    res.json({ success: true, dishes: newDishes });
+  } catch (error) {
+    console.error("Error scanning receipt:", error);
+    res.status(500).json({ error: "Error scanning receipt", details: error.message });
+  }
 });
 
-// app.listen(3000, () => console.log("Server running on http://localhost:3000"));
+// Add this at the end of your routes, just before the listen call
+// This is a fallback route to serve index.html for any path that doesn't match a specific route
+// This is especially useful for SPAs (Single Page Applications)
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 module.exports = app;

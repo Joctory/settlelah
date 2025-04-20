@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    <title>SettleLah - Login</title>
+    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link rel="stylesheet" type="text/css" href="login.css" />
+  </head>
+  <body class="login-page">
+    <!-- Preloader -->
+    <div id="preloader">
+      <div class="preloader-content">
+        <div class="preloader-spinner"></div>
+        <div class="preloader-text">Loading SettleLah...</div>
+      </div>
+    </div>
+
+    <div class="login-container">
+      <div class="login-header">
+        <div class="login-logo">
+          <img src="assets/settlelah-logo.svg" alt="SettleLah Logo" onerror="this.src='assets/start-card.svg'" />
+        </div>
+        <h1 class="login-title">SettleLah</h1>
+        <p class="login-subtitle">Enter your 6-digit passcode to continue</p>
+      </div>
+
+      <div class="passcode-container">
+        <div class="passcode-dots">
+          <div class="passcode-dot" data-index="0"></div>
+          <div class="passcode-dot" data-index="1"></div>
+          <div class="passcode-dot" data-index="2"></div>
+          <div class="passcode-dot" data-index="3"></div>
+          <div class="passcode-dot" data-index="4"></div>
+          <div class="passcode-dot" data-index="5"></div>
+        </div>
+
+        <div class="error-message" id="login-error"></div>
+
+        <div class="numeric-keypad">
+          <div class="keypad-row">
+            <button class="keypad-key" data-value="1">1</button>
+            <button class="keypad-key" data-value="2">2</button>
+            <button class="keypad-key" data-value="3">3</button>
+          </div>
+          <div class="keypad-row">
+            <button class="keypad-key" data-value="4">4</button>
+            <button class="keypad-key" data-value="5">5</button>
+            <button class="keypad-key" data-value="6">6</button>
+          </div>
+          <div class="keypad-row">
+            <button class="keypad-key" data-value="7">7</button>
+            <button class="keypad-key" data-value="8">8</button>
+            <button class="keypad-key" data-value="9">9</button>
+          </div>
+          <div class="keypad-row">
+            <button class="keypad-key keypad-key-clear" data-action="clear">Clear</button>
+            <button class="keypad-key" data-value="0">0</button>
+            <button class="keypad-key keypad-key-delete" data-action="delete">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                <line x1="18" y1="9" x2="12" y2="15"></line>
+                <line x1="12" y1="9" x2="18" y2="15"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="login-footer">
+        <p>App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span></p>
+        <p>Developed with 💗 by Joel Lee.</p>
+      </div>
+    </div>
+
+    <script src="login.js"></script>
+  </body>
+</html>

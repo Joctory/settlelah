@@ -76,7 +76,7 @@ function showShareModal(memberName) {
               <span>${data.breakdown.subtotal}</span>
             </div>
             <div class="member-bill-row">
-              <span>Service Charge (10%)</span>
+              <span>Service Charge (${data.serviceChargeRate})</span>
               <span>${data.breakdown.serviceCharge}</span>
             </div>
             <div class="member-bill-row">
@@ -439,7 +439,7 @@ function renderBillData(data) {
 
       // Set service charge rate
       if (serviceChargeRate) {
-        serviceChargeRate.textContent = data.serviceChargeRate || "10%";
+        serviceChargeRate.textContent = data.serviceChargeRate;
       }
     } else {
       serviceChargeRow.style.display = "none";

@@ -215,6 +215,15 @@
                 <p>Visit My Website</p>
               </div>
             </a>
+
+            <div class="settings-item logout-item">
+              <div class="settings-info">
+                <p>Logout</p>
+              </div>
+              <div class="settings-action">
+                <button class="logout-button" onclick="logout()">Logout</button>
+              </div>
+            </div>
           </div>
         </div>
         <div class="settings-footer">
@@ -321,7 +330,7 @@
                 <div class="input-field">
                   <label for="memberName">Member name</label>
                   <input type="text" id="memberName" placeholder="Name" />
-                  <div class="error-message">Please enter member's name</div>
+                  <div class="error-message"></div>
                 </div>
                 <button class="add-member-submit">Add</button>
               </div>
@@ -630,6 +639,12 @@
             <div id="dishSummaryContainer">
               <!-- Items will be added dynamically here -->
             </div>
+            <div class="bill-summary-subtotal">
+              <div class="subtotal-row">
+                <span class="subtotal-label">Subtotal:</span>
+                <span class="subtotal-value" id="billSubtotal">$0.00</span>
+              </div>
+            </div>
             <div class="bill-summary-footer">
               <button class="add-more-items-btn">Add More Items</button>
               <button class="confirm-bill-btn">Confirm Bill</button>
@@ -876,6 +891,15 @@
         <div class="toast-message">
           <p class="toast-title">Missing Members</p>
           <p class="toast-error-message">Some items have no members assigned</p>
+        </div>
+      </div>
+
+      <!-- No items added toast notification -->
+      <div id="noItemsAddedToast" class="error-toast">
+        <div class="toast-icon">!</div>
+        <div class="toast-message">
+          <p class="toast-title">No Items Added</p>
+          <p class="toast-error-message">Please add at least one item</p>
         </div>
       </div>
 
