@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+
 * {
   margin: 0;
   padding: 0;
@@ -15,6 +17,11 @@ a {
 
 ::-webkit-scrollbar {
   display: none;
+}
+
+html,
+body {
+  height: 100%;
 }
 
 /* Base styles and theme variables */
@@ -44,7 +51,6 @@ a {
 body {
   background: var(--body-bg);
   width: 100vw;
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -147,7 +153,7 @@ body {
 }
 
 .success-details {
-  font-family: monospace;
+  font-family: "VT323", monospace;
   width: 100%;
   max-width: 500px;
   height: auto;
@@ -187,7 +193,16 @@ body {
 .success-title {
   font-size: 24px;
   font-weight: 700;
-  margin-bottom: 16px;
+  line-height: 110%;
+  margin-bottom: 5px;
+  color: #333;
+  text-align: center;
+}
+
+.success-subtitle {
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 110%;
   color: #333;
   text-align: center;
 }
@@ -275,18 +290,43 @@ body {
   font-size: 18px;
 }
 
+.receipt-footer-row {
+  display: flex;
+  flex-direction: column;
+  margin-top: 10px;
+  border-top: 1px dashed #ccc;
+  padding-top: 15px;
+  font-weight: bold;
+  font-size: 18px;
+}
+
+.receipt-footer-row .detail-row {
+  margin-bottom: 10px;
+}
+
+.receipt-footer-row .detail-label,
+.receipt-footer-row .detail-value {
+  width: auto;
+}
+
+.detail-label,
+.detail-value {
+  font-size: 1.3rem;
+  /* letter-spacing: 0.095px; */
+  line-height: 19.4px;
+}
+
 .detail-label {
+  width: 60%;
   color: var(--light-text);
-  font-size: 17px;
-  font-weight: 300;
-  line-height: 26px;
+  font-weight: 400;
 }
 
 .detail-value {
+  width: 40%;
   color: #333;
-  font-size: 17px;
   font-weight: 700;
-  line-height: 26px;
+  text-align: right;
 }
 
 .amount-row .detail-value {
@@ -302,7 +342,7 @@ body {
   width: 100%;
   height: auto;
   max-height: 90vh;
-  border-radius: 40px 40px 0 0;
+  border-radius: 30px 30px 0 0;
   background: #fff;
   box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -346,7 +386,7 @@ body {
 }
 
 .member-bill-modal-body {
-  padding: 20px;
+  padding: 10px 20px 20px 20px;
   min-height: 200px;
 }
 
@@ -405,26 +445,30 @@ body.dark-mode .member-close-modal:hover {
 }
 
 .group-members-container {
+  position: sticky;
+  bottom: 0;
+  z-index: 11;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 0 20px;
+  padding: 0 10px 10px 10px;
   margin-bottom: 15px;
 }
 
 .favourite-group-section {
   width: 100%;
   background-color: #d1e7c0;
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 15px;
+  padding: 15px;
   margin: 0 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   opacity: 0;
   transition: transform 0.2s ease;
+  box-shadow: 0px -4px 4px rgb(0 0 0 / 20%);
 }
 
 .favourite-group-title {
@@ -432,13 +476,15 @@ body.dark-mode .member-close-modal:hover {
   font-weight: 500;
   color: var(--text-color);
   text-align: center;
+  line-height: 100%;
 }
 
 .group-members {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
   margin-top: 10px;
+  justify-content: center;
 }
 
 .member-name {
@@ -524,7 +570,58 @@ body.dark-mode .member-close-modal:hover {
 .member-bill-row {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.member-bill-row-label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  width: 35%;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body-text);
+  line-height: 120%;
+}
+
+.member-bill-row-value {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  text-align: right;
+  width: 65%;
+  padding-left: 10px;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--body-desc);
+  line-height: 130%;
+}
+
+.total-section .member-bill-row-label {
+  width: 70%;
+}
+
+.total-section .member-bill-row-value {
+  width: 30%;
+}
+
+.shared-with-container {
+  width: 60%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.shared-member {
+  background-color: rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 3px 8px;
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--body-desc);
+  line-height: 24px;
 }
 
 /* PayNow QR section styles */
@@ -554,7 +651,7 @@ body.dark-mode .member-close-modal:hover {
 }
 
 .paynow-qr-container:hover {
-  transform: scale(1.02);
+  transform: scale(1);
 }
 
 .paynow-amount {
@@ -778,14 +875,18 @@ body.dark-mode .paynow-qr-container {
   gap: 4px;
   cursor: pointer;
   transition: transform 0.3s ease;
-  margin: 0 4px;
+  margin: 0;
   opacity: 0;
   flex: 0 0 auto;
   cursor: pointer;
   touch-action: none; /* Important for mobile dragging */
   user-select: none;
+  width: calc(25% - 6px); /* Four items per row with gaps considered */
+  max-width: 80px;
+  min-width: 60px;
 }
 
+/* Remove the first/last child margins that were causing imbalance */
 .member-avatar-wrapper:first-child {
   margin-left: 0;
 }
@@ -840,6 +941,7 @@ body.dark-mode .paynow-qr-container {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-bottom: 10px;
 }
 
 .success-footer {
@@ -856,18 +958,26 @@ body.dark-mode .paynow-qr-container {
   font-weight: 700;
   color: var(--body-text);
   text-align: center;
-  line-height: 100%;
+  line-height: 130%;
   opacity: 0;
 }
 
 .settings-footer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.settings-footer p {
   text-align: center;
   color: var(--body-text);
   font-size: 14px;
   font-weight: 400;
-  line-height: 120%;
+  line-height: 140%;
   letter-spacing: 0.095px;
-  opacity: 0;
 }
 
 @keyframes modalFadeIn {
@@ -1068,5 +1178,28 @@ body.dark-mode .paynow-qr-container {
   100% {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (min-width: 430px) {
+  .shared-with-container {
+    width: 75%;
+  }
+  .member-bill-row-label {
+    width: 25%;
+  }
+}
+
+@media (max-width: 500px) {
+  .member-avatar {
+    width: 60px;
+    height: 60px;
+  }
+}
+
+@media (max-width: 350px) {
+  .member-avatar-wrapper {
+    width: calc(33.333% - 6px); /* Three items per row on smaller screens */
   }
 }

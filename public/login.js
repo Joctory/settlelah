@@ -8,6 +8,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const dots = document.querySelectorAll(".passcode-dot");
   const errorElement = document.getElementById("login-error");
 
+  // Vibration utility function
+  function vibrate(pattern) {
+    if (navigator.vibrate) {
+      navigator.vibrate(pattern);
+    }
+  }
+
   // Hide preloader after page loads
   const preloader = document.getElementById("preloader");
   if (preloader) {
@@ -27,6 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
     key.addEventListener("click", (e) => {
       const keyValue = e.currentTarget.getAttribute("data-value");
       const keyAction = e.currentTarget.getAttribute("data-action");
+
+      // Vibrate on keypad press
+      vibrate(20);
 
       // Apply button press animation
       const keyElement = e.currentTarget;
@@ -162,6 +172,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Handle failed login
   function handleFailedLogin(message) {
+    // Vibrate with a more intense pattern for error
+    vibrate([100, 50, 100, 50, 100]);
+
     // Shake the passcode container
     const passcodeContainer = document.querySelector(".passcode-dots");
     passcodeContainer.classList.add("shake");
@@ -172,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateDots();
       passcodeContainer.classList.remove("shake");
       showError(message);
-    }, 600);
+    }, 400);
   }
 
   // Show error message

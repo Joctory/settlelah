@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=VT323&display=swap");
+
 * {
   margin: 0;
   padding: 0;
@@ -45,10 +47,15 @@ a {
   --navbar-bg: #263238;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   background: var(--body-bg);
   width: 100vw;
-  height: 100vh;
+  /* height: 100vh; */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -92,7 +99,7 @@ body {
 #navbarContainer {
   width: 100%;
   min-width: 400px;
-  height: 100vh;
+  height: 100%;
   border-radius: 0;
   display: flex;
   justify-content: flex-end;
@@ -1958,7 +1965,7 @@ input:checked + .slider:before {
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin: 0 2px;
+  margin: 3px;
   opacity: 0;
   animation: fadeInUp 0.4s ease forwards;
   flex: 0 0 auto;
@@ -2173,6 +2180,7 @@ input:checked + .slider:before {
   padding-left: 45px; /* Align with the content of the above row */
   border-top: none !important;
   padding-top: 0;
+  padding-bottom: 10px;
 }
 
 .tax-rates {
@@ -2995,7 +3003,7 @@ input:checked + .slider:before {
 }
 
 .success-details {
-  font-family: monospace;
+  font-family: "VT323", monospace;
   width: 100%;
   max-width: 500px;
   height: auto;
@@ -3116,18 +3124,24 @@ input:checked + .slider:before {
   font-size: 18px;
 }
 
+.detail-label,
+.detail-value {
+  font-size: 1.3rem;
+  /* letter-spacing: 0.095px; */
+  line-height: 19.4px;
+}
+
 .detail-label {
+  width: 60%;
   color: var(--light-text);
-  font-size: 17px;
-  font-weight: 300;
-  line-height: 26px;
+  font-weight: 400;
 }
 
 .detail-value {
+  width: 40%;
   color: #333;
-  font-size: 17px;
   font-weight: 700;
-  line-height: 26px;
+  text-align: right;
 }
 
 .amount-row .detail-value {
@@ -3754,7 +3768,7 @@ button.share-btn .share-btn-span {
 .loading-spinner:after {
   width: 75%;
   height: 75%;
-  background: var(--body-bg);
+  background: var(--history-bg);
   top: 12.5%;
   left: 12.5%;
   animation: spin 0.5s linear infinite reverse;
@@ -3874,23 +3888,27 @@ button.share-btn .share-btn-span {
   width: 100%;
   display: block;
   animation: pulse-bg 1.5s infinite;
+  z-index: 5;
 }
 
 .group-card.loading .settle-info-amount {
   width: 80px;
   height: 24px;
+  color: transparent !important;
 }
 
 .group-card.loading .settle-info-matter {
   width: 120px;
   height: 18px;
   margin-top: 8px;
+  color: transparent !important;
 }
 
 .group-card.loading .settle-info-group {
   width: 100px;
   height: 16px;
   margin-top: 8px;
+  color: transparent !important;
 }
 
 .group-card.loading .settle-info-date span {

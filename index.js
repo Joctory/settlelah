@@ -1,6 +1,6 @@
 const express = require("express");
-const { initializeApp } = require("firebase/app");
-const { getFirestore, doc, setDoc, getDoc, deleteDoc, writeBatch } = require("firebase/firestore");
+const firebase = require("firebase/app");
+const firestore = require("firebase/firestore");
 const path = require("path");
 const app = express();
 app.use(express.json());
@@ -54,8 +54,8 @@ const firebaseConfig = {
   projectId: "settlelah-1da97",
   // Add the rest from Firebase Console > Project Settings > General > Your Apps
 };
-const firebaseApp = initializeApp(firebaseConfig);
-const db = getFirestore(firebaseApp);
+const firebaseApp = firebase.initializeApp(firebaseConfig);
+const db = firestore.getFirestore(firebaseApp);
 
 // Install multer for file uploads
 // npm install multer
@@ -69,18 +69,18 @@ const fetch = (...args) => import("node-fetch").then(({ default: fetch }) => fet
 const FormData = require("form-data");
 
 async function saveBill(id, data) {
-  await setDoc(doc(db, "bills", id), data);
+  await firestore.setDoc(firestore.doc(db, "bills", id), data);
 }
 
 async function getBill(id) {
-  const billDoc = await getDoc(doc(db, "bills", id));
+  const billDoc = await firestore.getDoc(firestore.doc(db, "bills", id));
   return billDoc.exists() ? billDoc.data() : null;
 }
 
 async function deleteBills(ids) {
-  const batch = writeBatch(db);
+  const batch = firestore.writeBatch(db);
   ids.forEach((id) => {
-    const billRef = doc(db, "bills", id);
+    const billRef = firestore.doc(db, "bills", id);
     batch.delete(billRef);
   });
   await batch.commit();
@@ -265,6 +265,8 @@ app.get("/result/:id", async (req, res) => {
       settleMatter: bill.settleMatter,
       paynowName: bill.paynowName,
       paynowID: bill.paynowID,
+      serviceChargeRate: bill.serviceChargeRate,
+      gstRate: bill.gstRate,
     });
   }
 });

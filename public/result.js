@@ -36,7 +36,7 @@ function showShareModal(memberName) {
       modalBody.innerHTML = `
         <div class="member-bill-modal-details modal-fade-in">
           <div style="text-align: center;">
-            <h2 class="member-bill-title">Total Settle Bill Amount</h2>
+            <h2 class="member-bill-title">Settle Detail</h2>
             <h1 class="member-bill-amount">${data.totalAmount}</h1>
           </div>
           
@@ -49,16 +49,16 @@ function showShareModal(memberName) {
                 (item, index) => `
               <div class="member-bill-item-container">
                 <div class="member-bill-row">
-                  <span>Item Name</span>
-                  <span>${item.name}</span>
+                  <span class="member-bill-row-label">Item Name</span>
+                  <span class="member-bill-row-value">${item.name}</span>
                 </div>
                 <div class="member-bill-row">
-                  <span>Shared With</span>
-                  <span>${item.sharedWith || "-"}</span>
+                  <span class="member-bill-row-label">Shared With</span>
+                  <div class="shared-with-container">${item.sharedWith || "-"}</div>
                 </div>
                 <div class="member-bill-row">
-                  <span>Item Price</span>
-                  <span>${item.price}</span>
+                  <span class="member-bill-row-label">Item Price</span>
+                  <span class="member-bill-row-value">${item.price}</span>
                 </div>
                 ${index < data.items.length - 1 ? '<hr class="member-bill-divider">' : ""}
               </div>
@@ -70,33 +70,51 @@ function showShareModal(memberName) {
           <hr class="member-bill-solid-divider">
           
           <h3 class="member-bill-section-title">Amount Breakdown</h3>
-          <div class="animate-staggered">
+          <div class="total-section animate-staggered">
             <div class="member-bill-row">
-              <span>Subtotal</span>
-              <span>${data.breakdown.subtotal}</span>
+              <span class="member-bill-row-label">Subtotal</span>
+              <span class="member-bill-row-value">${data.breakdown.subtotal}</span>
+            </div>
+            ${
+              parseFloat(data.breakdown.serviceCharge.replace("$", "")) > 0
+                ? `
+            <div class="member-bill-row">
+              <span class="member-bill-row-label">Service Charge (${data.serviceChargeRate})</span>
+              <span class="member-bill-row-value">${data.breakdown.serviceCharge}</span>
             </div>
             <div class="member-bill-row">
-              <span>Service Charge (${data.serviceChargeRate})</span>
-              <span>${data.breakdown.serviceCharge}</span>
+              <span class="member-bill-row-label">After Service</span>
+              <span class="member-bill-row-value">${data.breakdown.afterService}</span>
+            </div>
+            `
+                : ""
+            }
+            ${
+              parseFloat(data.breakdown.discount.replace("$", "")) > 0
+                ? `
+            <div class="member-bill-row">
+              <span class="member-bill-row-label">Discount</span>
+              <span class="member-bill-row-value">${data.breakdown.discount}</span>
             </div>
             <div class="member-bill-row">
-              <span>After Service</span>
-              <span>${data.breakdown.afterService}</span>
+              <span class="member-bill-row-label">After Discount</span>
+              <span class="member-bill-row-value">${data.breakdown.afterDiscount}</span>
             </div>
+            `
+                : ""
+            }
+            ${
+              parseFloat(data.breakdown.gst.replace("$", "")) > 0
+                ? `
             <div class="member-bill-row">
-              <span>Discount</span>
-              <span>${data.breakdown.discount}</span>
-            </div>
-            <div class="member-bill-row">
-              <span>After Discount</span>
-              <span>${data.breakdown.afterDiscount}</span>
-            </div>
-            <div class="member-bill-row">
-              <span>GST (${
+              <span class="member-bill-row-label">GST (${
                 data.taxProfile === "singapore" ? "9%" : data.taxProfile === "malaysia" ? "6%" : "9%"
               })</span>
-              <span>${data.breakdown.gst}</span>
+              <span class="member-bill-row-value">${data.breakdown.gst}</span>
             </div>
+            `
+                : ""
+            }
           </div>
         </div>
         
@@ -160,10 +178,10 @@ function showPayNowQR(memberName) {
           <!-- QR code will be generated here -->
           <img src="https://www.sgqrcode.com/paynow?mobile=${
             data.paymentInfo.phoneNumber
-          }&uen=&editable=1&amount=${data.paymentInfo.amount.replace(
-                "$",
-                ""
-              )}&expiry=2025%2F04%2F18%2023%3A59&ref_id=SettleLah-${
+          }&uen=&editable=1&amount=${data.paymentInfo.amount.replace("$", "")}&expiry=${new Date()
+                .toISOString()
+                .split("T")[0]
+                .replace(/-/g, "%2F")}%2023%3A59&ref_id=SettleLah-${
                 data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
               }&company=" alt="PayNow QR Code">
         </div>
@@ -288,27 +306,10 @@ document.addEventListener("DOMContentLoaded", function () {
       return response.json();
     })
     .then((data) => {
-      // Hide loading and show content with animation using classes
-      const loadingElement = document.getElementById("loading");
-
-      // Add fade-out class instead of inline styles
-      loadingElement.classList.add("fade-out");
-
       // Wait for animation to complete before hiding
       setTimeout(() => {
-        // Add hidden class instead of inline display style
-        loadingElement.classList.add("hidden");
-
         // Display bill data
         renderBillData(data);
-
-        // Show content with animation using classes
-        const billContent = document.getElementById("bill-content");
-
-        if (billContent) {
-          // Add visible class to trigger animation
-          billContent.classList.add("visible");
-        }
       }, 300);
     })
     .catch((error) => {
@@ -376,14 +377,39 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
+// Function to round amounts to the nearest 0.05
+// Values below 0.05 round to 0, values above 0.05 round to nearest 0.05
+// Exact 0.05 values stay as 0.05
+function roundToNearest5Cents(value) {
+  if (typeof value === "string") {
+    value = parseFloat(value);
+  }
+
+  // Get decimal part (cents)
+  const wholePart = Math.floor(value);
+  const decimalPart = value - wholePart;
+  const cents = Math.round(decimalPart * 100);
+
+  // Handle special cases
+  if (cents < 5) {
+    return wholePart;
+  } else if (cents === 5) {
+    return wholePart + 0.05;
+  } else {
+    // Round to nearest 0.05
+    const roundedCents = Math.round(cents / 5) * 5;
+    return wholePart + roundedCents / 100;
+  }
+}
+
 // Function to render bill data
 function renderBillData(data) {
   // Format currency values
   const formatCurrency = (value) => {
     if (typeof value === "number") {
-      return `$${value.toFixed(2)}`;
+      return `$${roundToNearest5Cents(value).toFixed(2)}`;
     }
-    return `$${parseFloat(value).toFixed(2)}`;
+    return `$${roundToNearest5Cents(parseFloat(value)).toFixed(2)}`;
   };
 
   // Format timestamp to date and time strings
@@ -406,8 +432,7 @@ function renderBillData(data) {
 
   // Find all detail elements by their class names
   const settleMatterEl = document.querySelector(".successSettleMatter");
-  const dateEl = document.querySelector(".successDate");
-  const timeEl = document.querySelector(".successTime");
+  const dateTimeEl = document.querySelector(".successDateTime");
   const itemCountEl = document.querySelector(".successItemCount");
   const subtotalEl = document.querySelector(".successSubtotal");
   const serviceChargeEl = document.querySelector(".successServiceCharge");
@@ -426,8 +451,7 @@ function renderBillData(data) {
 
   // Update the text content if elements exist
   if (settleMatterEl) settleMatterEl.textContent = data.settleMatter ? data.settleMatter : "No One Ask!";
-  if (dateEl) dateEl.textContent = dateString;
-  if (timeEl) timeEl.textContent = timeString;
+  if (dateTimeEl) dateTimeEl.textContent = dateString + " " + timeString;
   if (itemCountEl) itemCountEl.textContent = data.dishes ? data.dishes.length : 0;
   if (subtotalEl) subtotalEl.textContent = formatCurrency(data.breakdown.subtotal);
 
@@ -511,9 +535,9 @@ function createMemberData(data) {
   // Format currency values
   const formatCurrency = (value) => {
     if (typeof value === "number") {
-      return `$${value.toFixed(2)}`;
+      return `$${roundToNearest5Cents(value).toFixed(2)}`;
     }
-    return `$${parseFloat(value).toFixed(2)}`;
+    return `$${roundToNearest5Cents(parseFloat(value)).toFixed(2)}`;
   };
 
   // Create member data for each member
@@ -529,11 +553,15 @@ function createMemberData(data) {
       .map((dish) => ({
         name: dish.name,
         price: formatCurrency(dish.cost),
-        sharedWith: dish.members.filter((m) => m !== name).join(", "),
+        sharedWith: dish.members
+          .filter((m) => m !== name)
+          .map((m) => `<span class="shared-member">${m}</span>`)
+          .join(""),
       }));
 
     memberData[name] = {
       taxProfile: data.taxProfile || "singapore", // Default to singapore if not specified
+      serviceChargeRate: data.serviceChargeRate || "10%", // Add service charge rate
       totalAmount: formatCurrency(data.totals[name]),
       items: memberItems,
       breakdown: {
@@ -563,6 +591,15 @@ function updateGroupMembers(members) {
   // Clear existing members
   groupMembersContainer.innerHTML = "";
 
+  // Hide the entire container initially
+  const groupSection = document.querySelector(".favourite-group-section");
+  if (groupSection) {
+    groupSection.style.opacity = "0";
+  }
+
+  // Track image loading
+  let imagesLoading = members.length;
+
   // Add member avatars with proper data attributes
   members.forEach((member, index) => {
     const memberAvatar = document.createElement("div");
@@ -583,6 +620,12 @@ function updateGroupMembers(members) {
       <div class="member-name">${member.name}</div>
     `;
 
+    // Preload the image to track when it's loaded
+    const img = new Image();
+    img.onload = imageLoaded;
+    img.onerror = imageLoaded; // Count errors as "loaded" to avoid blocking
+    img.src = `/assets/cat-icon/cat-${avatarIndex}.svg`;
+
     // Add click event for member avatar
     memberAvatar.addEventListener("click", function () {
       showShareModal(member.name);
@@ -590,4 +633,77 @@ function updateGroupMembers(members) {
 
     groupMembersContainer.appendChild(memberAvatar);
   });
+
+  // Function to track when all images are loaded
+  function imageLoaded() {
+    imagesLoading--;
+
+    // When all images are loaded, show the container
+    if (imagesLoading === 0) {
+      if (groupSection) {
+        groupSection.style.opacity = "1";
+        groupSection.style.transition = "opacity 0.5s ease";
+        const billContent = document.getElementById("bill-content");
+        // Make content visible with animation
+        if (billContent) {
+          billContent.classList.add("visible");
+        }
+
+        // Hide loading and show content with animation using classes
+        const loadingElement = document.getElementById("loading");
+
+        // Add fade-out class instead of inline styles
+        loadingElement.classList.add("fade-out");
+        // Add hidden class instead of inline display style
+        loadingElement.classList.add("hidden");
+      }
+    }
+  }
 }
+
+// Wait for all images and resources to load before showing content
+window.onload = function () {
+  // Get elements
+  const terminalImg = document.querySelector(".terminal-img");
+  const terminalImgTop = document.querySelector(".terminal-img-top");
+  const successReceipt = document.getElementById("successReceipt");
+  const groupSection = document.querySelector(".favourite-group-section");
+  const titleElement = document.querySelector(".success-footer-text-title");
+  const footerElement = document.querySelector(".settings-footer");
+
+  // Start animations for receipt in sequence
+  if (successReceipt) {
+    // The receipt animation will start after a delay
+    successReceipt.style.animation = "receipt 3s ease both";
+  }
+
+  // Make terminal images visible
+  if (terminalImg) {
+    terminalImg.style.animation = "slideup 0.5s 4s ease both";
+  }
+
+  if (terminalImgTop) {
+    terminalImgTop.style.animation = "slideup 0.5s 4s ease both";
+  }
+
+  // Make group section visible
+  if (groupSection) {
+    groupSection.style.opacity = "1";
+  }
+
+  // Apply animations to footer elements
+  if (titleElement) {
+    titleElement.style.animation = "fadeInUp 0.5s 0.2s ease forwards";
+  }
+
+  if (footerElement) {
+    footerElement.style.animation = "fadeInUp 0.5s 0.4s ease forwards";
+  }
+
+  // Apply staggered fade-in for member avatars
+  const memberAvatars = document.querySelectorAll(".member-avatar-wrapper");
+  memberAvatars.forEach((avatar, index) => {
+    // Ensure animation is applied with the correct delay
+    avatar.style.animation = `fadeInUp 0.4s ${0.4 + index * 0.2}s ease forwards`;
+  });
+};

@@ -1005,7 +1005,8 @@ function updateReceiptDetails(receiptContainer, data) {
   if (serviceChargeEl && serviceChargeRow) {
     const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
     if (serviceChargeValue > 0) {
-      serviceChargeEl.textContent = data.serviceCharge;
+      const roundedServiceCharge = roundToNearest5Cents(serviceChargeValue);
+      serviceChargeEl.textContent = `$${roundedServiceCharge.toFixed(2)}`;
       serviceChargeRow.style.display = "";
 
       // Set service charge rate
@@ -1024,7 +1025,8 @@ function updateReceiptDetails(receiptContainer, data) {
       // Calculate after service amount from subtotal + service charge
       const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
       const afterServiceValue = subtotalValue + serviceChargeValue;
-      afterServiceEl.textContent = `$${afterServiceValue.toFixed(2)}`;
+      const roundedAfterService = roundToNearest5Cents(afterServiceValue);
+      afterServiceEl.textContent = `$${roundedAfterService.toFixed(2)}`;
       afterServiceRow.style.display = "";
     } else {
       afterServiceRow.style.display = "none";
@@ -1036,7 +1038,8 @@ function updateReceiptDetails(receiptContainer, data) {
     // Extract discount from data if available, otherwise don't show
     const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
     if (discountValue > 0) {
-      discountEl.textContent = data.discount;
+      const roundedDiscount = roundToNearest5Cents(discountValue);
+      discountEl.textContent = `$${roundedDiscount.toFixed(2)}`;
       discountRow.style.display = "";
     } else {
       discountRow.style.display = "none";
@@ -1052,7 +1055,8 @@ function updateReceiptDetails(receiptContainer, data) {
       const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
       const afterServiceValue = subtotalValue + serviceChargeValue;
       const afterDiscountValue = afterServiceValue - discountValue;
-      afterDiscountEl.textContent = `$${afterDiscountValue.toFixed(2)}`;
+      const roundedAfterDiscount = roundToNearest5Cents(afterDiscountValue);
+      afterDiscountEl.textContent = `$${roundedAfterDiscount.toFixed(2)}`;
       afterDiscountRow.style.display = "";
     } else {
       afterDiscountRow.style.display = "none";
@@ -1063,7 +1067,8 @@ function updateReceiptDetails(receiptContainer, data) {
   if (gstEl && gstRow) {
     const gstValue = parseFloat(data.gst.replace("$", ""));
     if (gstValue > 0) {
-      gstEl.textContent = data.gst;
+      const roundedGST = roundToNearest5Cents(gstValue);
+      gstEl.textContent = `$${roundedGST.toFixed(2)}`;
       gstRow.style.display = "";
 
       // Set GST rate
@@ -1075,7 +1080,11 @@ function updateReceiptDetails(receiptContainer, data) {
     }
   }
 
-  if (amountEl) amountEl.textContent = data.totalAmount;
+  if (amountEl) {
+    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
+    const roundedTotal = roundToNearest5Cents(totalValue);
+    amountEl.textContent = `$${roundedTotal.toFixed(2)}`;
+  }
 }
 
 function showSuccessScreen() {
@@ -1726,7 +1735,7 @@ function fetchHistory() {
 
             // Get total amount from the breakdown
             const total = bill.breakdown?.total || 0;
-            const formattedTotal = `$${total.toFixed(2)}`;
+            const formattedTotal = `$${roundToNearest5Cents(total).toFixed(2)}`;
 
             // Get settle matter
             const settleMatter = bill.settleMatter || "Settlement";
@@ -3804,11 +3813,12 @@ function updateSettleCardContent(card, billId, data) {
 
   // Set the link to the result page
   card.href = `/result/${billId}`;
+  card.target = "_blank";
 
   // Update amount
   const amountElement = card.querySelector("#lastSettle .settle-info-amount");
   if (amountElement && data.breakdown && data.breakdown.total) {
-    amountElement.textContent = `$${data.breakdown.total.toFixed(2)}`;
+    amountElement.textContent = `$${roundToNearest5Cents(data.breakdown.total).toFixed(2)}`;
   }
 
   // Update matter
@@ -3910,3 +3920,28 @@ window.onload = function () {
     }
   }, 100);
 };
+
+// Function to round amounts to the nearest 0.05
+// Values below 0.05 round to 0, values above 0.05 round to nearest 0.05
+// Exact 0.05 values stay as 0.05
+function roundToNearest5Cents(value) {
+  if (typeof value === "string") {
+    value = parseFloat(value);
+  }
+
+  // Get decimal part (cents)
+  const wholePart = Math.floor(value);
+  const decimalPart = value - wholePart;
+  const cents = Math.round(decimalPart * 100);
+
+  // Handle special cases
+  if (cents < 5) {
+    return wholePart;
+  } else if (cents === 5) {
+    return wholePart + 0.05;
+  } else {
+    // Round to nearest 0.05
+    const roundedCents = Math.round(cents / 5) * 5;
+    return wholePart + roundedCents / 100;
+  }
+}
