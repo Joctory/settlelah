@@ -108,7 +108,7 @@ body {
   position: relative;
   z-index: 2;
   box-shadow: none;
-  transition: background-color 0.3s ease-in-out;
+  transition: background-color var(--transition-speed) ease-in-out;
 }
 
 #navbar {
@@ -142,7 +142,7 @@ body {
   justify-content: center;
   align-items: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: transform var(--transition-speed) cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .icon {
@@ -156,6 +156,12 @@ body {
 
 .bubble-home {
   background-color: var(--accent-color);
+  opacity: 0;
+}
+
+.bubble-bounce {
+  animation: bubbleBounce 0.5s forwards;
+  opacity: 1;
 }
 
 .nav-icon {
@@ -188,7 +194,7 @@ body {
   width: 100%;
   height: 100%;
   background-color: transparent;
-  transition: background-color 0.3s ease-in-out;
+  transition: background-color var(--transition-speed) ease-in-out;
 }
 
 #navbgBubble {
@@ -212,7 +218,7 @@ body {
   opacity: 0.4;
   transform: translateY(60%);
   cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity var(--transition-speed) ease, transform var(--transition-speed) ease;
 }
 
 .menuElement:hover {
@@ -224,7 +230,11 @@ body {
   transform: translateY(100%);
 }
 
+/* Card widget animations when loaded */
 .card-widget {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: none;
   width: 100%;
   transition: transform 0.1s ease-in-out;
   cursor: pointer;
@@ -237,6 +247,37 @@ body {
 .card-widget .settle-item {
   padding: 0;
   box-shadow: none;
+}
+
+/* Staggered animation delay for each card */
+.active .card-widget:nth-child(1).animated {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease forwards;
+  transition-delay: 0.1s;
+}
+
+.active .card-widget:nth-child(2).animated {
+  opacity: 0;
+  animation: fadeInUp 0.5s 0.2s ease forwards;
+  transition-delay: 0.2s;
+}
+
+.active .card-widget:nth-child(3).animated {
+  opacity: 0;
+  transition-delay: var(--transition-speed);
+  animation: fadeInUp 0.5s var(--transition-speed) ease forwards;
+}
+
+.active .card-widget:nth-child(4).animated {
+  opacity: 0;
+  transition-delay: 0.4s;
+  animation: fadeInUp 0.5s 0.4s ease forwards;
+}
+
+.active .card-widget:nth-child(5).animated {
+  opacity: 0;
+  transition-delay: 0.5s;
+  animation: fadeInUp 0.5s 0.5s ease forwards;
 }
 
 /* Welcome section */
@@ -268,7 +309,6 @@ body {
   box-shadow: var(--card-shadow);
   opacity: 0;
   transform: translateY(10px);
-  animation: fadeInUp 0.5s ease forwards 0.1s;
 }
 
 .weather-location h2 {
@@ -320,7 +360,6 @@ body {
   box-shadow: var(--card-shadow);
   opacity: 0;
   transform: translateY(10px);
-  animation: fadeInUp 0.5s ease forwards 0.2s;
 }
 
 .settle-header h3 {
@@ -403,7 +442,12 @@ body {
   box-shadow: var(--card-shadow);
   opacity: 0;
   transform: translateY(10px);
-  animation: fadeInUp 0.5s ease forwards 0.3s;
+}
+
+.active .group-card.animated {
+  opacity: 0;
+  transition-delay: 0.1s;
+  animation: fadeInUp 0.5s ease forwards;
 }
 
 .group-card:nth-child(5) {
@@ -470,6 +514,11 @@ body {
   padding: 20px;
   margin-bottom: 10px;
   box-shadow: var(--card-shadow);
+  transition: all var(--transition-speed) ease;
+  transform-origin: center;
+  opacity: 0;
+  transform: translateY(15px);
+  animation: fadeInHistory 0.5s forwards;
 }
 
 .settle-top {
@@ -549,40 +598,6 @@ body {
   animation: slideIn 1s 0.6s ease both;
 }
 
-/* Media Queries for Responsiveness */
-@media (max-width: 480px) {
-  .page-container {
-    padding: 15px;
-  }
-
-  .weather-temp h1 {
-    font-size: 36px;
-  }
-
-  #navbarContainer {
-    min-width: 100%;
-  }
-
-  #navbar {
-    background-color: rgba(255, 255, 255, 0.95);
-  }
-
-  .bubble {
-    width: 65px;
-    height: 65px;
-  }
-}
-
-@media (min-width: 768px) {
-  .page-container {
-    max-width: 600px;
-  }
-
-  .welcome-section h1 {
-    font-size: 28px;
-  }
-}
-
 /* History page styles */
 .history-list {
   display: flex;
@@ -625,35 +640,6 @@ body {
   transform: translateX(-100%);
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes pulse-bg {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-/* Improve history item appearance and animation */
-.settle-item {
-  border-radius: 12px;
-  padding: 15px;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  transform-origin: center;
-  opacity: 0;
-  transform: translateY(15px);
-  animation: fadeInHistory 0.5s forwards;
-}
-
 /* Staggered animation for history items */
 .settle-item:nth-child(1) {
   animation-delay: 0.1s;
@@ -662,7 +648,7 @@ body {
   animation-delay: 0.2s;
 }
 .settle-item:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: var(--transition-speed);
 }
 .settle-item:nth-child(4) {
   animation-delay: 0.4s;
@@ -672,17 +658,6 @@ body {
 }
 .settle-item:nth-child(n + 6) {
   animation-delay: 0.6s;
-}
-
-@keyframes fadeInHistory {
-  from {
-    opacity: 0;
-    transform: translateY(15px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* Enhance hover effect for history items */
@@ -705,14 +680,7 @@ body {
   margin: 30px 0;
   opacity: 0;
   transform: translateY(10px);
-  animation: fadeInNoHistory 0.5s 0.3s forwards;
-}
-
-@keyframes fadeInNoHistory {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  animation: fadeInNoHistory 0.5s var(--transition-speed) forwards;
 }
 
 .clear-history-button-container {
@@ -732,7 +700,7 @@ body {
   font-weight: 500;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-  transition: all 0.3s ease;
+  transition: all var(--transition-speed) ease;
 }
 
 .clear-history-btn:hover {
@@ -810,66 +778,59 @@ input:checked + .slider:before {
 }
 
 .page-container .group-card:nth-child(3) {
-  animation-delay: 0.3s;
+  animation-delay: var(--transition-speed);
 }
 
 .page-container .group-card:nth-child(4) {
   animation-delay: 0.4s;
 }
 
-.settings-item,
-.settle-item {
+.active .animated .settings-item,
+.active .animated .settle-item {
   opacity: 0;
   transform: translateY(10px);
-  animation: fadeInUp 0.4s ease forwards;
+  animation: fadeInUp 0.4s 0.2s ease forwards;
 }
 
-.settings-item:nth-child(1),
-.settle-item:nth-child(1) {
-  animation-delay: 0.3s;
+.active .animated .settings-item:nth-child(1),
+.active .animated .settle-item:nth-child(1) {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s var(--transition-speed) ease forwards;
 }
 
-.settings-item:nth-child(2),
-.settle-item:nth-child(2) {
-  animation-delay: 0.4s;
+.active .animated .settings-item:nth-child(2),
+.active .animated .settle-item:nth-child(2) {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s 0.4s ease forwards;
 }
 
-.settings-item:nth-child(3),
-.settle-item:nth-child(3) {
-  animation-delay: 0.5s;
+.active .animated .settings-item:nth-child(3),
+.active .animated .settle-item:nth-child(3) {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s 0.5s ease forwards;
 }
 
-.settings-item:nth-child(4),
-.settle-item:nth-child(4) {
-  animation-delay: 0.6s;
+.active .animated .settings-item:nth-child(4),
+.active .animated .settle-item:nth-child(4) {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s 0.6s ease forwards;
 }
 
-/* More responsive adjustments */
-@media (max-width: 350px) {
-  .weather-card,
-  .settle-card,
-  .group-card {
-    padding: 12px 15px;
-  }
-
-  .weather-temp h1 {
-    font-size: 30px;
-  }
-
-  .cat-image {
-    width: 60px;
-    height: 60px;
-  }
-
-  .welcome-section h1 {
-    font-size: 20px;
-  }
+.active .animated .settings-item:nth-child(5),
+.active .animated .settle-item:nth-child(5) {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s 0.7s ease forwards;
 }
 
 /* Settle Now Screen Styles */
 #settleNowScreen {
   background-color: var(--body-bg);
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 0;
@@ -929,13 +890,13 @@ input:checked + .slider:before {
 
 .white-slide-container {
   width: 100%;
-  height: calc(100vh - 60px);
+  height: calc(100% - 60px);
   border-radius: 30px 30px 0px 0px;
   background: #fff;
   box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   position: relative;
-  transition: transform 0.3s ease-out;
+  transition: transform var(--transition-speed) ease-out;
 }
 
 .white-slide-container.hidden {
@@ -1021,7 +982,7 @@ input:checked + .slider:before {
   font-weight: 500;
   margin-top: 15px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  transition: background-color 0.3s ease;
+  transition: background-color var(--transition-speed) ease;
   z-index: 1;
 }
 
@@ -1030,7 +991,7 @@ input:checked + .slider:before {
   align-items: center;
   margin: 10px 0;
   justify-content: center;
-  animation: fadeIn 0.5s ease forwards 0.3s;
+  animation: fadeIn 0.5s ease forwards var(--transition-speed);
   opacity: 0;
 }
 
@@ -1115,14 +1076,14 @@ input:checked + .slider:before {
 .navbar-hidden #bubbleWrapper {
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s ease;
+  transition: all var(--transition-speed) ease;
   transform: translateY(20px);
 }
 
 #navbar,
 #navbgWrapper,
 #bubbleWrapper {
-  transition: all 0.3s ease;
+  transition: all var(--transition-speed) ease;
   transform: translateY(0);
 }
 
@@ -1252,13 +1213,13 @@ input:checked + .slider:before {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 101;
   overflow: auto;
-  animation: fadeIn 0.3s;
+  animation: fadeIn var(--transition-speed);
   align-items: center;
   justify-content: center;
 }
 
 .modal.closing {
-  animation: fadeOut 0.3s forwards;
+  animation: fadeOut var(--transition-speed) forwards;
 }
 
 .modal-content {
@@ -1267,7 +1228,7 @@ input:checked + .slider:before {
   width: 85%;
   max-width: 500px;
   border-radius: 15px;
-  animation: fadeInUp 0.3s;
+  animation: fadeInUp var(--transition-speed);
   box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
   max-height: 90vh;
   overflow-y: auto;
@@ -1275,7 +1236,7 @@ input:checked + .slider:before {
 }
 
 .modal-content.closing {
-  animation: fadeOutDown 0.3s forwards;
+  animation: fadeOutDown var(--transition-speed) forwards;
 }
 
 .bill-summary-modal-content {
@@ -1397,7 +1358,7 @@ input:checked + .slider:before {
   bottom: 0;
   background-color: rgba(0, 0, 0, 0);
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-speed) ease;
   z-index: 15; /* Below the modal but above everything else */
   pointer-events: none;
   will-change: opacity; /* Optimize for animation */
@@ -1522,12 +1483,12 @@ input:checked + .slider:before {
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100vh - 60px);
+  height: calc(100% - 60px);
   background-color: var(--body-bg);
   z-index: 5;
   overflow-y: auto;
   transform: translateY(100%);
-  transition: transform 0.3s ease-in-out;
+  transition: transform var(--transition-speed) ease-in-out;
   will-change: transform;
   backface-visibility: hidden;
 }
@@ -2026,7 +1987,7 @@ input:checked + .slider:before {
   max-width: 500px;
   margin: 0 auto;
   padding: 20px;
-  height: 100vh;
+  height: 100%;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -2046,7 +2007,7 @@ input:checked + .slider:before {
   display: none;
   opacity: 0;
   transform: translateY(20px);
-  transition: all 0.3s ease-in-out;
+  transition: all var(--transition-speed) ease-in-out;
 }
 
 #historyContainer.active,
@@ -2104,6 +2065,9 @@ input:checked + .slider:before {
   font-weight: 400;
   line-height: 25.914px;
   letter-spacing: 0.095px;
+}
+
+.active .settings-footer {
   opacity: 0;
   animation: fadeInUp 0.5s 0.8s ease forwards;
 }
@@ -2125,27 +2089,7 @@ input:checked + .slider:before {
 
 /* Additional animation for page transition */
 .page-container.active {
-  animation: fadeIn 0.3s ease forwards;
-}
-
-/* Additional animations */
-@keyframes bubbleBounce {
-  0% {
-    transform: translateY(120%);
-  }
-  70% {
-    transform: translateY(-10%);
-  }
-  85% {
-    transform: translateY(5%);
-  }
-  100% {
-    transform: translateY(0%);
-  }
-}
-
-.bubble-bounce {
-  animation: bubbleBounce 0.5s forwards;
+  animation: fadeIn var(--transition-speed) ease forwards;
 }
 
 /* Settings dropdown styles */
@@ -2315,7 +2259,7 @@ input:checked + .slider:before {
   display: none;
   opacity: 0;
   transform: translateX(20px);
-  transition: all 0.3s ease;
+  transition: all var(--transition-speed) ease;
   position: absolute;
   width: 100%;
   height: 100%;
@@ -2419,10 +2363,10 @@ input:checked + .slider:before {
   border-radius: 25px 25px 0 0;
   margin: 0;
   position: fixed;
-  bottom: -90vh; /* Start mostly off-screen */
+  bottom: -90%; /* Start mostly off-screen */
   top: auto;
   height: 90vh;
-  max-height: 90vh;
+  max-height: 90%;
   overflow: hidden;
   transition: bottom 0.2s ease;
   box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
@@ -2432,12 +2376,12 @@ input:checked + .slider:before {
 }
 
 .bill-summary-modal.peeking {
-  bottom: -88vh; /* Show just a little bit at the bottom */
+  bottom: -86.6%; /* Show just a little bit at the bottom */
   pointer-events: all;
 }
 
 .bill-summary-modal.half-open {
-  bottom: -50vh;
+  bottom: -35vh;
 }
 
 .bill-summary-modal.fully-open {
@@ -2452,12 +2396,20 @@ input:checked + .slider:before {
 }
 
 .bill-summary-drag-handle {
+  display: flex;
+  width: 100%;
+  height: 30px;
+  cursor: grab;
+  justify-content: center;
+  align-items: center;
+}
+
+.drag-handle-line {
   width: 40px;
   height: 5px;
   background-color: #ddd;
   border-radius: 3px;
   margin: 10px auto;
-  cursor: grab;
 }
 
 .bill-summary-body {
@@ -2490,12 +2442,17 @@ input:checked + .slider:before {
   overflow-y: auto;
   overflow-x: hidden;
   flex: 1;
-  -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+  -webkit-overflow-scrolling: touch;
   max-height: calc(100% - 180px); /* Ensure space for subtotal and footer */
 }
 
+.half-open #dishSummaryContainer {
+  min-height: 200px;
+  max-height: calc(100% - 550px);
+}
+
 .is-finalise-bill #dishSummaryContainer {
-  max-height: 100%; /* When finalizing bill, allow full height */
+  max-height: 100%;
 }
 
 .dish-summary-item {
@@ -2697,14 +2654,14 @@ input:checked + .slider:before {
   top: 0;
   left: 0;
   width: 100%;
-  height: calc(100vh - 60px);
+  height: calc(100% - 60px);
   padding-bottom: 0;
   z-index: 20; /* Lower than bill summary but higher than other content */
   display: flex;
   flex-direction: column;
   background-color: #fffbe5; /* Light cream background */
   transform: translateY(100%);
-  transition: transform 0.3s ease-out;
+  transition: transform var(--transition-speed) ease-out;
 }
 
 #finaliseSettleBillScreen.active {
@@ -2863,7 +2820,7 @@ input:checked + .slider:before {
   z-index: 18;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-speed) ease;
 }
 
 .loading-screen.active {
@@ -2881,7 +2838,7 @@ input:checked + .slider:before {
   font-weight: 600;
   opacity: 0;
   transform: translateY(20px);
-  animation: fadeInUp 0.6s ease forwards 0.3s;
+  animation: fadeInUp 0.6s ease forwards var(--transition-speed);
 }
 
 .loading-bar-container {
@@ -3162,7 +3119,7 @@ input:checked + .slider:before {
   z-index: 1;
   opacity: 0;
   transition: transform 0.2s ease, box-shadow 0.4s ease;
-  animation: fadeInUp 0.5s 0.3s ease forwards;
+  animation: fadeInUp 0.5s var(--transition-speed) ease forwards;
 }
 
 .success-footer h2 {
@@ -3246,7 +3203,7 @@ input:checked + .slider:before {
   box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   z-index: 20;
-  transition: bottom 0.3s ease; /* 0.3s = 300ms for transition */
+  transition: bottom var(--transition-speed) ease;
 }
 
 .share-bill-modal.active {
@@ -3354,128 +3311,6 @@ button.share-btn .share-btn-span {
   color: #333;
 }
 
-/* Animations */
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUpbot {
-  from {
-    visibility: hidden;
-    margin-top: 50px;
-  }
-  to {
-    visibility: visible;
-    margin-top: 0;
-  }
-}
-
-@keyframes identifier {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 50%);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes receipt {
-  0% {
-    opacity: 0;
-    transform: translateY(-130%);
-  }
-
-  20% {
-    opacity: 1;
-    transform: translateY(-90%);
-  }
-
-  30% {
-    opacity: 1;
-    transform: translateY(-80%);
-  }
-
-  40% {
-    opacity: 1;
-    transform: translateY(-70%);
-  }
-
-  60% {
-    opacity: 1;
-    transform: translateY(-60%);
-  }
-
-  70% {
-    opacity: 1;
-    transform: translateY(-40%);
-  }
-
-  100% {
-    opacity: 1;
-    transform: translateY(0%);
-  }
-}
-
-@keyframes slideOut {
-  0% {
-    opacity: 1;
-    transform: translateY(0%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(150%);
-  }
-}
-
-@keyframes slideIn {
-  0% {
-    opacity: 1;
-    transform: translateY(-150%);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0%);
-  }
-}
-
-@keyframes fadeOut {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-
-@keyframes fadeOutDown {
-  from {
-    opacity: 1;
-    transform: translateY(0);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-}
-
 .inline-input {
   width: 40px;
   margin: 0 5px;
@@ -3554,7 +3389,7 @@ button.share-btn .share-btn-span {
   border-radius: 15px;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-speed) ease;
 }
 
 .scan-receipt-overlay.active {
@@ -3600,30 +3435,6 @@ button.share-btn .share-btn-span {
   animation: pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes scan {
-  0% {
-    top: 0;
-  }
-  50% {
-    top: calc(100% - 4px);
-  }
-  100% {
-    top: 0;
-  }
-}
-
-@keyframes pulse {
-  0% {
-    opacity: 0.7;
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.7;
-  }
-}
-
 /* Success Toast Notification */
 .success-toast,
 .error-toast {
@@ -3643,14 +3454,14 @@ button.share-btn .share-btn-span {
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.3s ease;
+  transition: all var(--transition-speed) ease;
 }
 
 .success-toast.show,
 .error-toast.show {
   opacity: 1;
   visibility: visible;
-  animation: slideUpFade 0.3s ease forwards;
+  animation: slideUpFade var(--transition-speed) ease forwards;
 }
 
 .success-toast .toast-icon {
@@ -3710,17 +3521,6 @@ button.share-btn .share-btn-span {
   background-color: #545454;
 }
 
-@keyframes slideUpFade {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 20px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
-}
-
 /* Add custom loading spinner for history */
 .history-container {
   position: relative;
@@ -3740,7 +3540,7 @@ button.share-btn .share-btn-span {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn var(--transition-speed) ease;
 }
 
 .loading-spinner {
@@ -3778,15 +3578,6 @@ button.share-btn .share-btn-span {
   font-size: 14px;
   color: var(--text-color);
   font-weight: 500;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 /* Enhance loading placeholders */
@@ -3916,18 +3707,8 @@ button.share-btn .share-btn-span {
   height: 16px;
 }
 
-/* Fade in animation for card content when loaded */
-@keyframes fadeInCard {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .group-card .card-content {
-  animation: fadeInCard 0.3s ease forwards;
+  animation: fadeInCard var(--transition-speed) ease forwards;
 }
 
 /* Styles for empty state messages */
@@ -3980,34 +3761,6 @@ button.share-btn .share-btn-span {
   animation: fadeInCard 0.5s ease forwards;
 }
 
-/* Card widget animations when loaded */
-.card-widget {
-  opacity: 0;
-  transform: translateY(20px);
-  transition: none;
-}
-
-/* Staggered animation delay for each card */
-.card-widget:nth-child(1).animated {
-  transition-delay: 0.1s;
-}
-
-.card-widget:nth-child(2).animated {
-  transition-delay: 0.2s;
-}
-
-.card-widget:nth-child(3).animated {
-  transition-delay: 0.3s;
-}
-
-.card-widget:nth-child(4).animated {
-  transition-delay: 0.4s;
-}
-
-.card-widget:nth-child(5).animated {
-  transition-delay: 0.5s;
-}
-
 /* Logout styles */
 .logout-item {
   border-top: 1px solid var(--border-color);
@@ -4052,5 +3805,621 @@ button.share-btn .share-btn-span {
   font-size: 14px;
   font-weight: 500;
   z-index: 10000;
-  animation: fadeInUp 0.3s ease-out forwards;
+  animation: fadeInUp var(--transition-speed) ease-out forwards;
+}
+
+/* Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@-webkit-keyframes fadeInUp {
+  from {
+    opacity: 0;
+    -webkit-transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    -webkit-transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUpbot {
+  from {
+    visibility: hidden;
+    margin-top: 50px;
+  }
+  to {
+    visibility: visible;
+    margin-top: 0;
+  }
+}
+
+@keyframes identifier {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 50%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes receipt {
+  0% {
+    opacity: 0;
+    transform: translateY(-130%);
+  }
+
+  20% {
+    opacity: 1;
+    transform: translateY(-90%);
+  }
+
+  30% {
+    opacity: 1;
+    transform: translateY(-80%);
+  }
+
+  40% {
+    opacity: 1;
+    transform: translateY(-70%);
+  }
+
+  60% {
+    opacity: 1;
+    transform: translateY(-60%);
+  }
+
+  70% {
+    opacity: 1;
+    transform: translateY(-40%);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0%);
+  }
+}
+
+@keyframes slideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(150%);
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 1;
+    transform: translateY(-150%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0%);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOutDown {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-bg {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes fadeInHistory {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInNoHistory {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bubbleBounce {
+  0% {
+    transform: translateY(120%);
+  }
+  70% {
+    transform: translateY(-10%);
+  }
+  85% {
+    transform: translateY(5%);
+  }
+  100% {
+    transform: translateY(0%);
+  }
+}
+
+@keyframes bubbleBounceDesktop {
+  0% {
+    transform: translateX(-120%);
+  }
+  70% {
+    transform: translateX(10%);
+  }
+  85% {
+    transform: translateX(-5%);
+  }
+  100% {
+    transform: translateX(0%);
+  }
+}
+
+@keyframes scan {
+  0% {
+    top: 0;
+  }
+  50% {
+    top: calc(100% - 4px);
+  }
+  100% {
+    top: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes slideUpFade {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Fade in animation for card content when loaded */
+@keyframes fadeInCard {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Add these PWA-related styles to the end of your styles.css file */
+
+/* Improved touch animations */
+button,
+input[type="button"],
+.card-widget,
+.settle-now-btn,
+.group-card,
+.item-card,
+.tab-item,
+.user-action-btn {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease;
+}
+
+button:active,
+input[type="button"]:active,
+.tab-item:active,
+.user-action-btn:active {
+  transform: scale(0.96);
+}
+
+.card-widget:active,
+.settle-now-btn:active,
+.group-card:active,
+.item-card:active {
+  transform: scale(0.98);
+  opacity: 0.9;
+}
+
+/* Loading indicators */
+.pwa-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  width: 100%;
+}
+
+.pwa-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #212529;
+  animation: spinner-rotation 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.pwa-loading-text {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+@keyframes spinner-rotation {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* App Installation Banner */
+.app-install-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.app-install-banner.show {
+  transform: translateY(0);
+}
+
+.app-install-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-install-banner-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.app-install-banner-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.app-install-banner-text {
+  flex: 1;
+}
+
+.app-install-banner-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.app-install-banner-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.app-install-banner-btn {
+  background-color: #212529;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  font-size: 14px;
+  border: none;
+}
+
+.app-install-banner-close {
+  background: transparent;
+  border: none;
+  color: #6c757d;
+  padding: 4px;
+  margin-left: 8px;
+}
+
+/* Dark mode adjustments for PWA components */
+@media (prefers-color-scheme: dark) {
+  .pwa-loading-spinner {
+    border-color: rgba(255, 255, 255, 0.1);
+    border-top-color: #f8f9fa;
+  }
+
+  .pwa-loading-text {
+    color: #adb5bd;
+  }
+
+  .app-install-banner {
+    background-color: #212529;
+  }
+
+  .app-install-banner-title {
+    color: #f8f9fa;
+  }
+
+  .app-install-banner-subtitle {
+    color: #adb5bd;
+  }
+
+  .app-install-banner-btn {
+    background-color: #f8f9fa;
+    color: #212529;
+  }
+
+  .app-install-banner-close {
+    color: #adb5bd;
+  }
+}
+
+/* Add smooth scrolling for a better PWA experience */
+html,
+body {
+  scroll-behavior: smooth;
+  overscroll-behavior-y: contain;
+}
+
+/* Add native-like pull-to-refresh animation */
+.pull-to-refresh {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transform: translateY(-100%);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.pull-to-refresh.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.pull-to-refresh-spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  border-top-color: #212529;
+  animation: spinner-rotation 1s linear infinite;
+  margin-right: 8px;
+}
+
+.pull-to-refresh-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #212529;
+}
+
+/* Improved focus states for accessibility */
+button:focus,
+input:focus,
+select:focus,
+textarea:focus,
+.card-widget:focus-within,
+.tab-item:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(33, 37, 41, 0.3);
+}
+
+.install-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background-color: #000000;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 15px;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.install-button:hover {
+  background-color: #333333;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.install-button img {
+  width: 55px;
+}
+
+.install-button.installing {
+  background-color: #839788;
+}
+
+/* Media Queries for Responsiveness */
+@media screen and (min-width: 1100px) {
+  #navbar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 10%;
+    max-width: 120px;
+  }
+
+  #menuWrapper {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  #bubbleWrapper,
+  #menuWrapper {
+    display: flex;
+    bottom: 0;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+  }
+
+  .bubble-bounce {
+    animation: bubbleBounceDesktop 0.5s forwards;
+  }
+
+  .menuElement.active {
+    transform: translateX(-100%);
+  }
+
+  #bubble1,
+  #menu1 {
+    order: 2;
+  }
+
+  #bubble2,
+  #menu2 {
+    order: 1;
+  }
+
+  #bubble3,
+  #menu3 {
+    order: 3;
+  }
+
+  .page-container {
+    max-width: 1100px;
+    width: 85%;
+    left: 120px;
+  }
+}
+
+@media (min-width: 768px) {
+  .page-container {
+    max-width: 600px;
+  }
+
+  .welcome-section h1 {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    padding: 15px;
+  }
+
+  .weather-temp h1 {
+    font-size: 36px;
+  }
+
+  #navbarContainer {
+    min-width: 100%;
+  }
+
+  #navbar {
+    background-color: rgba(255, 255, 255, 0.95);
+  }
+
+  .bubble {
+    width: 65px;
+    height: 65px;
+  }
+}
+
+@media (max-width: 350px) {
+  .weather-card,
+  .settle-card,
+  .group-card {
+    padding: 12px 15px;
+  }
+
+  .weather-temp h1 {
+    font-size: 30px;
+  }
+
+  .cat-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .welcome-section h1 {
+    font-size: 20px;
+  }
 }

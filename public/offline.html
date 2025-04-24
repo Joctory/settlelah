@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>SettleLah! - Offline</title>
+    <link rel="icon" href="icons/icon-192x192.png" />
+    <link rel="manifest" href="manifest.json" />
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f8f9fa;
+        color: #212529;
+      }
+
+      .offline-container {
+        max-width: 100%;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        text-align: center;
+      }
+
+      .offline-icon {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 20px;
+        border-radius: 50%;
+        background-color: #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .offline-icon svg {
+        width: 60px;
+        height: 60px;
+        fill: #6c757d;
+      }
+
+      h1 {
+        font-size: 24px;
+        margin-bottom: 16px;
+        font-weight: 600;
+      }
+
+      p {
+        font-size: 16px;
+        line-height: 1.5;
+        color: #6c757d;
+        margin-bottom: 24px;
+      }
+
+      .retry-button {
+        background-color: #212529;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background-color 0.3s ease;
+      }
+
+      .retry-button:hover {
+        background-color: #343a40;
+      }
+
+      .retry-button:active {
+        transform: scale(0.98);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background-color: #212529;
+          color: #f8f9fa;
+        }
+
+        .offline-icon {
+          background-color: #343a40;
+        }
+
+        .offline-icon svg {
+          fill: #adb5bd;
+        }
+
+        p {
+          color: #adb5bd;
+        }
+
+        .retry-button {
+          background-color: #f8f9fa;
+          color: #212529;
+        }
+
+        .retry-button:hover {
+          background-color: #e9ecef;
+        }
+      }
+
+      /* Animation */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .offline-container > * {
+        animation: fadeIn 0.5s ease forwards;
+      }
+
+      .offline-icon {
+        animation-delay: 0.1s;
+      }
+
+      h1 {
+        animation-delay: 0.2s;
+      }
+
+      p {
+        animation-delay: 0.3s;
+      }
+
+      .retry-button {
+        animation-delay: 0.4s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="offline-container">
+      <div class="offline-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path
+            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM12 20c-4.42 0-8-3.58-8-8 0-1.85.63-3.55 1.69-4.9L16.9 18.31C15.55 19.37 13.85 20 12 20zm6.31-3.1L7.1 5.69C8.45 4.63 10.15 4 12 4c4.42 0 8 3.58 8 8 0 1.85-.63 3.55-1.69 4.9z"
+          />
+        </svg>
+      </div>
+      <h1>You're offline</h1>
+      <p>Looks like you've lost your internet connection. SettleLah needs a connection to work properly.</p>
+      <button class="retry-button" onclick="window.location.reload()">Try Again</button>
+    </div>
+
+    <script>
+      // Check if we're back online
+      window.addEventListener("online", () => {
+        window.location.reload();
+      });
+    </script>
+  </body>
+</html>

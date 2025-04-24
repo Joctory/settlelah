@@ -4,11 +4,75 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <title>SettleLah - Settle Bill Easily</title>
+    <title>SettleLah! - Settle Bill Easily</title>
+    <meta name="description" content="The easiest way to settle your bills" />
+    <link rel="icon" href="icons/icon-192x192.png" />
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="description" content="The easiest way to settle your bills" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="SettleLah!" />
+
+    <!-- PWA Icons and Manifest -->
+    <link rel="manifest" href="manifest.json" />
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+    <link rel="apple-touch-startup-image" href="icons/splash-screen.png" />
+
     <link rel="stylesheet" type="text/css" href="styles.css" />
     <script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
+    <script>
+      // Prevent zoom on iOS Safari
+      (function () {
+        document.addEventListener(
+          "touchmove",
+          function (event) {
+            if (event.scale !== 1) {
+              event.preventDefault();
+            }
+          },
+          { passive: false }
+        );
+
+        var lastTouchEnd = 0;
+        document.addEventListener(
+          "touchend",
+          function (event) {
+            var now = new Date().getTime();
+            if (now - lastTouchEnd <= 300) {
+              event.preventDefault();
+            }
+            lastTouchEnd = now;
+          },
+          { passive: false }
+        );
+
+        document.addEventListener(
+          "gesturestart",
+          function (event) {
+            event.preventDefault();
+          },
+          { passive: false }
+        );
+      })();
+
+      // Service Worker Registration
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/service-worker.js")
+            .then((registration) => {
+              console.log("Service Worker registered with scope:", registration.scope);
+            })
+            .catch((error) => {
+              console.error("Service Worker registration failed:", error);
+            });
+        });
+      }
+    </script>
     <style>
       /* Preloader styles */
       #preloader {
@@ -632,7 +696,9 @@
       <!-- Bill Summary Modal -->
       <div id="billSummaryOverlay" class="modal-overlay"></div>
       <div id="billSummaryModal" class="modal bill-summary-modal">
-        <div class="bill-summary-drag-handle"></div>
+        <div class="bill-summary-drag-handle">
+          <div class="drag-handle-line"></div>
+        </div>
         <div class="modal-content bill-summary-modal-content">
           <div class="modal-header">
             <h2>Bill Summary</h2>
@@ -1007,7 +1073,7 @@
             resourcesLoaded = true;
             hidePreloader();
           }
-        }, 5000); // 5 second maximum loading time
+        }, 10000); // 10 second maximum loading time
       });
     </script>
   </body>

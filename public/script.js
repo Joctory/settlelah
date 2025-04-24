@@ -17,6 +17,28 @@ function checkAuthentication() {
   return true;
 }
 
+// Prevent zooming on iOS Safari
+(function () {
+  document.addEventListener(
+    "touchstart",
+    function (event) {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "gesturestart",
+    function (event) {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
+})();
+
 // Run auth check when script loads (unless we're on a result page)
 if (!window.location.pathname.startsWith("/result")) {
   checkAuthentication();
@@ -130,32 +152,6 @@ function showStep(step) {
   document.getElementById(`step${step}`).style.display = "block";
   currentStep = step;
   clearError();
-}
-
-function resetToHome(step) {
-  dishes = [];
-  members = [];
-  currentGroup = "";
-  updateDishList();
-  closeSummary();
-  document.getElementById("dishMembers").innerHTML = "";
-  document.getElementById("next3").disabled = true;
-  showStep(1);
-  document.getElementById("groupSelect").value = "";
-  document.getElementById("next1").disabled = true;
-  clearError();
-}
-
-function loadMembersForDrag() {
-  const memberPool = document.getElementById("memberPool");
-  memberPool.innerHTML = "";
-  members.forEach((member, index) => {
-    const li = document.createElement("li");
-    li.textContent = member;
-    li.dataset.member = member;
-    li.ondblclick = () => editMember(index);
-    memberPool.appendChild(li);
-  });
 }
 
 function scanReceipt() {
@@ -340,32 +336,6 @@ function scanReceipt() {
     });
 }
 
-function addDish() {
-  const dishName = document.getElementById("dishName").value.trim();
-  const dishCost = document.getElementById("dishCost").value;
-  const assignedMembers = Array.from(document.getElementById("dishMembers").children).map((li) => li.dataset.member);
-
-  if (!dishName) {
-    showError("Please enter a dish name.");
-    return;
-  }
-  if (!dishCost || isNaN(dishCost) || parseFloat(dishCost) <= 0) {
-    showError("Please enter a valid dish cost greater than 0.");
-    return;
-  }
-  if (assignedMembers.length === 0) {
-    showError("Please drag at least one member to assign the dish.");
-    return;
-  }
-
-  clearError();
-  dishes.push({ name: dishName, cost: parseFloat(dishCost), members: assignedMembers });
-  updateDishList();
-  clearDishInputs();
-  showSummary();
-  document.getElementById("next3").disabled = false;
-}
-
 function editDish(index) {
   const dish = dishes[index];
   document.getElementById("itemName").value = dish.name;
@@ -387,7 +357,7 @@ function editDish(index) {
         a = (a << 5) - a + b.charCodeAt(0);
         return a & a;
       }, 0);
-      avatarNumber = Math.abs(nameHash % 12) + 1;
+      avatarNumber = Math.abs(nameHash % 20) + 1;
     }
 
     const memberWrapper = document.createElement("div");
@@ -473,12 +443,6 @@ function updateDishList() {
   }
 }
 
-function clearDishInputs() {
-  document.getElementById("dishName").value = "";
-  document.getElementById("dishCost").value = "";
-  document.getElementById("dishMembers").innerHTML = "";
-}
-
 function showSummary(openState = "fully-open") {
   // Update the dish summary content
   updateDishSummary();
@@ -539,8 +503,6 @@ function toggleBillSummaryVisibility(show) {
 
     overlay.classList.remove("active");
   } else {
-    // Hide the bill summary completely
-    modal.style.display = "none";
     modal.classList.remove("peeking", "half-open", "fully-open");
     overlay.classList.remove("active");
   }
@@ -1217,45 +1179,30 @@ function initializeBillSummaryDrag() {
   let startY = 0;
   let startTop = 0;
   let currentState = "peeking";
-
-  // Initially hide the modal until we're in the right view
-  modal.style.display = "none";
-
-  // Touch event handlers for the drag handle
-  dragHandle.addEventListener("touchstart", handleDragStart);
-  dragHandle.addEventListener("touchmove", handleDragMove);
-  dragHandle.addEventListener("touchend", handleDragEnd);
-
-  // Mouse event handlers for desktop (optional)
-  dragHandle.addEventListener("mousedown", handleDragStart);
-  document.addEventListener("mousemove", handleDragMove);
-  document.addEventListener("mouseup", handleDragEnd);
-
-  // Overlay click handler to close the modal
-  overlay.addEventListener("click", function () {
-    // Just minimize to peeking state, don't hide completely
-    modal.classList.remove("fully-open", "half-open");
-    modal.classList.add("peeking");
-
-    // Hide the overlay
-    overlay.classList.remove("active");
-  });
-
   let isDragging = false;
+  let isMouseDrag = false;
 
   function handleDragStart(e) {
+    if (e.type === "mousedown" && e.button !== 0) return; // Only process left mouse button
+
     isDragging = true;
+    isMouseDrag = e.type === "mousedown";
     startY = e.type.includes("touch") ? e.touches[0].clientY : e.clientY;
 
     // Get the current position from the transform
     const style = window.getComputedStyle(modal);
     startTop = parseInt(style.bottom);
 
-    e.preventDefault();
+    if (e.type === "mousedown") {
+      e.preventDefault();
+    }
   }
 
   function handleDragMove(e) {
     if (!isDragging) return;
+
+    // For mouse events, only process if this is an active mouse drag
+    if (e.type === "mousemove" && !isMouseDrag) return;
 
     const currentY = e.type.includes("touch") ? e.touches[0].clientY : e.clientY;
     const deltaY = startY - currentY;
@@ -1278,8 +1225,12 @@ function initializeBillSummaryDrag() {
   }
 
   function handleDragEnd(e) {
+    // For mouse events, only process if this is an active mouse drag
+    if (e.type === "mouseup" && !isMouseDrag) return;
+
     if (!isDragging) return;
     isDragging = false;
+    isMouseDrag = false;
 
     // Get final position
     const style = window.getComputedStyle(modal);
@@ -1311,6 +1262,24 @@ function initializeBillSummaryDrag() {
     modal.style.bottom = "";
     overlay.style.opacity = "";
   }
+
+  // Touch event handlers for the drag handle
+  dragHandle.addEventListener("touchstart", handleDragStart);
+  dragHandle.addEventListener("touchmove", handleDragMove);
+  dragHandle.addEventListener("touchend", handleDragEnd);
+
+  // Mouse event handlers for desktop
+  dragHandle.addEventListener("mousedown", handleDragStart);
+  document.addEventListener("mousemove", handleDragMove);
+  document.addEventListener("mouseup", handleDragEnd);
+
+  // Overlay click handler to close the modal
+  overlay.addEventListener("click", function () {
+    // Just minimize to peeking state, don't hide completely
+    modal.classList.remove("fully-open", "half-open");
+    modal.classList.add("peeking");
+    overlay.classList.remove("active");
+  });
 }
 
 // Function to reset the loading animation
@@ -1334,151 +1303,92 @@ function initializeSwipeGesture() {
   const addSettleItemView = document.getElementById("addSettleItemView");
   const finaliseSettleBillScreen = document.getElementById("finaliseSettleBillScreen");
   let startY = 0;
+  let startX = 0;
   let startTime = 0;
+  let isProcessingGesture = false;
+  const swipeTimeout = 300; // Timeout to prevent swipe detection during scrolling
+  const minTouchDuration = 150; // Minimum touch duration in ms to consider it intentional
+  const maxTouchDuration = 1300; // Maximum touch duration to consider it a swipe (not a long press)
 
   // Function to handle touch start for both screens
   const handleTouchStart = function (e) {
     startY = e.touches[0].clientY;
+    startX = e.touches[0].clientX;
     startTime = new Date().getTime();
+    isProcessingGesture = false;
   };
 
   // Function to handle touch end for both screens
   const handleTouchEnd = function (e) {
-    const endY = e.changedTouches[0].clientY;
-    const endTime = new Date().getTime();
-    const deltaY = startY - endY;
-    const deltaTime = endTime - startTime;
+    if (isProcessingGesture) return; // Prevent multiple triggers
 
-    // If the swipe is quick enough and long enough
-    if (deltaTime < 300 && deltaY > 50) {
+    const endY = e.changedTouches[0].clientY;
+    const endX = e.changedTouches[0].clientX;
+    const endTime = new Date().getTime();
+    const touchDuration = endTime - startTime;
+
+    // Check if touch duration is within the desired range
+    if (touchDuration < minTouchDuration) {
+      // Touch was too short - likely accidental
+      return;
+    }
+
+    if (touchDuration > maxTouchDuration) {
+      // Touch was too long - likely user is reading or doing something else
+      return;
+    }
+
+    // Calculate deltas for swipe detection
+    const deltaY = startY - endY;
+    const deltaX = Math.abs(startX - endX);
+
+    // Calculate velocity in pixels per millisecond
+    const velocity = Math.abs(deltaY) / touchDuration;
+
+    // Angle constraint to ensure it's a vertical swipe (in degrees)
+    const angle = (Math.atan2(Math.abs(deltaY), deltaX) * 180) / Math.PI;
+
+    // Improved swipe detection conditions:
+    // 1. Must be primarily vertical (angle > 45 degrees)
+    // 2. Must have sufficient velocity (> 0.6 pixels/ms)
+    // 3. Must have minimum distance (> 80px)
+    // 4. Time constraint for quick gestures
+    if (deltaY > 80 && velocity > 0.6 && angle > 45 && deltaX < deltaY * 0.8) {
+      isProcessingGesture = true;
+
+      // Provide subtle haptic feedback
+      triggerHapticFeedback();
+
       showSummary("fully-open");
+
+      // Add debounce timeout to reset the processing flag
+      setTimeout(() => {
+        isProcessingGesture = false;
+      }, swipeTimeout);
     }
   };
 
-  // Add event listeners to add settle item view
-  addSettleItemView.addEventListener("touchstart", handleTouchStart);
+  // Add touch event listeners to both screens
+  addSettleItemView.addEventListener("touchstart", handleTouchStart, { passive: true });
   addSettleItemView.addEventListener("touchend", handleTouchEnd);
 
-  // Add event listeners to finalise settle bill screen
-  finaliseSettleBillScreen.addEventListener("touchstart", handleTouchStart);
-  finaliseSettleBillScreen.addEventListener("touchend", handleTouchEnd);
+  // Keep existing functionality for other contexts if needed
 
   // Initialize the bill summary drag functionality
   initializeBillSummaryDrag();
-}
 
-function showSettings() {
-  // Original code
-  const popup = document.getElementById("settingsPopup");
-  popup.style.display = "block";
-
-  // Initialize settings with logout button
-  initializeSettings();
-}
-
-function closeSettings() {
-  const popup = document.getElementById("settingsPopup");
-  popup.style.display = "none";
-}
-
-function saveSettings() {
-  const profile = document.getElementById("taxProfile").value;
-  const serviceValue = document.getElementById("serviceChargeValue")?.value || "10";
-  document.getElementById("serviceRate").textContent = `${serviceValue}%`;
-  document.getElementById("gstRate").textContent = profile === "singapore" ? "9%" : "6%";
-  updateGSTCheckboxLabel(profile);
-  closeSettings();
-}
-
-function addMemberPopup(mode = "new") {
-  editMode = mode === "edit";
-  document.getElementById("newMemberName").value = "";
-  document.getElementById("addMemberPopup").style.display = "block";
-}
-
-function closeAddMember() {
-  document.getElementById("addMemberPopup").style.display = "none";
-}
-
-function saveNewMember() {
-  const name = document.getElementById("newMemberName").value.trim();
-  if (!name) {
-    showError("Please enter a member name.");
-    return;
-  }
-  if (members.includes(name)) {
-    showError("This name is already added.");
-    return;
-  }
-  members.push(name);
-  if (editMode) {
-    updateEditGroupList();
-  } else {
-    updateMemberList();
-  }
-  closeAddMember();
-  clearError();
-  document.getElementById("next2").disabled = false;
-}
-
-function updateMemberList() {
-  const list = document.getElementById("memberList");
-  list.innerHTML = "";
-  members.forEach((member, index) => {
-    const li = document.createElement("li");
-    li.textContent = member;
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Edit";
-    editBtn.onclick = () => editMember(index);
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "Remove";
-    removeBtn.onclick = () => removeMember(index);
-    li.appendChild(editBtn);
-    li.appendChild(removeBtn);
-    list.appendChild(li);
-  });
-}
-
-// Remove member
-function removeMember() {
-  const nameInput = document.getElementById("editMemberName");
-  const memberName = nameInput.dataset.originalName;
-
-  // Remove from members array - find index using the name property
-  const index = members.findIndex((member) =>
-    typeof member === "object" ? member.name === memberName : member === memberName
-  );
-
-  if (index !== -1) {
-    members.splice(index, 1);
-  }
-
-  // Remove from UI
-  const memberItems = document.querySelectorAll(".member-item");
-  memberItems.forEach((item) => {
-    if (item.dataset.name === memberName) {
-      // Add fade-out animation
-      item.style.opacity = "0";
-      item.style.transform = "translateY(10px)";
-      setTimeout(() => {
-        item.remove();
-      }, 300);
+  // Add a slight haptic feedback if supported by device
+  const triggerHapticFeedback = () => {
+    if (navigator.vibrate) {
+      navigator.vibrate(10); // 10ms subtle vibration
     }
-  });
-
-  // Close the modal
-  hideModal("editMemberModal");
+  };
 }
 
 function editMember(index) {
   editingIndex = index;
   document.getElementById("editMemberName").value = members[index];
   document.getElementById("editMemberPopup").style.display = "block";
-}
-
-function closeEditMember() {
-  document.getElementById("editMemberPopup").style.display = "none";
-  editingIndex = -1;
 }
 
 // Save an edited member name
@@ -1543,81 +1453,6 @@ function saveEditedMember() {
   hideModal("editMemberModal");
 }
 
-function editGroupMembers() {
-  if (!currentGroup) return;
-  updateEditGroupList();
-  document.getElementById("editGroupPopup").style.display = "block";
-}
-
-function closeEditGroup() {
-  document.getElementById("editGroupPopup").style.display = "none";
-}
-
-function updateEditGroupList() {
-  const list = document.getElementById("editGroupList");
-  list.innerHTML = "";
-  members.forEach((member, index) => {
-    const li = document.createElement("li");
-    li.textContent = member;
-    const editBtn = document.createElement("button");
-    editBtn.textContent = "Edit";
-    editBtn.onclick = () => editMember(index);
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "Remove";
-    removeBtn.onclick = () => removeMember(index);
-    li.appendChild(editBtn);
-    li.appendChild(removeBtn);
-    list.appendChild(li);
-  });
-}
-
-function saveEditedGroup() {
-  if (members.length === 0) {
-    showError("Please add at least one member.");
-    return;
-  }
-  dishes = [];
-  updateDishList();
-  closeSummary();
-  document.getElementById("dishMembers").innerHTML = "";
-  document.getElementById("next3").disabled = true;
-  groups[currentGroup] = [...members];
-  localStorage.setItem("groups", JSON.stringify(groups));
-  loadMembersForDrag();
-  closeEditGroup();
-  showError("Group members updated. All dishes have been cleared.");
-}
-
-function saveAsGroup() {
-  document.getElementById("groupName").value = "";
-  document.getElementById("groupMembersPreview").textContent = members.join(", ");
-  document.getElementById("saveGroupPopup").style.display = "block";
-}
-
-function closeSaveGroup() {
-  document.getElementById("saveGroupPopup").style.display = "none";
-}
-
-function confirmSaveGroup() {
-  const groupName = document.getElementById("groupName").value.trim();
-  if (!groupName) {
-    showError("Please enter a group name.");
-    return;
-  }
-  if (groups[groupName]) {
-    showError("Group name already exists. Choose a different name.");
-    return;
-  }
-  groups[groupName] = [...members];
-  currentGroup = groupName;
-  localStorage.setItem("groups", JSON.stringify(groups));
-  updateGroupSelect();
-  document.getElementById("editGroupBtn").style.display = "inline";
-  document.getElementById("saveGroupBtn").style.display = "none";
-  closeSaveGroup();
-  clearError();
-}
-
 function updateGroupSelect() {
   const select = document.getElementById("groupSelect");
   select.innerHTML = ""; // Clear existing options
@@ -1636,11 +1471,6 @@ function updateGroupSelect() {
       document.getElementById("next1").disabled = !radio.checked; // Enable if checked
     };
   });
-}
-
-function updateGroupActions() {
-  document.getElementById("editGroupBtn").style.display = currentGroup ? "inline" : "none";
-  document.getElementById("saveGroupBtn").style.display = currentGroup ? "none" : "inline";
 }
 
 function fetchHistory() {
@@ -1795,20 +1625,6 @@ function fetchHistory() {
       historyList.innerHTML = "<p class='no-history'>Error loading history. Please try again.</p>";
       console.error("Error loading history:", err);
     });
-}
-
-// New function to delete the selected group
-function deleteSelectedGroup() {
-  const selectedGroup = document.querySelector('input[name="group"]:checked');
-  if (!selectedGroup) {
-    showError("Please select a group to delete.");
-    return;
-  }
-  const groupName = selectedGroup.value;
-  delete groups[groupName];
-  localStorage.setItem("groups", JSON.stringify(groups));
-  updateGroupSelect(); // Refresh the group list
-  showError(`Group "${groupName}" has been deleted.`);
 }
 
 function moveWithCalc(id) {
@@ -1980,7 +1796,6 @@ function hideSettleNowScreen() {
   // Completely hide the bill summary when leaving the settle now screen
   const modal = document.getElementById("billSummaryModal");
   if (modal) {
-    modal.style.display = "none";
     modal.classList.remove("peeking", "half-open", "fully-open");
   }
 
@@ -2162,7 +1977,7 @@ function createSavedGroupCard(groupName, membersList, cardIndex) {
 
     if (typeof member === "object" && member.name) {
       memberName = member.name;
-      avatarNumber = member.avatar || Math.floor(Math.random() * 12) + 1;
+      avatarNumber = member.avatar || Math.floor(Math.random() * 20) + 1;
     } else {
       memberName = member;
       // For backward compatibility with old format, generate a consistent avatar
@@ -2171,7 +1986,7 @@ function createSavedGroupCard(groupName, membersList, cardIndex) {
         a = (a << 5) - a + b.charCodeAt(0);
         return a & a;
       }, 0);
-      avatarNumber = Math.abs(nameHash % 12) + 1;
+      avatarNumber = Math.abs(nameHash % 20) + 1;
     }
 
     img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
@@ -2319,6 +2134,19 @@ function showModal(modalId) {
     if (modalId === "addMemberModal") {
       const inputs = modal.querySelectorAll("input");
       inputs.forEach((input) => (input.value = ""));
+      // Focus the first input field in the modal
+      const firstInput = modal.querySelector("input");
+      if (firstInput) {
+        setTimeout(() => {
+          // Force keyboard to appear on iOS devices
+          firstInput.focus();
+          // Add a slight delay and then focus again to ensure keyboard appears on iOS
+          setTimeout(() => {
+            firstInput.click();
+            firstInput.focus();
+          }, 100);
+        }, 300); // Wait for modal animation to complete
+      }
     }
   }
 }
@@ -2487,6 +2315,14 @@ function addNewMember() {
   const inputField = memberNameInput.closest(".input-field");
   const errorMessage = inputField.querySelector(".error-message");
 
+  // Check if we've reached the maximum number of members (20)
+  if (members.length >= 20) {
+    inputField.classList.add("error");
+    errorMessage.classList.add("visible");
+    errorMessage.textContent = "Maximum of 20 members allowed";
+    return;
+  }
+
   // Validate input
   if (!memberName) {
     inputField.classList.add("error");
@@ -2508,8 +2344,8 @@ function addNewMember() {
     .filter((member) => typeof member === "object" && member.avatar)
     .map((member) => member.avatar);
 
-  // Generate a list of available avatars (1-12)
-  const allAvatars = Array.from({ length: 12 }, (_, i) => i + 1);
+  // Generate a list of available avatars (1-20)
+  const allAvatars = Array.from({ length: 20 }, (_, i) => i + 1);
   const availableAvatars = allAvatars.filter((num) => !usedAvatars.includes(num));
 
   // If all avatars are used, just pick a random one
@@ -2517,7 +2353,7 @@ function addNewMember() {
   const avatarNumber =
     availableAvatars.length > 0
       ? availableAvatars[Math.floor(Math.random() * availableAvatars.length)]
-      : Math.floor(Math.random() * 12) + 1;
+      : Math.floor(Math.random() * 20) + 1;
 
   // Add the member to the array as an object with name and avatar
   members.push({
@@ -2617,9 +2453,23 @@ function showToast(toastId) {
   const toast = document.getElementById(toastId);
   if (toast) {
     toast.classList.add("show");
-    setTimeout(() => {
+
+    // Store the timeout ID so we can clear it if the toast is manually dismissed
+    const timeoutId = setTimeout(() => {
       toast.classList.remove("show");
     }, 3000); // Hide after 3 seconds
+
+    // Add touch/click event to dismiss the toast
+    toast.addEventListener("click", function dismissToast() {
+      clearTimeout(timeoutId);
+      toast.classList.remove("show");
+      toast.removeEventListener("click", dismissToast);
+
+      // Add subtle haptic feedback if available
+      if (window.navigator && window.navigator.vibrate) {
+        window.navigator.vibrate(5); // Light vibration for feedback
+      }
+    });
   }
 }
 
@@ -3339,7 +3189,7 @@ function initializeMemberList() {
           a = (a << 5) - a + b.charCodeAt(0);
           return a & a;
         }, 0);
-        const avatarNumber = Math.abs(nameHash % 12) + 1;
+        const avatarNumber = Math.abs(nameHash % 20) + 1;
 
         addMemberToUI(memberName, avatarNumber);
       }
@@ -3420,7 +3270,7 @@ function updateSettleItemMembersUI() {
         a = (a << 5) - a + b.charCodeAt(0);
         return a & a;
       }, 0);
-      avatarNumber = Math.abs(nameHash % 12) + 1;
+      avatarNumber = Math.abs(nameHash % 20) + 1;
     }
 
     const memberWrapper = document.createElement("div");
@@ -3681,7 +3531,7 @@ function updateLastCreatedGroup() {
             a = (a << 5) - a + b.charCodeAt(0);
             return a & a;
           }, 0);
-          avatarNumber = Math.abs(nameHash % 12) + 1;
+          avatarNumber = Math.abs(nameHash % 20) + 1;
         }
 
         const avatarDiv = document.createElement("div");
@@ -3908,6 +3758,14 @@ window.onload = function () {
       });
     }, 100);
 
+    setTimeout(() => {
+      document.querySelectorAll(".group-card").forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add("animated");
+        }, index * 100); // Stagger animations
+      });
+    }, 100);
+
     // If a preloader exists, hide it
     const preloader = document.getElementById("preloader");
     if (preloader) {
@@ -3945,3 +3803,282 @@ function roundToNearest5Cents(value) {
     return wholePart + roundedCents / 100;
   }
 }
+
+// Add this code to the top of script.js, after any initial variables
+
+// PWA - IndexedDB setup for offline functionality
+let db;
+
+// Initialize the database
+function initDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open("SettleLahDB", 1);
+
+    request.onerror = (event) => {
+      console.error("IndexedDB error:", event.target.error);
+      reject(event.target.error);
+    };
+
+    request.onsuccess = (event) => {
+      db = event.target.result;
+      console.log("IndexedDB initialized successfully");
+      resolve(db);
+    };
+
+    request.onupgradeneeded = (event) => {
+      const db = event.target.result;
+
+      // Create object stores
+      if (!db.objectStoreNames.contains("pendingSettlements")) {
+        db.createObjectStore("pendingSettlements", { keyPath: "id", autoIncrement: true });
+      }
+
+      if (!db.objectStoreNames.contains("groups")) {
+        db.createObjectStore("groups", { keyPath: "id" });
+      }
+
+      if (!db.objectStoreNames.contains("settlements")) {
+        db.createObjectStore("settlements", { keyPath: "id" });
+      }
+    };
+  });
+}
+
+// Save data to IndexedDB when offline
+function saveOfflineData(storeName, data) {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"));
+      return;
+    }
+
+    const transaction = db.transaction([storeName], "readwrite");
+    const store = transaction.objectStore(storeName);
+    const request = store.add(data);
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+// Get all pending offline data
+function getOfflineData(storeName) {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"));
+      return;
+    }
+
+    const transaction = db.transaction([storeName], "readonly");
+    const store = transaction.objectStore(storeName);
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+// Clear all pending offline data
+function clearOfflineData(storeName) {
+  return new Promise((resolve, reject) => {
+    if (!db) {
+      reject(new Error("Database not initialized"));
+      return;
+    }
+
+    const transaction = db.transaction([storeName], "readwrite");
+    const store = transaction.objectStore(storeName);
+    const request = store.clear();
+
+    request.onsuccess = () => {
+      resolve();
+    };
+
+    request.onerror = (event) => {
+      reject(event.target.error);
+    };
+  });
+}
+
+// Modified fetch function that handles offline mode
+async function fetchWithOfflineSupport(url, options = {}) {
+  try {
+    const response = await fetch(url, options);
+    return response;
+  } catch (error) {
+    // If it's a POST request and we're offline, save it for later
+    if (options.method === "POST" && !navigator.onLine) {
+      const data = JSON.parse(options.body);
+      await saveOfflineData("pendingSettlements", data);
+
+      // Register for background sync if supported
+      if ("serviceWorker" in navigator && "SyncManager" in window) {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.sync.register("sync-settlements");
+      }
+
+      // Return a fake successful response
+      return new Response(
+        JSON.stringify({
+          success: true,
+          offline: true,
+          message: "Data saved offline and will sync when online",
+        })
+      );
+    }
+
+    throw error;
+  }
+}
+
+// Initialize IndexedDB when the app starts
+document.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await initDB();
+
+    // Check if we're online and have pending data to sync
+    if (navigator.onLine) {
+      syncOfflineData();
+    }
+
+    // Listen for online events to sync data
+    window.addEventListener("online", syncOfflineData);
+  } catch (error) {
+    console.error("Failed to initialize IndexedDB:", error);
+  }
+});
+
+// Function to sync offline data when back online
+async function syncOfflineData() {
+  try {
+    // If service worker and sync are supported, let the service worker handle it
+    if ("serviceWorker" in navigator && "SyncManager" in window) {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.sync.register("sync-settlements");
+    }
+  } catch (error) {
+    console.error("Failed to sync offline data:", error);
+  }
+}
+
+// Show a notification to the user
+function showNotification(message) {
+  // Create and show a toast notification
+  const toast = document.createElement("div");
+  toast.className = "toast-notification";
+  toast.textContent = message;
+
+  document.body.appendChild(toast);
+
+  // Trigger animation
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 10);
+
+  // Remove after 3 seconds
+  setTimeout(() => {
+    toast.classList.remove("show");
+    setTimeout(() => {
+      document.body.removeChild(toast);
+    }, 300);
+  }, 3000);
+}
+
+// Add this CSS to the bottom of script.js
+document.addEventListener("DOMContentLoaded", () => {
+  const style = document.createElement("style");
+  style.textContent = `
+    .toast-notification {
+      position: fixed;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #212529;
+      color: white;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: bottom 0.3s ease;
+    }
+    
+    .toast-notification.show {
+      bottom: 20px;
+    }
+    
+    @media (prefers-color-scheme: dark) {
+      .toast-notification {
+        background-color: #f8f9fa;
+        color: #212529;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+});
+
+// Check for app installation
+window.addEventListener("beforeinstallprompt", (e) => {
+  // Prevent Chrome 67 and earlier from automatically showing the prompt
+  e.preventDefault();
+
+  // Stash the event so it can be triggered later
+  const deferredPrompt = e;
+
+  // Show the install button if not already installed
+  const installButton = document.createElement("button");
+  installButton.id = "install-app";
+  installButton.textContent = "Install SettleLah!";
+  installButton.classList.add("install-button");
+
+  // Add icon to button
+  const icon = document.createElement("div");
+  icon.classList.add("install-button-icon");
+  icon.innerHTML = `<img src="icons/icon-192x192.png" alt="SettleLah! Icon" />`;
+  installButton.prepend(icon);
+
+  document.body.appendChild(installButton);
+
+  // Add click event
+  installButton.addEventListener("click", async () => {
+    // Hide the button
+    installButton.classList.add("installing");
+    // Change button text to show loading state
+    installButton.textContent = "Installing...";
+
+    // Show the prompt
+    deferredPrompt.prompt();
+
+    // Wait for the user to respond to the prompt
+    const { outcome } = await deferredPrompt.userChoice;
+
+    // Log the outcome
+    console.log(`User ${outcome} the A2HS prompt`);
+  });
+});
+
+// Listen for app installed event
+window.addEventListener("appinstalled", () => {
+  // Hide the install button if it exists
+  const installButton = document.getElementById("install-app");
+  if (installButton) {
+    installButton.style.display = "none";
+  }
+
+  // Log successful installation
+  console.log("PWA was installed");
+
+  // Show a success notification
+  showNotification("SettleLah! has been installed successfully!");
+});

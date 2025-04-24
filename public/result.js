@@ -1,3 +1,25 @@
+// Prevent zooming on iOS Safari
+(function () {
+  document.addEventListener(
+    "touchstart",
+    function (event) {
+      if (event.touches.length > 1) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "gesturestart",
+    function (event) {
+      event.preventDefault();
+    },
+    { passive: false }
+  );
+})();
+
 // Member-specific bill data (will be populated from API)
 let memberData = {};
 
@@ -644,9 +666,16 @@ function updateGroupMembers(members) {
         groupSection.style.opacity = "1";
         groupSection.style.transition = "opacity 0.5s ease";
         const billContent = document.getElementById("bill-content");
+        const successScreen = document.getElementById("bill-content");
         // Make content visible with animation
         if (billContent) {
           billContent.classList.add("visible");
+          // Add a class after 5 seconds
+          setTimeout(() => {
+            if (successScreen) {
+              successScreen.classList.add("ready");
+            }
+          }, 4500);
         }
 
         // Hide loading and show content with animation using classes

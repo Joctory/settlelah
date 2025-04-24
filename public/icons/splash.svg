@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#FFFFFF"/>
+  <g transform="translate(156, 156)">
+    <path d="M100,0 C155.228,0 200,44.772 200,100 C200,155.228 155.228,200 100,200 C44.772,200 0,155.228 0,100 C0,44.772 44.772,0 100,0 Z" fill="#212529"/>
+    <text x="100" y="120" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="#FFFFFF" text-anchor="middle">SL</text>
+  </g>
+  <text x="256" y="400" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#212529" text-anchor="middle">SettleLah!</text>
+</svg> 
