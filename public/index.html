@@ -8,7 +8,7 @@
     />
     <title>SettleLah! - Settle Bill Easily</title>
     <meta name="description" content="The easiest way to settle your bills" />
-    <link rel="icon" href="icons/icon-192x192.png" />
+    <link rel="icon" href="icons/favicon.png" />
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#000000" />
@@ -124,6 +124,12 @@
     </style>
   </head>
   <body>
+    <!-- Pull to refresh indicator -->
+    <div class="pull-to-refresh">
+      <div class="pull-to-refresh-spinner"></div>
+      <div class="pull-to-refresh-text">Release to refresh</div>
+    </div>
+
     <!-- Preloader -->
     <div id="preloader">
       <div class="preloader-content">
@@ -314,13 +320,13 @@
         <div class="white-slide-container">
           <!-- Initial settle choice view -->
           <div id="settleChoiceView" class="settle-view active">
-            <div class="settle-choice-container">
+            <div class="settle-choice-header">
               <h2>Settle among?</h2>
-
               <div class="settle-choice-error">
                 <p>Please select an option to continue.</p>
               </div>
-
+            </div>
+            <div class="settle-choice-container">
               <div class="saved-group-option">
                 <img class="saved-group-bg" src="assets/saved-group-img.svg" alt="saved group" />
                 <div class="group-label">Saved Group</div>
@@ -336,9 +342,9 @@
                 <img class="new-group-bg" src="assets/new-group-img.svg" alt="new group" />
                 <div class="group-label">New Group</div>
               </div>
-              <div class="btn-container">
-                <button class="get-started-btn">Get Started</button>
-              </div>
+            </div>
+            <div class="btn-container">
+              <button class="get-started-btn">Get Started</button>
             </div>
           </div>
 

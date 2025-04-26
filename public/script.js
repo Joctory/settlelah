@@ -17,6 +17,116 @@ function checkAuthentication() {
   return true;
 }
 
+// Initialize pull-to-refresh functionality
+function initializePullToRefresh() {
+  let pullStartY = 0;
+  let pullMoveY = 0;
+  const pullThreshold = 80; // Minimum pull distance to trigger refresh
+  const pullElement = document.querySelector(".pull-to-refresh");
+  const pullText = document.querySelector(".pull-to-refresh-text");
+
+  if (!pullElement) return; // Guard clause if element doesn't exist
+
+  document.addEventListener(
+    "touchstart",
+    (e) => {
+      // Only enable pull-to-refresh at the top of the page
+      if (window.scrollY === 0) {
+        pullStartY = e.touches[0].screenY;
+      }
+    },
+    { passive: true }
+  );
+
+  document.addEventListener(
+    "touchmove",
+    (e) => {
+      if (pullStartY === 0) return;
+
+      pullMoveY = e.touches[0].screenY;
+      const pullDistance = pullMoveY - pullStartY;
+
+      // Only activate if user is pulling down and we're at the top
+      if (pullDistance > 0 && window.scrollY === 0) {
+        const pullProgress = Math.min(pullDistance / pullThreshold, 1);
+        const pullHeight = pullProgress * 60; // Max height of pull indicator
+
+        pullElement.classList.add("visible");
+        pullElement.style.transform = `translateY(${pullHeight}px)`;
+
+        // Update text based on whether pull is enough to trigger refresh
+        if (pullDistance >= pullThreshold) {
+          pullText.textContent = "Release to refresh";
+        } else {
+          pullText.textContent = "Pull down to refresh";
+        }
+
+        // Prevent default scrolling if pull distance is significant
+        if (pullDistance > 30) {
+          e.preventDefault();
+        }
+      }
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      const pullDistance = pullMoveY - pullStartY;
+
+      if (pullDistance >= pullThreshold) {
+        // Animate the pull element
+        pullElement.style.transform = "translateY(40px)";
+        pullText.textContent = "Refreshing...";
+
+        // Add a small spinner animation to the pull element
+        const spinner = document.querySelector(".pull-to-refresh-spinner");
+        spinner.style.animation = "spin 1s infinite linear";
+
+        // Trigger haptic feedback if available
+        if (navigator.vibrate) {
+          navigator.vibrate(30);
+        }
+
+        // Perform refresh action based on current page
+        refreshCurrentPage();
+
+        // Reset after animation completes
+        setTimeout(() => {
+          pullElement.classList.remove("visible");
+          pullElement.style.transform = "translateY(-100%)";
+          spinner.style.animation = "";
+        }, 1500);
+      } else {
+        // Reset without refreshing
+        pullElement.classList.remove("visible");
+        pullElement.style.transform = "translateY(-100%)";
+      }
+
+      // Reset pull tracking
+      pullStartY = 0;
+      pullMoveY = 0;
+    },
+    { passive: false }
+  );
+}
+
+// Function to refresh content based on current active page
+function refreshCurrentPage() {
+  if (activePage === "home") {
+    // Refresh home page
+    updateHomePageCards();
+    updateLastSettle();
+    fetchWeatherData();
+  } else if (activePage === "history") {
+    // Refresh history
+    fetchHistory();
+  } else if (activePage === "settings") {
+    // Nothing to refresh in settings currently
+  }
+}
+
 // Prevent zooming on iOS Safari
 (function () {
   document.addEventListener(
@@ -3729,6 +3839,9 @@ document.addEventListener("DOMContentLoaded", function () {
 window.onload = function () {
   // Wait a short amount of time to ensure everything is ready
   setTimeout(() => {
+    // Initialize pull-to-refresh functionality
+    initializePullToRefresh();
+
     // Initialize all needed components
     document.getElementById("taxProfile").value = "singapore";
     document.getElementById("serviceRate").textContent = "10%";

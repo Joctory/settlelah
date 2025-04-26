@@ -132,7 +132,6 @@ self.addEventListener("notificationclick", (event) => {
     clients.openWindow("/");
   }
 });
-
 // Function to sync offline settlements
 async function syncSettlements() {
   try {

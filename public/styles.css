@@ -9,14 +9,16 @@
   -webkit-user-select: none;
   user-select: none;
   outline: none;
+  -ms-overflow-style: none; /* Internet Explorer and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
 }
 
 a {
   text-decoration: none;
-}
-
-::-webkit-scrollbar {
-  display: none;
 }
 
 /* Base styles and theme variables */
@@ -371,6 +373,7 @@ body {
 
 .settle-content {
   display: flex;
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -901,6 +904,14 @@ input:checked + .slider:before {
 
 .white-slide-container.hidden {
   display: none;
+}
+
+#settleChoiceView {
+  padding: 20px;
+}
+
+#settleChoiceView h2 {
+  text-align: center;
 }
 
 .cat-avatars-container {
@@ -2010,9 +2021,19 @@ input:checked + .slider:before {
   transition: all var(--transition-speed) ease-in-out;
 }
 
-#historyContainer.active,
-#settingsContainer.active,
+#homeContainer {
+  grid-template-columns: repeat(1, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  grid-column-gap: 15px;
+  grid-row-gap: 15px;
+}
+
 #homeContainer.active {
+  display: grid;
+}
+
+#historyContainer.active,
+#settingsContainer.active {
   display: flex;
   opacity: 1;
   transform: translateY(0);
@@ -2154,10 +2175,10 @@ input:checked + .slider:before {
 }
 
 .settle-choice-container {
-  height: 100%;
-  flex: 1;
+  height: auto;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   padding: 20px 20px 10px 20px;
 }
 
@@ -2251,12 +2272,14 @@ input:checked + .slider:before {
 }
 
 .btn-container {
-  margin-top: auto;
+  margin-top: 0;
 }
 
 /* New Group Members View Styles */
 .settle-view {
   display: none;
+  flex-direction: column;
+  justify-content: space-between;
   opacity: 0;
   transform: translateX(20px);
   transition: all var(--transition-speed) ease;
@@ -2269,7 +2292,7 @@ input:checked + .slider:before {
 }
 
 .settle-view.active {
-  display: block;
+  display: flex;
   opacity: 1;
   transform: translateX(0);
 }
@@ -4268,7 +4291,7 @@ body {
 .pull-to-refresh-text {
   font-size: 14px;
   font-weight: 500;
-  color: #212529;
+  color: var(--black-btn);
 }
 
 /* Improved focus states for accessibility */
@@ -4316,6 +4339,16 @@ textarea:focus,
 }
 
 /* Media Queries for Responsiveness */
+@media (min-width: 768px) {
+  .page-container {
+    max-width: 600px;
+  }
+
+  .welcome-section h1 {
+    font-size: 28px;
+  }
+}
+
 @media screen and (min-width: 1100px) {
   #navbar {
     position: fixed;
@@ -4324,6 +4357,7 @@ textarea:focus,
     height: 100%;
     width: 10%;
     max-width: 120px;
+    z-index: 1;
   }
 
   #menuWrapper {
@@ -4364,19 +4398,104 @@ textarea:focus,
   }
 
   .page-container {
-    max-width: 1100px;
+    width: 100%;
+    max-width: 100%;
+    padding-bottom: 20px;
+    margin: 0;
+  }
+
+  #homeContainer,
+  #historyContainer,
+  #settingsContainer {
     width: 85%;
     left: 120px;
-  }
-}
-
-@media (min-width: 768px) {
-  .page-container {
-    max-width: 600px;
+    margin: 0 auto;
   }
 
-  .welcome-section h1 {
-    font-size: 28px;
+  .menuElement {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transform: translateY(0);
+    height: 33.33%;
+  }
+
+  #homeContainer {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .welcome-section {
+    grid-column: span 4;
+    grid-row: span 1;
+  }
+
+  .weather-card {
+    grid-column: span 4;
+    grid-row: span 1;
+  }
+
+  #startSettleCard {
+    grid-column: span 4;
+    grid-row: span 1;
+  }
+
+  .card-widget:nth-child(4) {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+
+  .card-widget:nth-child(5) {
+    grid-column: span 2;
+    grid-row: span 1;
+  }
+
+  #settleNowScreen {
+    gap: 20px;
+    align-items: center;
+  }
+
+  .settle-now-header {
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .white-slide-container {
+    width: 100%;
+    max-width: 1100px;
+    max-height: calc(100% - 15%);
+    border-radius: 30px;
+  }
+
+  .settle-view.active {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .settle-choice-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: row;
+    height: auto;
+  }
+
+  .saved-group-option,
+  .new-group-option {
+    width: 40%;
+    height: 240px;
+  }
+
+  .btn-container {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .get-started-btn {
+    width: 50%;
+    max-width: 500px;
   }
 }
 
