@@ -23,6 +23,11 @@
 // Member-specific bill data (will be populated from API)
 let memberData = {};
 
+// Function to check if the user is on desktop mode
+function isDesktopMode() {
+  return window.matchMedia("(min-width: 1100px)").matches;
+}
+
 // Function to show share modal with member-specific data
 function showShareModal(memberName) {
   const modal = document.getElementById("memberbillModal");
@@ -50,107 +55,276 @@ function showShareModal(memberName) {
     // Update modal title and content with member data
     if (memberName && memberData[memberName]) {
       const data = memberData[memberName];
+      const desktop = isDesktopMode();
 
       // Update modal title
       modalHeader.textContent = "Settle Detail";
 
-      // Create and populate modal content
-      modalBody.innerHTML = `
-        <div class="member-bill-modal-details modal-fade-in">
-          <div style="text-align: center;">
-            <h2 class="member-bill-title">Settle Detail</h2>
-            <h1 class="member-bill-amount">${data.totalAmount}</h1>
-          </div>
-          
-          <hr class="member-bill-divider">
-          
-          <h3 class="member-bill-section-title">Items</h3>
-          <div class="animate-staggered">
-            ${data.items
-              .map(
-                (item, index) => `
-              <div class="member-bill-item-container">
-                <div class="member-bill-row">
-                  <span class="member-bill-row-label">Item Name</span>
-                  <span class="member-bill-row-value">${item.name}</span>
-                </div>
-                <div class="member-bill-row">
-                  <span class="member-bill-row-label">Shared With</span>
-                  <div class="shared-with-container">${item.sharedWith || "-"}</div>
-                </div>
-                <div class="member-bill-row">
-                  <span class="member-bill-row-label">Item Price</span>
-                  <span class="member-bill-row-value">${item.price}</span>
-                </div>
-                ${index < data.items.length - 1 ? '<hr class="member-bill-divider">' : ""}
-              </div>
-            `
-              )
-              .join("")}
-          </div>
-          
-          <hr class="member-bill-solid-divider">
-          
-          <h3 class="member-bill-section-title">Amount Breakdown</h3>
-          <div class="total-section animate-staggered">
-            <div class="member-bill-row">
-              <span class="member-bill-row-label">Subtotal</span>
-              <span class="member-bill-row-value">${data.breakdown.subtotal}</span>
-            </div>
-            ${
-              parseFloat(data.breakdown.serviceCharge.replace("$", "")) > 0
-                ? `
-            <div class="member-bill-row">
-              <span class="member-bill-row-label">Service Charge (${data.serviceChargeRate})</span>
-              <span class="member-bill-row-value">${data.breakdown.serviceCharge}</span>
-            </div>
-            <div class="member-bill-row">
-              <span class="member-bill-row-label">After Service</span>
-              <span class="member-bill-row-value">${data.breakdown.afterService}</span>
-            </div>
-            `
-                : ""
-            }
-            ${
-              parseFloat(data.breakdown.discount.replace("$", "")) > 0
-                ? `
-            <div class="member-bill-row">
-              <span class="member-bill-row-label">Discount</span>
-              <span class="member-bill-row-value">${data.breakdown.discount}</span>
-            </div>
-            <div class="member-bill-row">
-              <span class="member-bill-row-label">After Discount</span>
-              <span class="member-bill-row-value">${data.breakdown.afterDiscount}</span>
-            </div>
-            `
-                : ""
-            }
-            ${
-              parseFloat(data.breakdown.gst.replace("$", "")) > 0
-                ? `
-            <div class="member-bill-row">
-              <span class="member-bill-row-label">GST (${
-                data.taxProfile === "singapore" ? "9%" : data.taxProfile === "malaysia" ? "6%" : "9%"
-              })</span>
-              <span class="member-bill-row-value">${data.breakdown.gst}</span>
-            </div>
-            `
-                : ""
-            }
-          </div>
-        </div>
-        
-        <button id="showPayNowBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
-          Show PayNow QR Code
-        </button>
-      `;
+      if (desktop) {
+        // In desktop mode, show both details and PayNow QR side by side
+        modal.classList.add("desktop-mode");
 
-      // Add event listener for the PayNow button
-      const payNowBtn = document.getElementById("showPayNowBtn");
-      if (payNowBtn) {
-        payNowBtn.addEventListener("click", () => {
-          showPayNowQR(memberName);
-        });
+        // Check tax profile to determine whether to show PayNow QR
+        const isSingapore = data.taxProfile === "singapore";
+
+        // Create and populate modal content with a two-column layout
+        modalBody.innerHTML = `
+          <div class="desktop-layout">
+            <div class="member-bill-modal-details modal-fade-in">
+              <div style="text-align: center;">
+                <h2 class="member-bill-title">Settle Detail</h2>
+                <h1 class="member-bill-amount">${data.totalAmount}</h1>
+              </div>
+              
+              <hr class="member-bill-divider">
+              
+              <h3 class="member-bill-section-title">Items</h3>
+              <div class="animate-staggered">
+                ${data.items
+                  .map(
+                    (item, index) => `
+                  <div class="member-bill-item-container">
+                    <div class="member-bill-row">
+                      <span class="member-bill-row-label">Item Name</span>
+                      <span class="member-bill-row-value">${item.name}</span>
+                    </div>
+                    <div class="member-bill-row">
+                      <span class="member-bill-row-label">Shared With</span>
+                      <div class="shared-with-container">${item.sharedWith || "-"}</div>
+                    </div>
+                    <div class="member-bill-row">
+                      <span class="member-bill-row-label">Item Price</span>
+                      <span class="member-bill-row-value">${item.price}</span>
+                    </div>
+                    ${index < data.items.length - 1 ? '<hr class="member-bill-divider">' : ""}
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+              
+              <hr class="member-bill-solid-divider">
+              
+              <h3 class="member-bill-section-title">Amount Breakdown</h3>
+              <div class="total-section animate-staggered">
+                <div class="member-bill-row">
+                  <span class="member-bill-row-label">Subtotal</span>
+                  <span class="member-bill-row-value">${data.breakdown.subtotal}</span>
+                </div>
+                ${
+                  parseFloat(data.breakdown.serviceCharge.replace("$", "")) > 0
+                    ? `
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Service Charge (${data.serviceChargeRate})</span>
+                    <span class="member-bill-row-value">${data.breakdown.serviceCharge}</span>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">After Service</span>
+                    <span class="member-bill-row-value">${data.breakdown.afterService}</span>
+                  </div>
+                  `
+                    : ""
+                }
+                ${
+                  parseFloat(data.breakdown.discount.replace("$", "")) > 0
+                    ? `
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Discount</span>
+                    <span class="member-bill-row-value">${data.breakdown.discount}</span>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">After Discount</span>
+                    <span class="member-bill-row-value">${data.breakdown.afterDiscount}</span>
+                  </div>
+                  `
+                    : ""
+                }
+                ${
+                  parseFloat(data.breakdown.gst.replace("$", "")) > 0
+                    ? `
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">GST (${
+                      data.taxProfile === "singapore" ? "9%" : data.taxProfile === "malaysia" ? "6%" : "9%"
+                    })</span>
+                    <span class="member-bill-row-value">${data.breakdown.gst}</span>
+                  </div>
+                  `
+                    : ""
+                }
+              </div>
+            </div>
+            
+            <div class="paynow-section modal-fade-in">
+              <h2 class="paynow-title">PayNow</h2>
+              ${
+                isSingapore
+                  ? `
+                <div class="paynow-qr-container" id="paynow-qr-container">
+                  <!-- QR code will be generated here -->
+                  <img src="https://www.sgqrcode.com/paynow?mobile=${
+                    data.paymentInfo.phoneNumber
+                  }&uen=&editable=1&amount=${data.paymentInfo.amount.replace("$", "")}&expiry=${new Date()
+                      .toISOString()
+                      .split("T")[0]
+                      .replace(/-/g, "%2F")}%2023%3A59&ref_id=SettleLah-${
+                      data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
+                    }&company=" alt="PayNow QR Code">
+                </div>
+                
+                <div class="paynow-instructions">
+                  <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${
+                      data.paymentInfo.name
+                    } (${data.paymentInfo.phoneNumber})</b>.</p>
+                  <p>Scan the QR code to complete transfer or copy the phone number to start transfer.</p>
+                </div>
+                
+                <button id="copyPhoneBtn" class="action-button secondary-button">
+                  Copy Phone Number
+                </button>
+                `
+                  : `
+                <div class="paynow-instructions">
+                  <p>PayNow is only available in Singapore.</p>
+                  <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${data.paymentInfo.name} (${data.paymentInfo.phoneNumber})</b> using another payment method.</p>
+                </div>
+                
+                <button id="copyPhoneBtn" class="action-button secondary-button">
+                  Copy Phone Number
+                </button>
+                `
+              }
+            </div>
+          </div>
+        `;
+
+        // Add event listener for the copy phone button
+        const copyPhoneBtn = document.getElementById("copyPhoneBtn");
+        if (copyPhoneBtn) {
+          copyPhoneBtn.addEventListener("click", () => {
+            navigator.clipboard
+              .writeText(data.paymentInfo.phoneNumber)
+              .then(() => {
+                // Show a toast notification using CSS classes
+                const notification = document.createElement("div");
+                notification.textContent = "Phone number copied!";
+                notification.className = "toast-notification";
+
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                  notification.classList.add("toast-fadeout");
+                  setTimeout(() => {
+                    document.body.removeChild(notification);
+                  }, 500);
+                }, 2000);
+              })
+              .catch((err) => {
+                console.error("Failed to copy phone number: ", err);
+              });
+          });
+        }
+      } else {
+        // On mobile, keep the original behavior with separate views
+        modal.classList.remove("desktop-mode");
+
+        // Create and populate modal content
+        modalBody.innerHTML = `
+          <div class="member-bill-modal-details modal-fade-in">
+            <div style="text-align: center;">
+              <h2 class="member-bill-title">Settle Detail</h2>
+              <h1 class="member-bill-amount">${data.totalAmount}</h1>
+            </div>
+            
+            <hr class="member-bill-divider">
+            
+            <h3 class="member-bill-section-title">Items</h3>
+            <div class="animate-staggered">
+              ${data.items
+                .map(
+                  (item, index) => `
+                <div class="member-bill-item-container">
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Item Name</span>
+                    <span class="member-bill-row-value">${item.name}</span>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Shared With</span>
+                    <div class="shared-with-container">${item.sharedWith || "-"}</div>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Item Price</span>
+                    <span class="member-bill-row-value">${item.price}</span>
+                  </div>
+                  ${index < data.items.length - 1 ? '<hr class="member-bill-divider">' : ""}
+                </div>
+              `
+                )
+                .join("")}
+            </div>
+            
+            <hr class="member-bill-solid-divider">
+            
+            <h3 class="member-bill-section-title">Amount Breakdown</h3>
+            <div class="total-section animate-staggered">
+              <div class="member-bill-row">
+                <span class="member-bill-row-label">Subtotal</span>
+                <span class="member-bill-row-value">${data.breakdown.subtotal}</span>
+              </div>
+              ${
+                parseFloat(data.breakdown.serviceCharge.replace("$", "")) > 0
+                  ? `
+                <div class="member-bill-row">
+                  <span class="member-bill-row-label">Service Charge (${data.serviceChargeRate})</span>
+                  <span class="member-bill-row-value">${data.breakdown.serviceCharge}</span>
+                </div>
+                <div class="member-bill-row">
+                  <span class="member-bill-row-label">After Service</span>
+                  <span class="member-bill-row-value">${data.breakdown.afterService}</span>
+                </div>
+                `
+                  : ""
+              }
+              ${
+                parseFloat(data.breakdown.discount.replace("$", "")) > 0
+                  ? `
+                <div class="member-bill-row">
+                  <span class="member-bill-row-label">Discount</span>
+                  <span class="member-bill-row-value">${data.breakdown.discount}</span>
+                </div>
+                <div class="member-bill-row">
+                  <span class="member-bill-row-label">After Discount</span>
+                  <span class="member-bill-row-value">${data.breakdown.afterDiscount}</span>
+                </div>
+                `
+                  : ""
+              }
+              ${
+                parseFloat(data.breakdown.gst.replace("$", "")) > 0
+                  ? `
+                <div class="member-bill-row">
+                  <span class="member-bill-row-label">GST (${
+                    data.taxProfile === "singapore" ? "9%" : data.taxProfile === "malaysia" ? "6%" : "9%"
+                  })</span>
+                  <span class="member-bill-row-value">${data.breakdown.gst}</span>
+                </div>
+                `
+                  : ""
+              }
+            </div>
+          </div>
+          
+          <button id="showPayNowBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
+            Show PayNow QR Code
+          </button>
+        `;
+
+        // Add event listener for the PayNow button
+        const payNowBtn = document.getElementById("showPayNowBtn");
+        if (payNowBtn) {
+          payNowBtn.addEventListener("click", () => {
+            showPayNowQR(memberName);
+          });
+        }
       }
 
       // Force reflow to ensure animations start correctly
@@ -171,8 +345,11 @@ function showShareModal(memberName) {
   overlay.onclick = closeShareModal;
 }
 
-// Function to show PayNow QR code
+// Function to show PayNow QR code (used only in mobile mode)
 function showPayNowQR(memberName) {
+  // Skip if desktop mode
+  if (isDesktopMode()) return;
+
   const modalBody = document.querySelector(".member-bill-modal-body");
   const modalHeader = document.querySelector(".member-bill-modal .modal-header h2");
   const data = memberData[memberName];
@@ -318,7 +495,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Fetch bill data from the API
   fetch(`/result/${billId}`, {
     headers: {
-      Accept: "application/json",
+      Accept: "application/json, */*;q=0.8",
     },
   })
     .then((response) => {
@@ -736,3 +913,11 @@ window.onload = function () {
     avatar.style.animation = `fadeInUp 0.4s ${0.4 + index * 0.2}s ease forwards`;
   });
 };
+
+// Update copyright year
+document.addEventListener("DOMContentLoaded", function () {
+  const copyrightYear = document.querySelector(".copyrightYear");
+  if (copyrightYear) {
+    copyrightYear.textContent = new Date().getFullYear();
+  }
+});

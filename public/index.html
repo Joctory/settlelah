@@ -177,7 +177,7 @@
         </div>
 
         <!-- Last Created Group -->
-        <div class="group-card card-widget">
+        <div id="lastCreatedGroup" class="group-card card-widget">
           <div class="card-header">
             <h3>Last Created Group</h3>
             <p>Friends</p>
@@ -361,7 +361,6 @@
                 </div>
                 <div class="add-member-label">New Member</div>
               </div>
-
               <div class="member-list"></div>
 
               <div class="btn-container">
@@ -373,7 +372,7 @@
           <!-- Saved Groups View -->
           <div id="savedGroupsView" class="settle-view">
             <div class="saved-groups-container">
-              <h2>Settle With Saved Group</h2>
+              <h2>Select your settle group</h2>
               <div class="saved-group-error">
                 <p>Please select a group or click "New Split Group".</p>
               </div>
@@ -470,12 +469,14 @@
               <div class="input-field">
                 <label for="itemPrice">Item Price</label>
                 <input
-                  type="text"
+                  type="number"
                   id="itemPrice"
                   placeholder="Item Price"
                   value="10"
                   autocomplete="off"
                   inputmode="decimal"
+                  min="0"
+                  step="0.01"
                 />
                 <div id="itemPriceError" class="error-message">Please enter item's price</div>
               </div>
@@ -510,7 +511,15 @@
 
               <div class="input-field">
                 <label for="discountValue">Discount</label>
-                <input type="text" id="discountValue" placeholder="Enter discount value" value="" />
+                <input
+                  type="number"
+                  id="discountValue"
+                  placeholder="Enter discount value"
+                  value=""
+                  inputmode="decimal"
+                  min="0"
+                  step="0.01"
+                />
                 <p class="helper-text">Enter discount value (5 for $5, 10% for 10%)</p>
               </div>
 
@@ -519,8 +528,16 @@
               <div class="checkbox-field">
                 <input type="checkbox" id="serviceChargeCheckbox" />
                 <label for="serviceChargeCheckbox"
-                  >Add <input type="text" id="serviceChargeValue" value="10" class="inline-input" />% Service
-                  Charge</label
+                  >Add
+                  <input
+                    type="number"
+                    id="serviceChargeValue"
+                    value="10"
+                    class="inline-input"
+                    inputmode="decimal"
+                    min="0"
+                    step="0.01"
+                  />% Service Charge</label
                 >
               </div>
 
@@ -540,7 +557,16 @@
 
               <div class="input-field">
                 <label for="paynowPhone">PayNow Phone Number</label>
-                <input type="text" id="paynowPhone" placeholder="Enter phone number" value="87011228" />
+                <input
+                  type="tel"
+                  id="paynowPhone"
+                  placeholder="Enter phone number (e.g., 8XXX XXXX)"
+                  value="87011228"
+                  pattern="[89]\d{7}"
+                  maxlength="8"
+                  inputmode="numeric"
+                  title="Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits"
+                />
                 <p class="helper-text">Enter the payer phone number to generate PayNow QR</p>
               </div>
             </div>

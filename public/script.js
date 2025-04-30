@@ -641,16 +641,6 @@ function updateDishSummary() {
     }
     return;
   }
-
-  // Hide the confirm button if no dishes or if on finalise screen
-  const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
-  const isFinaliseBillActive = finaliseScreen && finaliseScreen.classList.contains("active");
-
-  if (isFinaliseBillActive) {
-    billSummaryModal.classList.add("is-finalise-bill");
-  } else {
-    billSummaryModal.classList.remove("is-finalise-bill");
-  }
   // Loop through the dishes and create a dish summary item for each one
   dishes.forEach((dish, index) => {
     const dishItem = document.createElement("div");
@@ -822,6 +812,14 @@ function showFinaliseSettleBillScreen() {
     finaliseScreen.classList.add("active");
   }
 
+  // Hide the confirm button if no dishes or if on finalise screen
+  const isFinaliseBillActive = finaliseScreen && finaliseScreen.classList.contains("active");
+  if (isFinaliseBillActive) {
+    billSummaryModal.classList.add("is-finalise-bill");
+  } else {
+    billSummaryModal.classList.remove("is-finalise-bill");
+  }
+
   // Add event listener to the Settle Lah button
   const settleLahButton = finaliseScreen.querySelector(".settle-lah-btn");
   if (settleLahButton) {
@@ -831,6 +829,13 @@ function showFinaliseSettleBillScreen() {
   }
 
   function showLoadingScreen() {
+    if (billSummaryModal) {
+      billSummaryModal.style.display = "none";
+      if (overlay) {
+        overlay.classList.remove("active");
+      }
+    }
+
     // Reset and show loading screen
     resetLoadingAnimation();
     showSettleView("loadingScreen");
@@ -1230,18 +1235,25 @@ function showShareModal() {
   const overlay = document.getElementById("shareBillOverlay");
   const closeBtn = document.querySelector(".share-close-modal");
 
-  // Display the modal and overlay - no need to set display:block
-  // as visibility is controlled by the bottom position in CSS
-  modal.classList.add("active");
-  overlay.classList.add("active");
+  // Check if we're in desktop mode
+  const isDesktopMode = window.matchMedia("(min-width: 1100px)").matches;
+
+  // Only show if not already active (prevents animation restart in desktop)
+  if (!modal.classList.contains("active")) {
+    // Display the modal and overlay
+    modal.classList.add("active");
+    overlay.classList.add("active");
+  }
 
   // Make sure the close button works
   if (closeBtn) {
     closeBtn.onclick = closeShareModal;
   }
 
-  // Close modal when clicking outside
-  overlay.onclick = closeShareModal;
+  // In mobile mode, allow closing by clicking overlay
+  if (!isDesktopMode) {
+    overlay.onclick = closeShareModal;
+  }
 }
 
 // Function to close share modal
@@ -1958,8 +1970,10 @@ function showSettleView(viewId) {
   const loadingScreen = document.getElementById("loadingScreen");
   if (viewId === "successScreen") {
     showSuccessScreen();
-    loadingScreen.classList.remove("active");
-    loadingScreen.classList.add("inactive");
+    setTimeout(() => {
+      loadingScreen.classList.remove("active");
+      loadingScreen.classList.add("inactive");
+    }, 2000);
   }
 
   // Update header text based on current view
@@ -1997,9 +2011,13 @@ function updateSettleNowHeader() {
 
 // Handle back button functionality based on current view
 function handleSettleBackButton() {
+  const billSummaryModal = document.getElementById("billSummaryModal");
   if (currentSettleView === "settleChoiceView") {
     // If on main settle screen, go back to home
     hideSettleNowScreen();
+    if (billSummaryModal) {
+      billSummaryModal.style.display = "none";
+    }
   } else if (currentSettleView === "newGroupMembersView") {
     // If editing a group, return to saved groups view
     if (isEditingGroup) {
@@ -2011,12 +2029,18 @@ function handleSettleBackButton() {
       // If on new group members view, go back to settle choice
       showSettleView("settleChoiceView");
     }
+    if (billSummaryModal) {
+      billSummaryModal.style.display = "none";
+    }
   } else if (currentSettleView === "addSettleItemView") {
     // Show the back confirmation modal
     showModal("backConfirmModal");
   } else if (currentSettleView === "savedGroupsView") {
     // If on saved groups view, go back to settle choice
     showSettleView("settleChoiceView");
+    if (billSummaryModal) {
+      billSummaryModal.style.display = "none";
+    }
   } else if (currentSettleView === "finaliseSettleBillScreen") {
     hideFinaliseSettleBillScreen();
   }
@@ -3044,6 +3068,10 @@ if (backConfirmBtn) {
   backConfirmBtn.addEventListener("click", function () {
     // Hide the modal
     hideModal("backConfirmModal");
+    const billSummaryModal = document.getElementById("billSummaryModal");
+    if (billSummaryModal) {
+      billSummaryModal.style.display = "none";
+    }
     document.querySelector(".assigned-members").innerHTML = "";
     document.getElementById("dishSummaryContainer").innerHTML = "";
     // Clear dishes array and update the dish list
@@ -3054,6 +3082,7 @@ if (backConfirmBtn) {
 
     // Navigate back to the appropriate view based on previousView
     showSettleView(previousView);
+    // console.log(previousView);
 
     // Update the header text
     updateSettleNowHeader();
@@ -3065,6 +3094,19 @@ if (backConfirmBtn) {
         document.querySelector(".new-group-members-container h2").textContent = "Edit Group Members";
       } else {
         document.querySelector(".new-group-members-container h2").textContent = "Settle With New Group";
+      }
+    } else if (previousView === "settleChoiceView") {
+      // Check if there are any saved groups
+      const hasSavedGroups = Object.keys(groups).length > 0;
+
+      // If no saved groups, hide the saved group option and select new group
+      if (!hasSavedGroups) {
+        document.querySelector(".saved-group-option").style.display = "none";
+        document.querySelector(".or-divider").style.display = "none";
+        document.querySelector(".new-group-option").classList.add("selected");
+      } else {
+        document.querySelector(".saved-group-option").style.display = "flex";
+        document.querySelector(".or-divider").style.display = "flex";
       }
     }
   });
@@ -3150,7 +3192,7 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("taxProfile", taxProfile);
     updateTaxRates(taxProfile);
     // You can add additional functionality here when tax profile changes
-    console.log(`Tax profile changed to: ${taxProfile}`);
+    // console.log(`Tax profile changed to: ${taxProfile}`);
   });
 
   // Ensure menu icons have pointer events
@@ -4177,7 +4219,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
     const { outcome } = await deferredPrompt.userChoice;
 
     // Log the outcome
-    console.log(`User ${outcome} the A2HS prompt`);
+    // console.log(`User ${outcome} the A2HS prompt`);
   });
 });
 
