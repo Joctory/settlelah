@@ -13,6 +13,7 @@
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#000000" />
     <meta name="description" content="The easiest way to settle your bills" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SettleLah!" />
@@ -25,40 +26,6 @@
     <link rel="stylesheet" type="text/css" href="styles.css" />
     <script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
     <script>
-      // Prevent zoom on iOS Safari
-      (function () {
-        document.addEventListener(
-          "touchmove",
-          function (event) {
-            if (event.scale !== 1) {
-              event.preventDefault();
-            }
-          },
-          { passive: false }
-        );
-
-        var lastTouchEnd = 0;
-        document.addEventListener(
-          "touchend",
-          function (event) {
-            var now = new Date().getTime();
-            if (now - lastTouchEnd <= 300) {
-              event.preventDefault();
-            }
-            lastTouchEnd = now;
-          },
-          { passive: false }
-        );
-
-        document.addEventListener(
-          "gesturestart",
-          function (event) {
-            event.preventDefault();
-          },
-          { passive: false }
-        );
-      })();
-
       // Service Worker Registration
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
@@ -81,7 +48,7 @@
         left: 0;
         width: 100%;
         height: 100%;
-        background-color: #ffffff;
+        background-color: var(--loader-bg, #ffffff);
         display: flex;
         justify-content: center;
         align-items: center;
@@ -106,13 +73,13 @@
         height: 60px;
         border: 5px solid rgba(0, 0, 0, 0.1);
         border-radius: 50%;
-        border-top-color: #212529;
+        border-top-color: var(--text-color, #212529);
         animation: spin 1s ease-in-out infinite;
       }
 
       .preloader-text {
         font-size: 18px;
-        color: #212529;
+        color: var(--text-color, #212529);
         font-weight: 500;
       }
 
@@ -126,8 +93,10 @@
   <body>
     <!-- Pull to refresh indicator -->
     <div class="pull-to-refresh">
-      <div class="pull-to-refresh-spinner"></div>
-      <div class="pull-to-refresh-text">Release to refresh</div>
+      <div class="pull-to-refresh-container">
+        <div class="pull-to-refresh-spinner"></div>
+        <div class="pull-to-refresh-text">Release to refresh</div>
+      </div>
     </div>
 
     <!-- Preloader -->
@@ -455,14 +424,7 @@
               </button>
               <div class="input-field">
                 <label for="itemName">Item Name</label>
-                <input
-                  type="text"
-                  id="itemName"
-                  placeholder="Item Name"
-                  value="KFC"
-                  autocomplete="off"
-                  inputmode="text"
-                />
+                <input type="text" id="itemName" placeholder="Item Name" value="" autocomplete="off" inputmode="text" />
                 <div id="itemNameError" class="error-message">Please enter item's name</div>
               </div>
 
@@ -472,7 +434,7 @@
                   type="number"
                   id="itemPrice"
                   placeholder="Item Price"
-                  value="10"
+                  value=""
                   autocomplete="off"
                   inputmode="decimal"
                   min="0"
@@ -506,7 +468,7 @@
             <div class="input-section">
               <div class="input-field">
                 <label for="settleMatter">Settle Matter</label>
-                <input type="text" id="settleMatter" placeholder="Enter settle matter" value="Group Lunch" />
+                <input type="text" id="settleMatter" placeholder="Enter settle matter" value="" />
               </div>
 
               <div class="input-field">
@@ -551,8 +513,8 @@
 
               <div class="input-field">
                 <label for="paynowName">PayNow Name</label>
-                <input type="text" id="paynowName" placeholder="Enter name" value="Joel" />
-                <p class="helper-text">Enter the name of PayNow account</p>
+                <input type="text" id="paynowName" placeholder="Enter name" value="" required />
+                <div id="paynowNameError" class="error-message">Please enter Payee name</div>
               </div>
 
               <div class="input-field">
@@ -561,13 +523,14 @@
                   type="tel"
                   id="paynowPhone"
                   placeholder="Enter phone number (e.g., 8XXX XXXX)"
-                  value="87011228"
+                  value=""
                   pattern="[89]\d{7}"
                   maxlength="8"
                   inputmode="numeric"
                   title="Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits"
+                  required
                 />
-                <p class="helper-text">Enter the payer phone number to generate PayNow QR</p>
+                <div id="paynowPhoneError" class="error-message">Please enter a valid phone number</div>
               </div>
             </div>
           </div>

@@ -24,92 +24,116 @@ function initializePullToRefresh() {
   const pullThreshold = 80; // Minimum pull distance to trigger refresh
   const pullElement = document.querySelector(".pull-to-refresh");
   const pullText = document.querySelector(".pull-to-refresh-text");
+  const containers = [
+    document.getElementById("homeContainer"),
+    document.getElementById("historyContainer"),
+    document.getElementById("settingsContainer"),
+  ];
 
   if (!pullElement) return; // Guard clause if element doesn't exist
 
-  document.addEventListener(
-    "touchstart",
-    (e) => {
-      // Only enable pull-to-refresh at the top of the page
-      if (window.scrollY === 0) {
-        pullStartY = e.touches[0].screenY;
-      }
-    },
-    { passive: true }
-  );
+  // Function to attach pull-to-refresh to each container
+  const attachPullToRefresh = (container) => {
+    if (!container) return;
 
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (pullStartY === 0) return;
+    container.addEventListener(
+      "touchstart",
+      (e) => {
+        // Only enable pull-to-refresh at the top of the container
+        if (container.scrollTop === 0) {
+          pullStartY = e.touches[0].screenY;
+        }
+      },
+      { passive: true }
+    );
 
-      pullMoveY = e.touches[0].screenY;
-      const pullDistance = pullMoveY - pullStartY;
+    container.addEventListener(
+      "touchmove",
+      (e) => {
+        if (pullStartY === 0) return;
 
-      // Only activate if user is pulling down and we're at the top
-      if (pullDistance > 0 && window.scrollY === 0) {
-        const pullProgress = Math.min(pullDistance / pullThreshold, 1);
-        const pullHeight = pullProgress * 60; // Max height of pull indicator
+        pullMoveY = e.touches[0].screenY;
+        const pullDistance = pullMoveY - pullStartY;
 
-        pullElement.classList.add("visible");
-        pullElement.style.transform = `translateY(${pullHeight}px)`;
+        // Only activate if user is pulling down and we're at the top of the container
+        if (pullDistance > 0 && container.scrollTop === 0) {
+          const pullProgress = Math.min(pullDistance / pullThreshold, 1);
+          const pullHeight = pullProgress * 40; // Max height of pull indicator
 
-        // Update text based on whether pull is enough to trigger refresh
+          pullElement.classList.add("visible");
+          pullElement.style.transform = `translateY(${pullHeight}px)`;
+
+          // Update text based on whether pull is enough to trigger refresh
+          if (pullDistance >= pullThreshold) {
+            pullText.textContent = "Release to refresh";
+          } else {
+            pullText.textContent = "Pull down to refresh";
+          }
+
+          // Prevent default scrolling if pull distance is significant
+          if (pullDistance > 30) {
+            e.preventDefault();
+          }
+        }
+      },
+      { passive: false }
+    );
+
+    container.addEventListener(
+      "touchend",
+      (e) => {
+        const pullDistance = pullMoveY - pullStartY;
+
         if (pullDistance >= pullThreshold) {
-          pullText.textContent = "Release to refresh";
+          // Animate the pull element
+          pullElement.style.transform = "translateY(40px)";
+          pullText.textContent = "Refreshing...";
+
+          // Add a small spinner animation to the pull element
+          const spinner = document.querySelector(".pull-to-refresh-spinner");
+          spinner.style.animation = "spin 1s infinite linear";
+
+          // Trigger haptic feedback if available
+          if (navigator.vibrate) {
+            navigator.vibrate(30);
+          }
+
+          // Perform refresh action based on current page
+          refreshCurrentPage();
+
+          setTimeout(() => {
+            pullElement.style.transform = "translateY(0)";
+            pullElement.style.opacity = "0.5";
+
+            setTimeout(() => {
+              pullElement.classList.remove("visible");
+              pullElement.style.transform = "translateY(-100%)";
+              pullElement.style.opacity = "1";
+              spinner.style.animation = "";
+            }, 500);
+          }, 1500);
         } else {
-          pullText.textContent = "Pull down to refresh";
+          // Reset without refreshing - with smooth animation
+          pullElement.style.transform = "translateY(0)";
+          pullElement.style.opacity = "0.5";
+
+          setTimeout(() => {
+            pullElement.classList.remove("visible");
+            pullElement.style.transform = "translateY(-100%)";
+            pullElement.style.opacity = "1";
+          }, 500);
         }
 
-        // Prevent default scrolling if pull distance is significant
-        if (pullDistance > 30) {
-          e.preventDefault();
-        }
-      }
-    },
-    { passive: false }
-  );
+        // Reset pull tracking
+        pullStartY = 0;
+        pullMoveY = 0;
+      },
+      { passive: false }
+    );
+  };
 
-  document.addEventListener(
-    "touchend",
-    (e) => {
-      const pullDistance = pullMoveY - pullStartY;
-
-      if (pullDistance >= pullThreshold) {
-        // Animate the pull element
-        pullElement.style.transform = "translateY(40px)";
-        pullText.textContent = "Refreshing...";
-
-        // Add a small spinner animation to the pull element
-        const spinner = document.querySelector(".pull-to-refresh-spinner");
-        spinner.style.animation = "spin 1s infinite linear";
-
-        // Trigger haptic feedback if available
-        if (navigator.vibrate) {
-          navigator.vibrate(30);
-        }
-
-        // Perform refresh action based on current page
-        refreshCurrentPage();
-
-        // Reset after animation completes
-        setTimeout(() => {
-          pullElement.classList.remove("visible");
-          pullElement.style.transform = "translateY(-100%)";
-          spinner.style.animation = "";
-        }, 1500);
-      } else {
-        // Reset without refreshing
-        pullElement.classList.remove("visible");
-        pullElement.style.transform = "translateY(-100%)";
-      }
-
-      // Reset pull tracking
-      pullStartY = 0;
-      pullMoveY = 0;
-    },
-    { passive: false }
-  );
+  // Attach pull-to-refresh to each container
+  containers.forEach((container) => attachPullToRefresh(container));
 }
 
 // Function to refresh content based on current active page
@@ -594,12 +618,10 @@ function toggleBillSummaryVisibility(show) {
     // Make the bill summary peek from the bottom
     modal.style.display = "block";
 
-    // Check if finaliseSettleBillScreen is active
-    const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
-    const isFinaliseBillActive = finaliseScreen && finaliseScreen.classList.contains("active");
-
     // If on finalise screen, make it peek, otherwise follow normal behavior
-    if (isFinaliseBillActive) {
+    if (currentSettleView === "finaliseSettleBillScreen") {
+      // Hide the confirm button if no dishes or if on finalise screen
+      modal.classList.add("is-finalise-bill");
       // Ensure it's at least in peeking mode
       if (!modal.classList.contains("fully-open") && !modal.classList.contains("half-open")) {
         modal.classList.add("peeking");
@@ -609,6 +631,7 @@ function toggleBillSummaryVisibility(show) {
       modal.classList.add("peeking");
       modal.classList.remove("fully-open", "half-open");
       document.querySelector(".bill-summary-footer").style.display = "flex";
+      modal.classList.remove("is-finalise-bill");
     }
 
     overlay.classList.remove("active");
@@ -689,14 +712,12 @@ function updateDishSummary() {
 
     const editBtn = document.createElement("button");
     editBtn.className = "dish-action-btn";
-    editBtn.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>';
+    editBtn.innerHTML = '<img class="group-action-btn-img" src="assets/edit.svg" alt="Edit" />';
     editBtn.onclick = () => editDish(index);
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "dish-action-btn";
-    deleteBtn.innerHTML =
-      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+    deleteBtn.innerHTML = '<img class="group-action-btn-img" src="assets/bin.svg" alt="Delete" />';
     deleteBtn.onclick = () => deleteDish(index, true); // Pass true to indicate deletion from summary
 
     actions.appendChild(editBtn);
@@ -812,14 +833,6 @@ function showFinaliseSettleBillScreen() {
     finaliseScreen.classList.add("active");
   }
 
-  // Hide the confirm button if no dishes or if on finalise screen
-  const isFinaliseBillActive = finaliseScreen && finaliseScreen.classList.contains("active");
-  if (isFinaliseBillActive) {
-    billSummaryModal.classList.add("is-finalise-bill");
-  } else {
-    billSummaryModal.classList.remove("is-finalise-bill");
-  }
-
   // Add event listener to the Settle Lah button
   const settleLahButton = finaliseScreen.querySelector(".settle-lah-btn");
   if (settleLahButton) {
@@ -829,6 +842,40 @@ function showFinaliseSettleBillScreen() {
   }
 
   function showLoadingScreen() {
+    // Get input values first for validation
+    const paynowNameCheck = document.getElementById("paynowName").value.trim();
+    const paynowPhoneCheck = document.getElementById("paynowPhone").value.trim();
+
+    // Validate required PayNow fields
+    let isValid = true;
+
+    // Check PayNow Name
+    const paynowNameError = document.getElementById("paynowNameError");
+    if (!paynowNameCheck) {
+      paynowNameError.style.display = "block";
+      document.getElementById("paynowName").classList.add("error");
+      isValid = false;
+    } else {
+      paynowNameError.style.display = "none";
+      document.getElementById("paynowName").classList.remove("error");
+    }
+
+    // Check PayNow Phone
+    const paynowPhoneError = document.getElementById("paynowPhoneError");
+    if (!paynowPhoneCheck) {
+      paynowPhoneError.style.display = "block";
+      document.getElementById("paynowPhone").classList.add("error");
+      isValid = false;
+    } else {
+      paynowPhoneError.style.display = "none";
+      document.getElementById("paynowPhone").classList.remove("error");
+    }
+
+    // Return early if validation fails
+    if (!isValid) {
+      return;
+    }
+
     if (billSummaryModal) {
       billSummaryModal.style.display = "none";
       if (overlay) {
@@ -1003,6 +1050,7 @@ function showFinaliseSettleBillScreen() {
         const revealBtn = document.querySelector(".reveal-bill-btn");
         revealBtn.onclick = function () {
           window.open(result.link, "_blank");
+          window.location.href = "/";
         };
 
         // Complete the loading bar to 100% when result is received
@@ -1168,6 +1216,9 @@ function showSuccessScreen() {
   // Update avatar group with actual members
   const avatarGroup = document.querySelector(".success-footer .avatar-group");
 
+  // Check if we're in desktop mode
+  const isDesktopMode = window.matchMedia("(min-width: 1100px)").matches;
+
   // Clear current avatars
   avatarGroup.innerHTML = "";
 
@@ -1222,6 +1273,12 @@ function showSuccessScreen() {
 
   // Add event listeners to buttons
   const shareBtn = document.querySelector(".share-bill-btn");
+  const shareModal = document.getElementById("shareBillModal");
+
+  if (!shareModal.classList.contains("active") && isDesktopMode) {
+    // Display the modal and overlay
+    shareModal.classList.add("active");
+  }
 
   shareBtn.onclick = function () {
     // Show share modal
@@ -1794,7 +1851,6 @@ function moveWithClass(id, position, themeClass) {
 
     // Reset bubbles
     bubble.style.transform = "translateY(150%)";
-    bubble.style.boxShadow = "none";
     bubble.classList.remove("bubble-bounce");
     document.getElementById(`bubble${i}`).querySelector(".icon").style.opacity = 0;
 
@@ -1818,7 +1874,6 @@ function moveWithClass(id, position, themeClass) {
     const activeBubble = document.getElementById(`bubble${id}`);
     activeBubble.style.transform = ""; // Remove inline transform to allow CSS animation
     activeBubble.classList.add("bubble-bounce");
-    activeBubble.style.boxShadow = "0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)";
     activeBubble.querySelector(".icon").style.opacity = 0.7;
 
     // Hide the corresponding menu element
@@ -1846,6 +1901,9 @@ function updateTaxRates(profile) {
   // Update GST checkbox label
   updateGSTCheckboxLabel(profile);
 
+  // Update PayNow labels based on profile
+  updatePaymentLabels(profile);
+
   // Update service charge label
   const serviceValue = document.getElementById("serviceChargeValue")?.value || "10";
   serviceRate.textContent = `${serviceValue}%`;
@@ -1864,6 +1922,93 @@ function updateGSTCheckboxLabel(profile) {
   if (gstCheckboxLabel) {
     const rate = profile === "singapore" ? "9%" : "6%";
     gstCheckboxLabel.textContent = `Add ${rate} GST`;
+  }
+}
+
+// Update the PayNow labels based on the selected tax profile
+function updatePaymentLabels(profile) {
+  const paynowNameLabel = document.querySelector('label[for="paynowName"]');
+  const paynowPhoneLabel = document.querySelector('label[for="paynowPhone"]');
+  const paynowNameInput = document.getElementById("paynowName");
+  const paynowPhoneInput = document.getElementById("paynowPhone");
+  const paynowNameHelper = paynowNameInput?.parentElement.querySelector(".helper-text");
+  const paynowPhoneHelper = paynowPhoneInput?.parentElement.querySelector(".helper-text");
+  const paynowNameError = document.getElementById("paynowNameError");
+  const paynowPhoneError = document.getElementById("paynowPhoneError");
+
+  if (paynowNameLabel && paynowPhoneLabel) {
+    if (profile === "malaysia") {
+      // Update labels
+      paynowNameLabel.textContent = "Pay to";
+      paynowPhoneLabel.textContent = "Payee Phone Number";
+
+      // Update placeholders
+      if (paynowNameInput) {
+        paynowNameInput.placeholder = "Enter recipient name";
+      }
+
+      if (paynowPhoneInput) {
+        paynowPhoneInput.placeholder = "Enter payee phone number";
+        // Remove pattern validation for Malaysia
+        paynowPhoneInput.removeAttribute("pattern");
+        paynowPhoneInput.removeAttribute("title");
+      }
+
+      // Update helper text
+      if (paynowNameHelper) {
+        paynowNameHelper.textContent = "Enter the name of payment recipient";
+      }
+
+      if (paynowPhoneHelper) {
+        paynowPhoneHelper.textContent = "Enter the payee phone number";
+      }
+
+      // Update error messages
+      if (paynowNameError) {
+        paynowNameError.textContent = "Please enter recipient name";
+      }
+
+      if (paynowPhoneError) {
+        paynowPhoneError.textContent = "Please enter a valid phone number";
+      }
+    } else {
+      // Default Singapore labels
+      paynowNameLabel.textContent = "PayNow Name";
+      paynowPhoneLabel.textContent = "PayNow Phone Number";
+
+      // Default Singapore placeholders
+      if (paynowNameInput) {
+        paynowNameInput.placeholder = "Enter name";
+      }
+
+      if (paynowPhoneInput) {
+        paynowPhoneInput.placeholder = "Enter phone number (e.g., 8XXX XXXX)";
+        // Add back Singapore phone validation
+        paynowPhoneInput.setAttribute("pattern", "[89]\\d{7}");
+        paynowPhoneInput.setAttribute(
+          "title",
+          "Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits"
+        );
+      }
+
+      // Update helper text
+      if (paynowNameHelper) {
+        paynowNameHelper.textContent = "Enter the name of PayNow account";
+      }
+
+      if (paynowPhoneHelper) {
+        paynowPhoneHelper.textContent = "Enter the payer phone number to generate PayNow QR";
+      }
+
+      // Update error messages
+      if (paynowNameError) {
+        paynowNameError.textContent = "Please enter PayNow name";
+      }
+
+      if (paynowPhoneError) {
+        paynowPhoneError.textContent = "Please enter a valid PayNow phone number";
+      }
+    }
   }
 }
 
@@ -1983,6 +2128,7 @@ function showSettleView(viewId) {
 // Update the header text based on current view
 function updateSettleNowHeader() {
   const header = document.querySelector(".settle-now-header h1");
+
   if (currentSettleView === "settleChoiceView") {
     header.textContent = "Settle Now?";
   } else if (currentSettleView === "newGroupMembersView") {
@@ -2628,6 +2774,9 @@ function initPageNavigation() {
   document.querySelector(".get-started-btn").addEventListener("click", function () {
     const savedGroupSelected = document.querySelector(".saved-group-option").classList.contains("selected");
     const newGroupSelected = document.querySelector(".new-group-option").classList.contains("selected");
+    const errorMessage = document.querySelector(".new-group-error-message");
+
+    errorMessage.style.display = "none";
 
     if (savedGroupSelected) {
       // Check if we have saved groups
@@ -2693,38 +2842,58 @@ function initPageNavigation() {
   });
 
   // Handle Next button click in new group members view
-  document.querySelector(".next-btn").addEventListener("click", function () {
-    // If we're editing a group, save changes before proceeding
-    if (isEditingGroup && currentGroup) {
-      // Save the updated members to the group
-      saveGroupToStorage();
+  document.querySelectorAll(".next-btn, .new-group-next-btn").forEach((button) => {
+    button.addEventListener("click", function () {
+      // If we're editing a group, save changes before proceeding
+      if (isEditingGroup && currentGroup) {
+        // Save the updated members to the group
+        saveGroupToStorage();
 
-      // Store the group name for the confirmation
-      document.getElementById("groupUpdatedModal").dataset.groupName = currentGroup;
+        // Store the group name for the confirmation
+        document.getElementById("groupUpdatedModal").dataset.groupName = currentGroup;
 
-      // Show the group updated modal
-      showModal("groupUpdatedModal");
+        // Show the group updated modal
+        showModal("groupUpdatedModal");
 
-      return;
-    }
+        // Important: Return early to prevent further execution
+        return;
+      }
 
-    // Set the previous view to settleChoiceView for proper back navigation
-    previousView = "settleChoiceView";
+      // Only proceed to add settle item if NOT editing a group
+      // Check if we have members
+      if (members.length === 0 || members.length < 2) {
+        const errorMessage = document.querySelector(".new-group-error-message");
+        errorMessage.style.display = "block";
+        return;
+      } else {
+        const errorMessage = document.querySelector(".new-group-error-message");
+        errorMessage.style.display = "none";
+      }
 
-    // Update the header text
-    document.querySelector(".settle-now-header h1").textContent = "Add Settle Item";
+      // Set the previous view to settleChoiceView for proper back navigation
+      previousView = "settleChoiceView";
 
-    // Ensure the New favourite group button is visible since we're coming from new group
-    const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
-    const successMessage = document.querySelector(".group-success-message");
+      // Ensure the New favourite group button is visible since we're coming from new group
+      const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
+      const successMessage = document.querySelector(".group-success-message");
 
-    if (newFavouriteGroupBtn && successMessage) {
-      newFavouriteGroupBtn.style.display = "flex";
-      successMessage.classList.remove("visible");
-    }
+      if (newFavouriteGroupBtn && successMessage) {
+        newFavouriteGroupBtn.style.display = "flex";
+        successMessage.classList.remove("visible");
+      }
 
-    // Load members into the UI
-    updateSettleItemMembersUI();
+      // Navigate to add settle item view
+      showSettleView("addSettleItemView");
+
+      // Scroll the addSettleItemView container to the top
+      const addSettleItemView = document.getElementById("addSettleItemView");
+      if (addSettleItemView) {
+        addSettleItemView.scrollTop = 0;
+      }
+
+      // Load members into the UI
+      updateSettleItemMembersUI();
+    });
   });
 
   // Handle add member button click
@@ -2812,30 +2981,6 @@ function initPageNavigation() {
       newFavouriteGroupBtn.style.display = "none";
       groupNameDisplay.textContent = `Group "${currentGroup}" selected`;
       successMessage.classList.add("visible");
-    }
-  });
-
-  // Handle Next button click in new group members view
-  document.querySelector(".new-group-next-btn").addEventListener("click", function () {
-    //if no members, show error message
-    if (members.length === 0 || members.length < 2) {
-      const errorMessage = document.querySelector(".new-group-error-message");
-      errorMessage.style.display = "block";
-      return;
-    } else {
-      const errorMessage = document.querySelector(".new-group-error-message");
-      errorMessage.style.display = "none";
-      // Navigate to add settle item view
-      showSettleView("addSettleItemView");
-
-      // Scroll the addSettleItemView container to the top
-      const addSettleItemView = document.getElementById("addSettleItemView");
-      if (addSettleItemView) {
-        addSettleItemView.scrollTop = 0;
-      }
-
-      // Update UI with selected group members
-      updateSettleItemMembersUI();
     }
   });
 }
@@ -3290,6 +3435,9 @@ document.addEventListener("DOMContentLoaded", function () {
 function initTaxProfileDropdown() {
   const taxProfileDropdown = document.getElementById("taxProfile");
   if (taxProfileDropdown) {
+    // Sync the dropdown with localStorage on initialization
+    syncTaxProfileDropdown();
+
     taxProfileDropdown.addEventListener("change", function () {
       updateTaxRates(this.value);
     });
@@ -4236,4 +4384,41 @@ window.addEventListener("appinstalled", () => {
 
   // Show a success notification
   showNotification("SettleLah! has been installed successfully!");
+});
+
+// Function to sync the tax profile dropdown with localStorage value
+function syncTaxProfileDropdown() {
+  const taxProfileDropdown = document.getElementById("taxProfile");
+  const savedTaxProfile = localStorage.getItem("taxProfile") || "singapore";
+
+  if (taxProfileDropdown) {
+    // Set the dropdown value to match localStorage
+    taxProfileDropdown.value = savedTaxProfile;
+
+    // Update the UI based on the selected profile
+    updateTaxRates(savedTaxProfile);
+  }
+}
+
+// Add a window.onload handler to ensure tax profile syncs even if user refreshes
+window.addEventListener("load", function () {
+  // Sync the tax profile dropdown with localStorage
+  syncTaxProfileDropdown();
+});
+
+// Prevent number inputs from changing on scroll
+document.addEventListener("DOMContentLoaded", function () {
+  // Select all numeric inputs
+  const numberInputs = document.querySelectorAll('input[type="number"]');
+
+  numberInputs.forEach((input) => {
+    input.addEventListener(
+      "wheel",
+      function (e) {
+        // Prevent the default behavior (value change) when scrolling
+        e.preventDefault();
+      },
+      { passive: false }
+    ); // Must use passive: false to allow preventDefault
+  });
 });

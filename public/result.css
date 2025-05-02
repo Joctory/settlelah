@@ -14,6 +14,8 @@
 
 a {
   text-decoration: none;
+  font-weight: 700;
+  color: #ffe7aa;
 }
 
 ::-webkit-scrollbar {
@@ -33,7 +35,7 @@ body {
   --body-bg: #fefae0;
   --main-bg: #ccd5ae;
   --history-bg: #e9edc9;
-  --settings-bg: #faedcd;
+  --member-bg: #d1e7c0;
   --navbar-bg: #ffffff;
   --body-text: #212529;
   --body-desc: #4f4f4f;
@@ -41,6 +43,7 @@ body {
   --card-bg: #ffffff;
   --text-color: #212529;
   --light-text: #4f4f4f;
+  --details-bg: #dce6c9;
   --border-radius: 12px;
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   --transition-speed: 0.3s;
@@ -48,8 +51,20 @@ body {
 }
 
 :root.dark-mode {
-  --body-bg: #37474f;
-  --navbar-bg: #263238;
+  --body-bg: #121212;
+  --main-bg: #1e1e1e;
+  --history-bg: #292929;
+  --member-bg: #323232;
+  --navbar-bg: #1a1a1a;
+  --body-text: #e0e0e0;
+  --body-desc: #b0b0b0;
+  --accent-color: #85a99c;
+  --card-bg: #25282e;
+  --text-color: #e0e0e0;
+  --light-text: #b0b0b0;
+  --details-bg: #5f614e;
+  --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --error-color: #f44336;
 }
 
 body {
@@ -61,7 +76,7 @@ body {
   margin: 0;
   overflow: hidden;
 
-  color: #212529;
+  color: var(--body-text);
   font-family: "SF Pro", -apple-system, BlinkMacSystemFont, "Segoe UI", "Open Sans", "Helvetica Neue", sans-serif;
   font-size: 18px;
   font-style: normal;
@@ -341,8 +356,8 @@ body {
   bottom: -100%; /* Start off-screen at the bottom */
   left: 0;
   width: 100%;
-  height: auto;
-  max-height: 90vh;
+  height: 95%;
+  max-height: 100%;
   border-radius: 30px 30px 0 0;
   background: #fff;
   box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
@@ -358,6 +373,7 @@ body {
 .member-bill-modal-content {
   padding: 0;
   width: 100%;
+  height: 100%;
   box-shadow: none;
 }
 
@@ -389,6 +405,9 @@ body {
 .member-bill-modal-body {
   padding: 10px 20px 20px 20px;
   min-height: 200px;
+  height: 90%;
+  display: flex;
+  flex-direction: column;
 }
 
 .member-option-list {
@@ -440,7 +459,7 @@ body.dark-mode .member-close-modal:hover {
 }
 
 .modal-overlay.active {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.8);
   opacity: 1;
   pointer-events: all;
 }
@@ -460,7 +479,7 @@ body.dark-mode .member-close-modal:hover {
 
 .favourite-group-section {
   width: 100%;
-  background-color: #d1e7c0;
+  background-color: var(--member-bg);
   border-radius: 15px;
   padding: 15px;
   margin: 0 20px;
@@ -469,7 +488,7 @@ body.dark-mode .member-close-modal:hover {
   gap: 8px;
   opacity: 0;
   transition: transform 0.2s ease;
-  box-shadow: 0px -4px 4px rgb(0 0 0 / 20%);
+  box-shadow: 0px 2px 4px rgb(0 0 0 / 20%);
 }
 
 .favourite-group-title {
@@ -509,11 +528,12 @@ body.dark-mode .member-close-modal:hover {
 
 .member-bill-modal-details {
   width: 100%;
-  height: 70vh;
-  background-color: #e9edc9;
+  height: 77%;
+  background-color: var(--details-bg);
   padding: 15px;
   border-radius: 10px;
-  margin-bottom: 20px;
+  margin-top: auto;
+  margin-bottom: auto;
   overflow: auto;
 }
 
@@ -627,10 +647,16 @@ body.dark-mode .member-close-modal:hover {
 
 /* PayNow QR section styles */
 .paynow-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
   background-color: #e9edc9;
   padding: 20px;
   border-radius: 10px;
   text-align: center;
+  margin-top: auto;
+  margin-bottom: auto;
+  min-height: 50%;
 }
 
 .paynow-qr-container {
@@ -666,11 +692,12 @@ body.dark-mode .member-close-modal:hover {
 }
 
 body.dark-mode .paynow-container {
-  background-color: #2c2c2e;
+  background-color: var(--history-bg);
 }
 
 body.dark-mode .paynow-qr-container {
-  background-color: #3a3a3c;
+  background-color: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .paynow-instructions {
@@ -679,7 +706,7 @@ body.dark-mode .paynow-qr-container {
   font-size: 16px;
   line-height: 1.5;
   opacity: 0;
-  text-align: left;
+  text-align: center;
   animation: fadeInUp 0.5s ease 0.1s forwards;
 }
 
@@ -691,6 +718,11 @@ body.dark-mode .paynow-qr-container {
   border-radius: 10px;
   font-size: 16px;
   cursor: pointer;
+  margin-top: auto;
+}
+
+#copyPhoneBtn {
+  margin-top: 0;
 }
 
 .primary-button {
@@ -1226,6 +1258,7 @@ body.dark-mode .paynow-qr-container {
 
   .success-screen {
     width: 40%;
+    height: 100%;
   }
 
   .group-members-container {
@@ -1295,27 +1328,25 @@ body.dark-mode .paynow-qr-container {
   .paynow-title {
     font-size: 1.5rem;
     margin-bottom: 16px;
-    color: #2d3748;
+    color: var(--body-text);
     font-weight: 600;
     text-align: center;
   }
 
   .paynow-qr-container {
     width: 100%;
-    max-width: 250px;
+    height: auto;
+    min-height: 325px;
+    max-width: 310px;
     margin: 0 auto 20px;
   }
 
   .paynow-qr-container img {
     width: 100%;
-    height: auto;
+    height: calc(100% - 15px);
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease;
-  }
-
-  .paynow-qr-container img:hover {
-    transform: scale(1.03);
   }
 
   .paynow-instructions {
@@ -1350,5 +1381,139 @@ body.dark-mode .paynow-qr-container {
 @media (max-width: 350px) {
   .member-avatar-wrapper {
     width: calc(33.333% - 6px); /* Three items per row on smaller screens */
+  }
+}
+
+/* Enhanced dark mode styles for modals and components */
+body.dark-mode .success-details,
+body.dark-mode .member-bill-modal {
+  background-color: var(--card-bg);
+  color: var(--body-text);
+}
+
+body.dark-mode .success-title,
+body.dark-mode .success-subtitle,
+body.dark-mode .detail-value,
+body.dark-mode .member-bill-title,
+body.dark-mode .member-bill-section-title {
+  color: var(--text-color);
+}
+
+body.dark-mode .detail-label,
+body.dark-mode .member-bill-row-label {
+  color: var(--light-text);
+}
+
+body.dark-mode .shared-member {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: var(--body-text);
+}
+
+body.dark-mode .paynow-container {
+  background-color: var(--history-bg);
+}
+
+body.dark-mode .paynow-qr-container {
+  background-color: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .success-details .notch-left,
+body.dark-mode .success-details .notch-right {
+  background-color: var(--body-bg);
+}
+
+body.dark-mode .success-details-liner-line {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .member-bill-divider,
+body.dark-mode .member-bill-solid-divider {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .loading-spinner {
+  border-color: rgba(133, 169, 156, 0.2);
+  border-top-color: var(--accent-color);
+}
+
+body.dark-mode .loading-text {
+  color: var(--text-color);
+}
+
+/* Dark mode button styles */
+body.dark-mode .primary-button {
+  background-color: #b1976d;
+}
+
+body.dark-mode .secondary-button {
+  background-color: #444444;
+  color: var(--text-color);
+}
+
+/* Animation to smoothly transition between light and dark mode */
+body,
+.success-details,
+.member-bill-modal,
+.member-bill-modal-details,
+.paynow-container,
+.paynow-qr-container,
+.shared-member,
+.action-button {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Theme toggle button styles */
+#theme-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.05);
+  border: none;
+  color: var(--body-text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#theme-toggle:hover {
+  transform: scale(1.1);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+#theme-toggle:active {
+  transform: scale(0.95);
+}
+
+body.dark-mode #theme-toggle {
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+body.dark-mode #theme-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+@media (prefers-reduced-motion) {
+  #theme-toggle,
+  body,
+  .success-details,
+  .member-bill-modal,
+  .member-bill-modal-details,
+  .paynow-container,
+  .paynow-qr-container,
+  .shared-member,
+  .action-button {
+    transition: none;
   }
 }

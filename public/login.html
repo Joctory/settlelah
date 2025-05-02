@@ -43,13 +43,12 @@
     <div class="login-container">
       <div class="login-header">
         <div class="login-logo">
-          <img src="assets/settlelah-logo.svg" alt="SettleLah Logo" onerror="this.src='assets/start-card.svg'" />
+          <img src="assets/lock.svg" alt="Lock" />
         </div>
         <h1 class="login-title">SettleLah</h1>
         <p class="login-subtitle">Enter your 6-digit passcode to continue</p>
       </div>
-
-      <div class="passcode-container">
+      <div class="passcode-dots-container">
         <div class="passcode-dots">
           <div class="passcode-dot" data-index="0"></div>
           <div class="passcode-dot" data-index="1"></div>
@@ -58,9 +57,9 @@
           <div class="passcode-dot" data-index="4"></div>
           <div class="passcode-dot" data-index="5"></div>
         </div>
-
         <div class="error-message" id="login-error"></div>
-
+      </div>
+      <div class="passcode-container">
         <div class="numeric-keypad">
           <div class="keypad-row">
             <button class="keypad-key" data-value="1">1</button>
