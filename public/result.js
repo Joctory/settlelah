@@ -129,7 +129,7 @@ function showShareModal(memberName) {
       const desktop = isDesktopMode();
 
       // Update modal title
-      modalHeader.textContent = "Settle Detail";
+      modalHeader.textContent = `Settle Detail - ${memberName}`;
 
       if (desktop) {
         // In desktop mode, show both details and PayNow QR side by side
@@ -166,6 +166,25 @@ function showShareModal(memberName) {
                     <div class="member-bill-row">
                       <span class="member-bill-row-label">Item Price</span>
                       <span class="member-bill-row-value">${item.price}</span>
+                    </div>
+                    <div class="member-bill-row">
+                      <span class="member-bill-row-label">Price Per Person</span>
+                      <span class="member-bill-row-value">
+                        ${(() => {
+                          // Calculate number of people sharing this item
+                          const numPeople = item.sharedWith
+                            ? (item.sharedWith.match(/<span class="shared-member">/g) || []).length + 1
+                            : 1;
+                          // Extract price value from string, remove "$" and convert to number
+                          const price = parseFloat(item.price.replace("$", ""));
+                          // Calculate price per person
+                          const pricePerPerson = (price / numPeople).toFixed(2);
+                          // Format with animation
+                          return numPeople === 1
+                            ? `$${pricePerPerson}`
+                            : `$${pricePerPerson} <span class="people-count">(÷${numPeople} Incl. You)</span>`;
+                        })()}
+                      </span>
                     </div>
                     ${index < data.items.length - 1 ? '<hr class="member-bill-divider">' : ""}
                   </div>
@@ -230,8 +249,21 @@ function showShareModal(memberName) {
               ${
                 isSingapore
                   ? `
+                <div class="paynow-qr-container" id="paynow-qr-container">
+                  <img src="https://www.sgqrcode.com/paynow?mobile=${
+                    data.paymentInfo.phoneNumber
+                  }&uen=&editable=1&amount=${data.paymentInfo.amount.replace("$", "")}&expiry=${new Date()
+                      .toISOString()
+                      .split("T")[0]
+                      .replace(/-/g, "%2F")}%2023%3A59&ref_id=SettleLah-${
+                      data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
+                    }&company=" alt="PayNow QR Code" class="desktop-qr-code">
+                </div>
+                
                 <div class="paynow-instructions">
-                  <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${data.paymentInfo.name} (${data.paymentInfo.phoneNumber})</b>.</p>
+                  <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${
+                      data.paymentInfo.name
+                    } (${data.paymentInfo.phoneNumber})</b>.</p>
                   <p>Scan the QR code to complete transfer or copy the phone number to start transfer.</p>
                 </div>
                 
@@ -310,6 +342,25 @@ function showShareModal(memberName) {
                   <div class="member-bill-row">
                     <span class="member-bill-row-label">Item Price</span>
                     <span class="member-bill-row-value">${item.price}</span>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Price Per Person</span>
+                    <span class="member-bill-row-value">
+                      ${(() => {
+                        // Calculate number of people sharing this item
+                        const numPeople = item.sharedWith
+                          ? (item.sharedWith.match(/<span class="shared-member">/g) || []).length + 1
+                          : 1;
+                        // Extract price value from string, remove "$" and convert to number
+                        const price = parseFloat(item.price.replace("$", ""));
+                        // Calculate price per person
+                        const pricePerPerson = (price / numPeople).toFixed(2);
+                        // Format with animation
+                        return numPeople === 1
+                          ? `$${pricePerPerson}`
+                          : `$${pricePerPerson} <span class="people-count">(÷${numPeople} Incl. You)</span>`;
+                      })()}
+                    </span>
                   </div>
                   ${index < data.items.length - 1 ? '<hr class="member-bill-divider">' : ""}
                 </div>
@@ -418,7 +469,7 @@ function showPayNowQR(memberName) {
   // Wait for animation to complete before switching content
   setTimeout(() => {
     // Update modal title with animation
-    modalHeader.textContent = "PayNow";
+    modalHeader.textContent = `PayNow - ${memberName}`;
 
     // Check tax profile to determine whether to show PayNow QR
     const isSingapore = data.taxProfile === "singapore";
@@ -436,8 +487,8 @@ function showPayNowQR(memberName) {
           }&uen=&editable=1&amount=${data.paymentInfo.amount.replace("$", "")}&expiry=${new Date()
                 .toISOString()
                 .split("T")[0]
-                .replace(/-/g, "%2F")}%2023%3A59&ref_id=SettleLah-${
-                data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
+                .replace(/-/g, "%2F")}%2023%3A59&ref_id=${
+                memberName + "%20-%20SettleLah!%20Bill"
               }&company=" alt="PayNow QR Code">
         </div>
         
@@ -544,17 +595,30 @@ document.addEventListener("DOMContentLoaded", function () {
   const billId = pathParts[pathParts.length - 1];
 
   if (!billId) {
-    showError("No bill ID found in URL");
+    showError("No bill ID found in URL", "invalid");
+    return;
+  }
+
+  // Basic client-side validation of bill ID format before making request
+  const validIdPattern = /^[a-z0-9]+-[a-z0-9]+-[a-z0-9]+$/i;
+  if (!validIdPattern.test(billId)) {
+    showError("Invalid bill ID format", "invalid");
     return;
   }
 
   // Fetch bill data from the API
   fetch(`/result/${billId}`, {
     headers: {
-      Accept: "application/json, */*;q=0.8",
+      Accept: "application/json",
     },
   })
     .then((response) => {
+      if (response.status === 410) {
+        throw new Error("This bill has expired", { cause: "expired" });
+      }
+      if (response.status === 400) {
+        throw new Error("Invalid bill ID format", { cause: "invalid" });
+      }
       if (!response.ok) {
         throw new Error("Bill not found or error fetching data");
       }
@@ -568,53 +632,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 300);
     })
     .catch((error) => {
-      showError(error.message);
+      // Pass error type for specific handling
+      const errorType = error.cause || "generic";
+      showError(error.message, errorType);
     });
-
-  // Add event listener for retry button
-  document.getElementById("error-retry-btn").addEventListener("click", function () {
-    // Hide error and restart the process
-    document.getElementById("error-container").classList.remove("visible");
-
-    // Show loading
-    const loadingElement = document.getElementById("loading");
-    loadingElement.classList.remove("hidden");
-    loadingElement.classList.remove("fade-out");
-
-    // Reload the page to retry
-    window.location.reload();
-  });
-
-  // Function to show error message
-  function showError(message) {
-    // Hide loading with animation using classes
-    const loadingElement = document.getElementById("loading");
-    loadingElement.classList.add("fade-out");
-
-    // Wait for animation to complete
-    setTimeout(() => {
-      loadingElement.classList.add("hidden");
-
-      // Update error message
-      document.getElementById("error-message").textContent = message;
-
-      // Show error container using class
-      const errorContainer = document.getElementById("error-container");
-      errorContainer.classList.add("visible");
-
-      // Hide any content that might be visible
-      const billContent = document.getElementById("bill-content");
-      const billContentFooter = document.getElementById("bill-content-footer");
-
-      if (billContent && billContent.classList.contains("visible")) {
-        billContent.classList.remove("visible");
-      }
-
-      if (billContentFooter && billContentFooter.classList.contains("visible")) {
-        billContentFooter.classList.remove("visible");
-      }
-    }, 300);
-  }
 
   const memberAvatars = document.querySelectorAll(".member-avatar-wrapper");
   const dragInstructions = document.querySelector(".drag-instructions");
@@ -640,31 +661,37 @@ function roundToNearest5Cents(value) {
     value = parseFloat(value);
   }
 
+  //two decimal places
+  value = parseFloat(value.toFixed(2));
+
   // Get decimal part (cents)
   const wholePart = Math.floor(value);
   const decimalPart = value - wholePart;
-  const cents = Math.round(decimalPart * 100);
+  const centsfinal = Math.round(decimalPart * 100);
+  const cents = centsfinal % 10;
 
   // Handle special cases
   if (cents < 5) {
-    return wholePart;
+    const finalValue = value - cents / 100;
+    return finalValue.toFixed(2);
   } else if (cents === 5) {
-    return wholePart + 0.05;
+    return value.toFixed(2);
   } else {
-    // Round to nearest 0.05
-    const roundedCents = Math.round(cents / 5) * 5;
-    return wholePart + roundedCents / 100;
+    const roundedUp = Math.ceil(centsfinal / 10) * 10;
+    const centsToAdd = (roundedUp - centsfinal) / 100;
+    const finalValue = value + centsToAdd;
+    return finalValue.toFixed(2);
   }
 }
 
 // Function to render bill data
 function renderBillData(data) {
   // Format currency values
-  const formatCurrency = (value) => {
+  const formatCurrency = (value, isFinalTotal = false) => {
     if (typeof value === "number") {
-      return `$${roundToNearest5Cents(value).toFixed(2)}`;
+      return isFinalTotal ? `$${roundToNearest5Cents(value)}` : `$${value.toFixed(2)}`;
     }
-    return `$${roundToNearest5Cents(parseFloat(value)).toFixed(2)}`;
+    return isFinalTotal ? `$${roundToNearest5Cents(parseFloat(value))}` : `$${parseFloat(value).toFixed(2)}`;
   };
 
   // Format timestamp to date and time strings
@@ -703,12 +730,21 @@ function renderBillData(data) {
   const gstRow = document.querySelector(".gstRow");
   const gstRate = document.querySelector(".gstRate");
   const amountEl = document.querySelector(".successAmount");
+  const originalAmountEl = document.querySelector(".successOriginalAmount");
+  const originalAmountRow = document.querySelector(".originalAmountRow");
 
   // Update the text content if elements exist
   if (settleMatterEl) settleMatterEl.textContent = data.settleMatter ? data.settleMatter : "No One Ask!";
   if (dateTimeEl) dateTimeEl.textContent = dateString + " " + timeString;
   if (itemCountEl) itemCountEl.textContent = data.dishes ? data.dishes.length : 0;
   if (subtotalEl) subtotalEl.textContent = formatCurrency(data.breakdown.subtotal);
+
+  // Set page title based on URL parameters
+  if (data.settleMatter) {
+    document.title = `SettleLah - ${data.settleMatter} Bill Details`;
+  } else {
+    document.title = `SettleLah - No One Ask! Bill Details`;
+  }
 
   // Handle Service Charge
   if (serviceChargeEl && serviceChargeRow) {
@@ -770,7 +806,26 @@ function renderBillData(data) {
     }
   }
 
-  if (amountEl) amountEl.textContent = formatCurrency(data.breakdown.total);
+  // Display both original unrounded amount and final rounded amount
+  if (originalAmountEl && originalAmountRow && amountEl) {
+    const totalValue = data.breakdown.total.toFixed(2);
+    const roundedTotal = roundToNearest5Cents(totalValue);
+
+    // Show original amount row if rounding was applied
+    if (totalValue !== roundedTotal) {
+      originalAmountEl.textContent = `$${totalValue}`;
+      originalAmountRow.style.display = "";
+      // Show the rounded amount
+      amountEl.textContent = roundedTotal;
+    } else {
+      // No rounding needed, hide original amount row
+      originalAmountRow.style.display = "none";
+      amountEl.textContent = roundedTotal;
+    }
+  } else if (amountEl) {
+    // Fallback if original amount elements don't exist
+    amountEl.textContent = roundedTotal;
+  }
 
   // Create memberData for the modal
   createMemberData(data);
@@ -788,11 +843,11 @@ function createMemberData(data) {
   if (!data.members || !data.perPersonBreakdown || !data.dishes) return;
 
   // Format currency values
-  const formatCurrency = (value) => {
+  const formatCurrency = (value, isFinalTotal = false) => {
     if (typeof value === "number") {
-      return `$${roundToNearest5Cents(value).toFixed(2)}`;
+      return isFinalTotal ? `$${roundToNearest5Cents(value)}` : `$${value.toFixed(2)}`;
     }
-    return `$${roundToNearest5Cents(parseFloat(value)).toFixed(2)}`;
+    return isFinalTotal ? `$${roundToNearest5Cents(parseFloat(value))}` : `$${parseFloat(value).toFixed(2)}`;
   };
 
   // Create member data for each member
@@ -814,10 +869,18 @@ function createMemberData(data) {
           .join(""),
       }));
 
+    // Get total amount and its rounded value
+    const totalValue = data.totals[name];
+    const roundedTotal = roundToNearest5Cents(totalValue);
+    const isRounded = totalValue !== roundedTotal;
+
     memberData[name] = {
       taxProfile: data.taxProfile || "singapore", // Default to singapore if not specified
       serviceChargeRate: data.serviceChargeRate || "10%", // Add service charge rate
-      totalAmount: formatCurrency(data.totals[name]),
+      // Original unrounded amount
+      originalAmount: isRounded ? formatCurrency(totalValue) : null,
+      // Final rounded amount
+      totalAmount: formatCurrency(totalValue, true),
       items: memberItems,
       breakdown: {
         subtotal: formatCurrency(breakdown.subtotal),
@@ -828,7 +891,9 @@ function createMemberData(data) {
         gst: formatCurrency(breakdown.gst),
       },
       paymentInfo: {
-        amount: formatCurrency(data.totals[name]),
+        // Include both original and rounded amounts
+        originalAmount: isRounded ? formatCurrency(totalValue) : null,
+        amount: formatCurrency(totalValue, true), // Apply rounding to the final total amount
         phoneNumber: data.paynowID || "",
         name: data.paynowName || "",
         settleMatter: data.settleMatter || "",
@@ -977,3 +1042,52 @@ document.addEventListener("DOMContentLoaded", function () {
     copyrightYear.textContent = new Date().getFullYear();
   }
 });
+
+// Enhanced function to show error message with specific error handling
+function showError(message, errorType = "generic") {
+  // Hide loading with animation using classes
+  const loadingElement = document.getElementById("loading");
+  loadingElement.classList.add("fade-out");
+
+  // Wait for animation to complete
+  setTimeout(() => {
+    loadingElement.classList.add("hidden");
+
+    // Update error message
+    const errorMessage = document.getElementById("error-message");
+    errorMessage.textContent = message;
+
+    // Add specific error handling based on error type
+    const retryBtn = document.getElementById("error-retry-btn");
+
+    if (errorType === "expired") {
+      // For expired bills, change button text
+      retryBtn.textContent = "Return to Home";
+      retryBtn.onclick = () => (window.location.href = "/");
+    } else if (errorType === "invalid") {
+      // For invalid IDs, change button text
+      retryBtn.textContent = "Return to Home";
+      retryBtn.onclick = () => (window.location.href = "/");
+    } else {
+      // Default behavior for other errors
+      retryBtn.textContent = "Try Again";
+      retryBtn.onclick = () => window.location.reload();
+    }
+
+    // Show error container using class
+    const errorContainer = document.getElementById("error-container");
+    errorContainer.classList.add("visible");
+
+    // Hide any content that might be visible
+    const billContent = document.getElementById("bill-content");
+    const billContentFooter = document.getElementById("bill-content-footer");
+
+    if (billContent && billContent.classList.contains("visible")) {
+      billContent.classList.remove("visible");
+    }
+
+    if (billContentFooter && billContentFooter.classList.contains("visible")) {
+      billContentFooter.classList.remove("visible");
+    }
+  }, 300);
+}

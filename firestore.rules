@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Common validation functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isValidBillData() {
+      let requiredFields = ['members', 'dishes', 'breakdown', 'timestamp', 'perPersonBreakdown', 'totals'];
+      let hasRequiredFields = requiredFields.hasAll(request.resource.data.keys());
+      
+      // Validate dishes array structure
+      let validDishes = request.resource.data.dishes.size() > 0 && 
+                         request.resource.data.dishes is list;
+                         
+      // Validate members array structure
+      let validMembers = request.resource.data.members.size() > 0 && 
+                          request.resource.data.members is list;
+                          
+      // Timestamp validation
+      let validTimestamp = request.resource.data.timestamp is number &&
+                           request.resource.data.timestamp <= request.time.toMillis();
+      
+      return hasRequiredFields && validDishes && validMembers && validTimestamp;
+    }
+    
+    function isBillExpired() {
+      // Bill expires after 30 days (2592000000 milliseconds)
+      let maxAge = 2592000000;
+      return resource.data.timestamp + maxAge < request.time.toMillis();
+    }
+    
+    function isValidBillId(billId) {
+      // Validate the bill ID format (timestamp-randomBytes-matterHash or legacy 6-char)
+      let newPattern = billId.matches('^[a-zA-Z0-9]+-[a-zA-Z0-9]+-[a-zA-Z0-9]+$');
+      let legacyPattern = billId.matches('^[a-zA-Z0-9]{6}$');
+      return newPattern || legacyPattern;
+    }
+    
+    // Rules for bills collection
+    match /bills/{billId} {
+      // Allow reading bills if the ID format is valid (since bills need to be shareable)
+      allow get: if isValidBillId(billId) && !isBillExpired();
+      
+      // More permissive rule for bill listing during development
+      allow list: if true;
+      
+      // Allow bill creation with valid data without requiring authentication for now
+      // In production, change this to require authentication
+      allow create: if isValidBillId(billId) && 
+                     request.resource.data.timestamp is number;
+      
+      // Allow deleting bills without strict authentication during development
+      // In production, change this to require authentication
+      allow delete: if true;
+      
+      // No updates allowed - bills are created once and never modified
+      allow update: if false;
+      
+      // For future: if you add sub-collections under bills, add rules here
+      match /{document=**} {
+        allow read: if true;
+        allow write: if true;
+      }
+    }
+    
+    // Default deny for all other collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 

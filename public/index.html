@@ -29,14 +29,18 @@
       // Service Worker Registration
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker
-            .register("/service-worker.js")
-            .then((registration) => {
-              console.log("Service Worker registered with scope:", registration.scope);
-            })
-            .catch((error) => {
-              console.error("Service Worker registration failed:", error);
-            });
+          // Use a timeout to ensure the page loads quickly even if the service worker has issues
+          setTimeout(() => {
+            navigator.serviceWorker
+              .register("/sw.js")
+              .then((registration) => {
+                console.log("Service Worker registered with scope:", registration.scope);
+              })
+              .catch((error) => {
+                console.error("Service Worker registration failed:", error);
+                // The app will still work without the service worker
+              });
+          }, 1000); // Delay registration by 1 second to prioritize page load
         });
       }
     </script>
@@ -91,6 +95,23 @@
     </style>
   </head>
   <body>
+    <!-- PWA Install Banner -->
+    <div id="pwaInstallBanner" class="pwa-install-banner">
+      <div class="pwa-banner-content">
+        <div class="pwa-banner-icon">
+          <img src="icons/icon-192x192.png" alt="SettleLah" />
+        </div>
+        <div class="pwa-banner-text">
+          <h3 class="pwa-banner-title">SettleLah!</h3>
+          <p class="pwa-banner-description">Install app for a better experience</p>
+        </div>
+      </div>
+      <div class="pwa-banner-actions">
+        <button id="pwaInstallBtn" class="pwa-install-btn">Install</button>
+        <button id="pwaDismissBtn" class="pwa-dismiss-btn">&times;</button>
+      </div>
+    </div>
+
     <!-- Pull to refresh indicator -->
     <div class="pull-to-refresh">
       <div class="pull-to-refresh-container">
@@ -603,6 +624,10 @@
                 <span class="detail-label">GST (<span class="gstRate"></span>)</span>
                 <span class="detail-value successGST"></span>
               </div>
+              <div class="detail-row originalAmountRow" style="display: none">
+                <span class="detail-label">Total Amount (Unrounded)</span>
+                <span class="detail-value successOriginalAmount"></span>
+              </div>
               <div class="detail-row amount-row">
                 <span class="detail-label">Total Amount</span>
                 <span class="detail-value successAmount"></span>
@@ -670,6 +695,10 @@
                 <span class="detail-label">GST (<span class="gstRate"></span>)</span>
                 <span class="detail-value successGST"></span>
               </div>
+              <div class="detail-row originalAmountRow" style="display: none">
+                <span class="detail-label">Total Amount (Unrounded)</span>
+                <span class="detail-value successOriginalAmount"></span>
+              </div>
               <div class="detail-row amount-row">
                 <span class="detail-label">Total Amount</span>
                 <span class="detail-value successAmount"></span>
@@ -705,7 +734,7 @@
             </div>
             <div class="bill-summary-subtotal">
               <div class="subtotal-row">
-                <span class="subtotal-label">Subtotal:</span>
+                <span class="subtotal-label">Subtotal (<span id="billItemCount">0</span> items):</span>
                 <span class="subtotal-value" id="billSubtotal">$0.00</span>
               </div>
             </div>
@@ -981,6 +1010,139 @@
     <script src="https://cdn.jsdelivr.net/npm/mindee@3.9.1/dist/mindee.min.js"></script>
     <script type="text/javascript" src="script.js"></script>
     <script>
+      // PWA Installation Banner
+      let deferredPrompt;
+
+      // Initialize PWA banner after window loads
+      window.addEventListener("load", () => {
+        const pwaInstallBanner = document.getElementById("pwaInstallBanner");
+        const pwaInstallBtn = document.getElementById("pwaInstallBtn");
+        const pwaDismissBtn = document.getElementById("pwaDismissBtn");
+        const pwaDescription = document.querySelector(".pwa-banner-description");
+
+        // Check if app is installed - hide banner if already installed
+        if (window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true) {
+          // App is installed, don't show the banner
+          if (pwaInstallBanner) pwaInstallBanner.style.display = "none";
+        }
+
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        // Update text for iOS devices
+        if (isIOS && pwaDescription) {
+          pwaDescription.textContent = 'Tap share icon and "Add to Home Screen"';
+          // Change install button text for iOS
+          if (pwaInstallBtn) {
+            pwaInstallBtn.textContent = "How to Install";
+            // For iOS we'll show instructions instead of triggering install
+            pwaInstallBtn.addEventListener("click", () => {
+              alert(
+                'To install this app on your iOS device:\n\n1. Tap the share icon in Safari (box with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right corner'
+              );
+              // Hide the banner after showing instructions
+              if (pwaInstallBanner) pwaInstallBanner.classList.remove("show");
+            });
+          }
+        } else {
+          // Install button click handler for non-iOS devices
+          if (pwaInstallBtn) {
+            pwaInstallBtn.addEventListener("click", async () => {
+              if (!deferredPrompt) return;
+
+              // Show the installation prompt
+              deferredPrompt.prompt();
+
+              // Wait for the user to respond to the prompt
+              const { outcome } = await deferredPrompt.userChoice;
+
+              // Clear the saved prompt since it can only be used once
+              deferredPrompt = null;
+
+              // Hide the banner regardless of outcome
+              if (pwaInstallBanner) pwaInstallBanner.classList.remove("show");
+            });
+          }
+        }
+
+        // Dismiss button click handler
+        if (pwaDismissBtn) {
+          pwaDismissBtn.addEventListener("click", () => {
+            if (pwaInstallBanner) pwaInstallBanner.classList.remove("show");
+
+            // Mark as dismissed and store current time
+            localStorage.setItem("pwa-banner-dismissed", "true");
+            localStorage.setItem("pwa-banner-dismissed-time", Date.now().toString());
+          });
+        }
+      });
+
+      // This event only fires on non-iOS browsers that support PWA installation
+      window.addEventListener("beforeinstallprompt", (e) => {
+        // Prevent Chrome 67 and earlier from automatically showing the prompt
+        e.preventDefault();
+        // Stash the event so it can be triggered later
+        deferredPrompt = e;
+
+        // Get banner element
+        const pwaInstallBanner = document.getElementById("pwaInstallBanner");
+
+        // Check if user has previously dismissed the banner
+        const bannerDismissed = localStorage.getItem("pwa-banner-dismissed");
+        const lastDismissed = parseInt(localStorage.getItem("pwa-banner-dismissed-time") || "0");
+        const now = Date.now();
+        const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+        // Only show banner if it wasn't dismissed in the last week
+        if (!bannerDismissed || now - lastDismissed > oneWeek) {
+          // Wait a moment before showing the banner for better UX
+          setTimeout(() => {
+            if (pwaInstallBanner) pwaInstallBanner.classList.add("show");
+          }, 2000);
+        }
+      });
+
+      // For iOS devices, we need to manually show the banner
+      // since beforeinstallprompt doesn't fire on iOS
+      window.addEventListener("load", () => {
+        // Detect iOS
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+        if (isIOS) {
+          // Check if installed already
+          const isInstalled = window.navigator.standalone === true;
+
+          if (!isInstalled) {
+            const pwaInstallBanner = document.getElementById("pwaInstallBanner");
+
+            // Check if user has previously dismissed the banner
+            const bannerDismissed = localStorage.getItem("pwa-banner-dismissed");
+            const lastDismissed = parseInt(localStorage.getItem("pwa-banner-dismissed-time") || "0");
+            const now = Date.now();
+            const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+
+            // Only show banner if it wasn't dismissed in the last week
+            if (!bannerDismissed || now - lastDismissed > oneWeek) {
+              // Wait a moment before showing the banner for better UX
+              setTimeout(() => {
+                if (pwaInstallBanner) pwaInstallBanner.classList.add("show");
+              }, 2000);
+            }
+          }
+        }
+      });
+
+      // Listen for the appinstalled event
+      window.addEventListener("appinstalled", () => {
+        // Hide the banner if it's showing
+        const pwaInstallBanner = document.getElementById("pwaInstallBanner");
+        if (pwaInstallBanner) pwaInstallBanner.classList.remove("show");
+
+        // Log install to analytics
+        console.log("PWA was installed");
+      });
+    </script>
+    <!-- <script>
       // Enhanced preloader logic
       document.addEventListener("DOMContentLoaded", function () {
         // Create an array of all images to track
@@ -1070,6 +1232,6 @@
           }
         }, 10000); // 10 second maximum loading time
       });
-    </script>
+    </script> -->
   </body>
 </html>

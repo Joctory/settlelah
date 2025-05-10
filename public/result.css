@@ -528,7 +528,7 @@ body.dark-mode .member-close-modal:hover {
 
 .member-bill-modal-details {
   width: 100%;
-  height: 77%;
+  height: 85%;
   background-color: var(--details-bg);
   padding: 15px;
   border-radius: 10px;
@@ -662,14 +662,15 @@ body.dark-mode .member-close-modal:hover {
 .paynow-qr-container {
   background-color: white;
   padding: 15px;
-  width: 220px;
-  height: 220px;
+  width: 240px;
+  height: 240px;
   margin: 0 auto 20px auto;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
+
 .paynow-qr-container img {
   width: 100%;
   height: calc(100% - 0px);
@@ -711,16 +712,6 @@ body.dark-mode .paynow-qr-container {
 }
 
 /* Button styles */
-.action-button {
-  width: 100%;
-  padding: 15px;
-  border: none;
-  border-radius: 10px;
-  font-size: 16px;
-  cursor: pointer;
-  margin-top: auto;
-}
-
 #copyPhoneBtn {
   margin-top: 0;
 }
@@ -851,14 +842,13 @@ body.dark-mode .paynow-qr-container {
 /* Button hover effects */
 .action-button {
   width: 100%;
-  padding: 15px;
+  padding: 13px;
   border: none;
   border-radius: 10px;
-  font-size: 16px;
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
-  overflow: hidden;
 }
 
 .action-button::after {
@@ -1199,6 +1189,28 @@ body.dark-mode .paynow-qr-container {
   }
 }
 
+@keyframes slideIn {
+  0% {
+    opacity: 1;
+    transform: translateY(150%);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0%);
+  }
+}
+
+@keyframes slideInDesktop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 150%);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 50%);
+  }
+}
+
 /* Content Display States */
 .bill-content,
 .bill-content-footer {
@@ -1285,6 +1297,7 @@ body.dark-mode .paynow-qr-container {
     left: 50%;
     transform: translate(-50%, 50%);
     border-radius: 12px;
+    animation: slideInDesktop 0.4s ease forwards;
   }
 
   .member-bill-modal.desktop-mode .member-bill-modal-content {
@@ -1358,7 +1371,7 @@ body.dark-mode .paynow-qr-container {
 
   .paynow-amount,
   .paynow-name {
-    color: #4a5568;
+    color: var(--body-text);
   }
 }
 
@@ -1516,4 +1529,10 @@ body.dark-mode #theme-toggle:hover {
   .action-button {
     transition: none;
   }
+}
+
+/* Make the final total amount row stand out */
+.amount-row {
+  font-weight: bold;
+  font-size: 1.1em;
 }

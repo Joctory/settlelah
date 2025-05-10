@@ -486,12 +486,30 @@ function editDish(index) {
       avatarNumber = member.avatar;
     } else {
       memberName = member;
-      // Generate consistent avatar based on name
-      const nameHash = memberName.split("").reduce((a, b) => {
-        a = (a << 5) - a + b.charCodeAt(0);
-        return a & a;
-      }, 0);
-      avatarNumber = Math.abs(nameHash % 20) + 1;
+
+      // Try to get avatar from localStorage groups first
+      let foundInGroups = false;
+      const storedGroups = JSON.parse(localStorage.getItem("groups")) || {};
+
+      // Search through all groups for this member
+      Object.values(storedGroups).forEach((groupMembers) => {
+        groupMembers.forEach((groupMember) => {
+          // If we find a matching name and it has an avatar
+          if (typeof groupMember === "object" && groupMember.name === memberName && groupMember.avatar) {
+            avatarNumber = groupMember.avatar;
+            foundInGroups = true;
+          }
+        });
+      });
+
+      // If not found in groups, generate a consistent avatar based on name
+      if (!foundInGroups) {
+        const nameHash = memberName.split("").reduce((a, b) => {
+          a = (a << 5) - a + b.charCodeAt(0);
+          return a & a;
+        }, 0);
+        avatarNumber = Math.abs(nameHash % 20) + 1;
+      }
     }
 
     const memberWrapper = document.createElement("div");
@@ -504,7 +522,7 @@ function editDish(index) {
     // Create img element for cat avatar
     const img = document.createElement("img");
     img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
-    img.alt = `Cat avatar ${avatarNumber}`;
+    img.alt = `Cat avatar ${memberName}`;
     img.className = "cat-avatar-img";
     memberAvatar.appendChild(img);
 
@@ -521,7 +539,8 @@ function editDish(index) {
     assigned.appendChild(memberWrapper);
   });
 
-  dishes.splice(index, 1);
+  // dishes.splice(index, 1);
+  deleteDish(index);
   updateDishList();
   clearError();
   // showSummary();
@@ -657,6 +676,12 @@ function updateDishSummary() {
       subtotalElement.textContent = "$0.00";
     }
 
+    // Clear the item count
+    const itemCountElement = document.getElementById("billItemCount");
+    if (itemCountElement) {
+      itemCountElement.textContent = "0";
+    }
+
     // Disable confirm button if no dishes
     const confirmButton = document.querySelector(".confirm-bill-btn");
     if (confirmButton) {
@@ -688,7 +713,7 @@ function updateDishSummary() {
     const divider = document.createElement("div");
     divider.className = "dish-members-divider";
     const dividerText = document.createElement("span");
-    dividerText.textContent = "Split Among";
+    dividerText.textContent = `Split Among (${dish.members.length})`;
     divider.appendChild(dividerText);
 
     // Dish members
@@ -737,6 +762,13 @@ function updateDishSummary() {
   const subtotalElement = document.getElementById("billSubtotal");
   if (subtotalElement) {
     subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+  }
+
+  // Update the item count
+  const itemCount = dishes.length;
+  const itemCountElement = document.getElementById("billItemCount");
+  if (itemCountElement) {
+    itemCountElement.textContent = itemCount.toString();
   }
 
   // Enable confirm button and add click handler with validation
@@ -788,6 +820,18 @@ function updateDishSummary() {
         if (overlay) {
           overlay.classList.remove("active");
         }
+      }
+
+      // Scroll the addSettleItemView container to the bottom
+      const addSettleItemView = document.querySelector(".add-settle-item-container");
+      if (addSettleItemView) {
+        // Use smooth scrolling for better UX
+        setTimeout(() => {
+          addSettleItemView.scrollTo({
+            top: 0,
+            behavior: "smooth",
+          });
+        }, 100);
       }
     };
   }
@@ -973,7 +1017,7 @@ function showFinaliseSettleBillScreen() {
                 <a
                   id="shareWhatsappBtn"
                   class="share-btn"
-                  href="https://wa.me/?text=Check%20this%20out!%20${result.link}"
+                  href="https://wa.me/?text=Let%27s%20settle%20our%20bill%20on%20SettleLah!%20${result.link}"
                   target="_blank"
                 >
                   <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/whatsapp.svg" alt="WhatsApp" />
@@ -993,7 +1037,7 @@ function showFinaliseSettleBillScreen() {
                 <a
                   id="shareTwitterBtn"
                     class="share-btn"
-                  href="https://twitter.com/intent/tweet?text=Check%20this%20out!&url=${result.link}"
+                  href="https://twitter.com/intent/tweet?text=Let%27s%20settle%20our%20bill%20on%20SettleLah!&url=${result.link}"
                   target="_blank"
                 >
                   <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/twitter.svg" alt="Twitter" />
@@ -1013,7 +1057,7 @@ function showFinaliseSettleBillScreen() {
                 <a
                   id="shareTelegramBtn"
                   class="share-btn"
-                  href="https://t.me/share/url?url=${result.link}&text=Check%20this%20out!"
+                  href="https://t.me/share/url?url=${result.link}&text=Let%27s%20settle%20our%20bill%20on%20SettleLah!"
                   target="_blank"
                 >
                   <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/telegram.svg" alt="Telegram" />
@@ -1023,7 +1067,7 @@ function showFinaliseSettleBillScreen() {
                 <a
                   id="shareEmailBtn"
                   class="share-btn"
-                  href="mailto:?subject=Check%20this%20out&body=Check%20this%20link:%20${result.link}"
+                  href="mailto:?subject=Let%27s%20settle%20our%20bill%20on%20SettleLah!&body=Here%27s%20the%20link%20to%20our%20bill:%20${result.link}"
                   target="_blank"
                 >
                   <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/maildotru.svg" alt="Email" />
@@ -1033,13 +1077,13 @@ function showFinaliseSettleBillScreen() {
                 <a
                   id="shareSmsBtn"
                   class="share-btn"
-                  href="sms:?&body=Check%20this%20out!%20${result.link}"
+                  href="sms:?&body=Let%27s%20settle%20our%20bill%20on%20SettleLah!%20${result.link}"
                 >
                   <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/signal.svg" alt="SMS" />
                   <span class="share-btn-span">SMS</span>
                 </a>
 
-                <button class="share-btn" onclick="copyToClipboard("${result.link}")">
+                <button class="share-btn" onclick="copyToClipboard('Lets Settle Our Bill On SettleLah! ${result.link}')">
                   <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/linktree.svg" alt="Copy" />
                   <span class="share-btn-span">Copy Link</span>
                 </button>
@@ -1118,6 +1162,8 @@ function updateReceiptDetails(receiptContainer, data) {
   const gstRow = receiptContainer.querySelector(".gstRow");
   const gstRate = receiptContainer.querySelector(".gstRate");
   const amountEl = receiptContainer.querySelector(".successAmount");
+  const originalAmountEl = receiptContainer.querySelector(".successOriginalAmount");
+  const originalAmountRow = receiptContainer.querySelector(".originalAmountRow");
 
   // Update the text content if elements exist
   if (settleMatterEl) settleMatterEl.textContent = data.settleMatter || "No one ask!";
@@ -1130,8 +1176,7 @@ function updateReceiptDetails(receiptContainer, data) {
   if (serviceChargeEl && serviceChargeRow) {
     const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
     if (serviceChargeValue > 0) {
-      const roundedServiceCharge = roundToNearest5Cents(serviceChargeValue);
-      serviceChargeEl.textContent = `$${roundedServiceCharge.toFixed(2)}`;
+      serviceChargeEl.textContent = `$${serviceChargeValue.toFixed(2)}`;
       serviceChargeRow.style.display = "";
 
       // Set service charge rate
@@ -1150,8 +1195,7 @@ function updateReceiptDetails(receiptContainer, data) {
       // Calculate after service amount from subtotal + service charge
       const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
       const afterServiceValue = subtotalValue + serviceChargeValue;
-      const roundedAfterService = roundToNearest5Cents(afterServiceValue);
-      afterServiceEl.textContent = `$${roundedAfterService.toFixed(2)}`;
+      afterServiceEl.textContent = `$${afterServiceValue.toFixed(2)}`;
       afterServiceRow.style.display = "";
     } else {
       afterServiceRow.style.display = "none";
@@ -1163,8 +1207,7 @@ function updateReceiptDetails(receiptContainer, data) {
     // Extract discount from data if available, otherwise don't show
     const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
     if (discountValue > 0) {
-      const roundedDiscount = roundToNearest5Cents(discountValue);
-      discountEl.textContent = `$${roundedDiscount.toFixed(2)}`;
+      discountEl.textContent = `$${discountValue.toFixed(2)}`;
       discountRow.style.display = "";
     } else {
       discountRow.style.display = "none";
@@ -1180,8 +1223,7 @@ function updateReceiptDetails(receiptContainer, data) {
       const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
       const afterServiceValue = subtotalValue + serviceChargeValue;
       const afterDiscountValue = afterServiceValue - discountValue;
-      const roundedAfterDiscount = roundToNearest5Cents(afterDiscountValue);
-      afterDiscountEl.textContent = `$${roundedAfterDiscount.toFixed(2)}`;
+      afterDiscountEl.textContent = `$${afterDiscountValue.toFixed(2)}`;
       afterDiscountRow.style.display = "";
     } else {
       afterDiscountRow.style.display = "none";
@@ -1192,8 +1234,7 @@ function updateReceiptDetails(receiptContainer, data) {
   if (gstEl && gstRow) {
     const gstValue = parseFloat(data.gst.replace("$", ""));
     if (gstValue > 0) {
-      const roundedGST = roundToNearest5Cents(gstValue);
-      gstEl.textContent = `$${roundedGST.toFixed(2)}`;
+      gstEl.textContent = `$${gstValue.toFixed(2)}`;
       gstRow.style.display = "";
 
       // Set GST rate
@@ -1205,10 +1246,28 @@ function updateReceiptDetails(receiptContainer, data) {
     }
   }
 
-  if (amountEl) {
+  // Display both original and rounded amounts for final total
+  if (originalAmountEl && originalAmountRow && amountEl) {
     const totalValue = parseFloat(data.totalAmount.replace("$", ""));
     const roundedTotal = roundToNearest5Cents(totalValue);
-    amountEl.textContent = `$${roundedTotal.toFixed(2)}`;
+
+    // Show original amount row only if rounding was applied
+    if (Math.abs(totalValue - roundedTotal) > 0.001) {
+      // Using a small epsilon for float comparison
+      originalAmountEl.textContent = `$${totalValue.toFixed(2)}`;
+      originalAmountRow.style.display = "";
+      // Show the rounded amount
+      amountEl.textContent = `$${roundedTotal}`;
+    } else {
+      // No rounding needed, hide original amount row
+      originalAmountRow.style.display = "none";
+      amountEl.textContent = `$${totalValue.toFixed(2)}`;
+    }
+  } else if (amountEl) {
+    // Fallback if original amount elements don't exist
+    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
+    const roundedTotal = roundToNearest5Cents(totalValue);
+    amountEl.textContent = `$${roundedTotal}`;
   }
 }
 
@@ -1238,9 +1297,46 @@ function showSuccessScreen() {
     const avatarImg = document.createElement("img");
     avatarImg.className = "avatar-img";
 
-    // Use different cat avatars for each member (cycling through 1-5)
-    const catNumber = (index % 5) + 1;
-    avatarImg.src = `assets/cat-icon/cat-${catNumber}.svg`;
+    // Determine avatar number based on member format
+    let avatarNumber;
+
+    if (typeof member === "object" && member.avatar) {
+      // Use the member's avatar if it's in object format
+      avatarNumber = member.avatar;
+    } else {
+      // For string format members, try to find their avatar in localStorage groups
+      const memberName = typeof member === "object" ? member.name : member;
+      let foundInGroups = false;
+      const storedGroups = JSON.parse(localStorage.getItem("groups")) || {};
+
+      // Search through all groups for this member
+      Object.values(storedGroups).forEach((groupMembers) => {
+        groupMembers.forEach((groupMember) => {
+          // If we find a matching name and it has an avatar
+          if (typeof groupMember === "object" && groupMember.name === memberName && groupMember.avatar) {
+            avatarNumber = groupMember.avatar;
+            foundInGroups = true;
+          }
+        });
+      });
+
+      // If not found in groups, fallback to index-based avatar or generate a consistent one
+      if (!foundInGroups) {
+        if (typeof member === "object" && member.name) {
+          // Generate consistent avatar based on name
+          const nameHash = member.name.split("").reduce((a, b) => {
+            a = (a << 5) - a + b.charCodeAt(0);
+            return a & a;
+          }, 0);
+          avatarNumber = Math.abs(nameHash % 20) + 1;
+        } else {
+          // Simple index-based fallback for string members
+          avatarNumber = (index % 20) + 1;
+        }
+      }
+    }
+
+    avatarImg.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
 
     // Append image to avatar container
     avatar.appendChild(avatarImg);
@@ -1485,8 +1581,8 @@ function initializeSwipeGesture() {
   let startX = 0;
   let startTime = 0;
   let isProcessingGesture = false;
-  const swipeTimeout = 300; // Timeout to prevent swipe detection during scrolling
-  const minTouchDuration = 150; // Minimum touch duration in ms to consider it intentional
+  const swipeTimeout = 400; // Timeout to prevent swipe detection during scrolling
+  const minTouchDuration = 300; // Minimum touch duration in ms to consider it intentional
   const maxTouchDuration = 1300; // Maximum touch duration to consider it a swipe (not a long press)
 
   // Function to handle touch start for both screens
@@ -1744,7 +1840,8 @@ function fetchHistory() {
 
             // Get total amount from the breakdown
             const total = bill.breakdown?.total || 0;
-            const formattedTotal = `$${roundToNearest5Cents(total).toFixed(2)}`;
+            // Apply rounding to the final total amount only
+            const formattedTotal = `$${roundToNearest5Cents(total)}`;
 
             // Get settle matter
             const settleMatter = bill.settleMatter || "Settlement";
@@ -3071,6 +3168,18 @@ if (addItemBtn) {
 
     // Show the bill summary
     showSummary();
+
+    // Scroll the dishSummaryContainer container to the bottom
+    const dishSummaryContainer = document.getElementById("dishSummaryContainer");
+    if (dishSummaryContainer) {
+      // Use smooth scrolling for better UX
+      setTimeout(() => {
+        dishSummaryContainer.scrollTo({
+          top: dishSummaryContainer.scrollHeight,
+          behavior: "smooth",
+        });
+      }, 100);
+    }
   });
 }
 
@@ -3968,7 +4077,8 @@ function updateSettleCardContent(card, billId, data) {
   // Update amount
   const amountElement = card.querySelector("#lastSettle .settle-info-amount");
   if (amountElement && data.breakdown && data.breakdown.total) {
-    amountElement.textContent = `$${roundToNearest5Cents(data.breakdown.total).toFixed(2)}`;
+    // Apply rounding to the final total amount only
+    amountElement.textContent = `$${roundToNearest5Cents(data.breakdown.total)}`;
   }
 
   // Update matter
@@ -4083,194 +4193,31 @@ window.onload = function () {
 };
 
 // Function to round amounts to the nearest 0.05
-// Values below 0.05 round to 0, values above 0.05 round to nearest 0.05
-// Exact 0.05 values stay as 0.05
 function roundToNearest5Cents(value) {
   if (typeof value === "string") {
     value = parseFloat(value);
   }
 
+  //two decimal places
+  value = parseFloat(value.toFixed(2));
+
   // Get decimal part (cents)
   const wholePart = Math.floor(value);
   const decimalPart = value - wholePart;
-  const cents = Math.round(decimalPart * 100);
+  const centsfinal = Math.round(decimalPart * 100);
+  const cents = centsfinal % 10;
 
   // Handle special cases
   if (cents < 5) {
-    return wholePart;
+    const finalValue = value - cents / 100;
+    return finalValue.toFixed(2);
   } else if (cents === 5) {
-    return wholePart + 0.05;
+    return value.toFixed(2);
   } else {
-    // Round to nearest 0.05
-    const roundedCents = Math.round(cents / 5) * 5;
-    return wholePart + roundedCents / 100;
-  }
-}
-
-// Add this code to the top of script.js, after any initial variables
-
-// PWA - IndexedDB setup for offline functionality
-let db;
-
-// Initialize the database
-function initDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("SettleLahDB", 1);
-
-    request.onerror = (event) => {
-      console.error("IndexedDB error:", event.target.error);
-      reject(event.target.error);
-    };
-
-    request.onsuccess = (event) => {
-      db = event.target.result;
-      console.log("IndexedDB initialized successfully");
-      resolve(db);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-
-      // Create object stores
-      if (!db.objectStoreNames.contains("pendingSettlements")) {
-        db.createObjectStore("pendingSettlements", { keyPath: "id", autoIncrement: true });
-      }
-
-      if (!db.objectStoreNames.contains("groups")) {
-        db.createObjectStore("groups", { keyPath: "id" });
-      }
-
-      if (!db.objectStoreNames.contains("settlements")) {
-        db.createObjectStore("settlements", { keyPath: "id" });
-      }
-    };
-  });
-}
-
-// Save data to IndexedDB when offline
-function saveOfflineData(storeName, data) {
-  return new Promise((resolve, reject) => {
-    if (!db) {
-      reject(new Error("Database not initialized"));
-      return;
-    }
-
-    const transaction = db.transaction([storeName], "readwrite");
-    const store = transaction.objectStore(storeName);
-    const request = store.add(data);
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = (event) => {
-      reject(event.target.error);
-    };
-  });
-}
-
-// Get all pending offline data
-function getOfflineData(storeName) {
-  return new Promise((resolve, reject) => {
-    if (!db) {
-      reject(new Error("Database not initialized"));
-      return;
-    }
-
-    const transaction = db.transaction([storeName], "readonly");
-    const store = transaction.objectStore(storeName);
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = (event) => {
-      reject(event.target.error);
-    };
-  });
-}
-
-// Clear all pending offline data
-function clearOfflineData(storeName) {
-  return new Promise((resolve, reject) => {
-    if (!db) {
-      reject(new Error("Database not initialized"));
-      return;
-    }
-
-    const transaction = db.transaction([storeName], "readwrite");
-    const store = transaction.objectStore(storeName);
-    const request = store.clear();
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = (event) => {
-      reject(event.target.error);
-    };
-  });
-}
-
-// Modified fetch function that handles offline mode
-async function fetchWithOfflineSupport(url, options = {}) {
-  try {
-    const response = await fetch(url, options);
-    return response;
-  } catch (error) {
-    // If it's a POST request and we're offline, save it for later
-    if (options.method === "POST" && !navigator.onLine) {
-      const data = JSON.parse(options.body);
-      await saveOfflineData("pendingSettlements", data);
-
-      // Register for background sync if supported
-      if ("serviceWorker" in navigator && "SyncManager" in window) {
-        const registration = await navigator.serviceWorker.ready;
-        await registration.sync.register("sync-settlements");
-      }
-
-      // Return a fake successful response
-      return new Response(
-        JSON.stringify({
-          success: true,
-          offline: true,
-          message: "Data saved offline and will sync when online",
-        })
-      );
-    }
-
-    throw error;
-  }
-}
-
-// Initialize IndexedDB when the app starts
-document.addEventListener("DOMContentLoaded", async () => {
-  try {
-    await initDB();
-
-    // Check if we're online and have pending data to sync
-    if (navigator.onLine) {
-      syncOfflineData();
-    }
-
-    // Listen for online events to sync data
-    window.addEventListener("online", syncOfflineData);
-  } catch (error) {
-    console.error("Failed to initialize IndexedDB:", error);
-  }
-});
-
-// Function to sync offline data when back online
-async function syncOfflineData() {
-  try {
-    // If service worker and sync are supported, let the service worker handle it
-    if ("serviceWorker" in navigator && "SyncManager" in window) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.sync.register("sync-settlements");
-    }
-  } catch (error) {
-    console.error("Failed to sync offline data:", error);
+    const roundedUp = Math.ceil(centsfinal / 10) * 10;
+    const centsToAdd = (roundedUp - centsfinal) / 100;
+    const finalValue = value + centsToAdd;
+    return finalValue.toFixed(2);
   }
 }
 
@@ -4331,61 +4278,6 @@ document.addEventListener("DOMContentLoaded", () => {
   document.head.appendChild(style);
 });
 
-// Check for app installation
-window.addEventListener("beforeinstallprompt", (e) => {
-  // Prevent Chrome 67 and earlier from automatically showing the prompt
-  e.preventDefault();
-
-  // Stash the event so it can be triggered later
-  const deferredPrompt = e;
-
-  // Show the install button if not already installed
-  const installButton = document.createElement("button");
-  installButton.id = "install-app";
-  installButton.textContent = "Install SettleLah!";
-  installButton.classList.add("install-button");
-
-  // Add icon to button
-  const icon = document.createElement("div");
-  icon.classList.add("install-button-icon");
-  icon.innerHTML = `<img src="icons/icon-192x192.png" alt="SettleLah! Icon" />`;
-  installButton.prepend(icon);
-
-  document.body.appendChild(installButton);
-
-  // Add click event
-  installButton.addEventListener("click", async () => {
-    // Hide the button
-    installButton.classList.add("installing");
-    // Change button text to show loading state
-    installButton.textContent = "Installing...";
-
-    // Show the prompt
-    deferredPrompt.prompt();
-
-    // Wait for the user to respond to the prompt
-    const { outcome } = await deferredPrompt.userChoice;
-
-    // Log the outcome
-    // console.log(`User ${outcome} the A2HS prompt`);
-  });
-});
-
-// Listen for app installed event
-window.addEventListener("appinstalled", () => {
-  // Hide the install button if it exists
-  const installButton = document.getElementById("install-app");
-  if (installButton) {
-    installButton.style.display = "none";
-  }
-
-  // Log successful installation
-  console.log("PWA was installed");
-
-  // Show a success notification
-  showNotification("SettleLah! has been installed successfully!");
-});
-
 // Function to sync the tax profile dropdown with localStorage value
 function syncTaxProfileDropdown() {
   const taxProfileDropdown = document.getElementById("taxProfile");
@@ -4422,3 +4314,57 @@ document.addEventListener("DOMContentLoaded", function () {
     ); // Must use passive: false to allow preventDefault
   });
 });
+
+// Add this function at the top of the file, after the other utility functions
+
+// Validate a bill ID format on the client side
+function isValidBillId(id) {
+  // Check if the ID follows our secure format pattern
+  // Format: timestamp-randomBytes-matterHash
+  const pattern = /^[a-z0-9]+-[a-z0-9]+-[a-z0-9]+$/i;
+
+  // For backward compatibility, also accept the old format (6 alphanumeric chars)
+  const oldPattern = /^[a-z0-9]{6}$/i;
+
+  return pattern.test(id) || oldPattern.test(id);
+}
+
+// Update the bill history storage to include validation
+function addBillToHistory(id, data) {
+  // Validate ID before storing
+  if (!isValidBillId(id)) {
+    console.warn(`Attempted to store invalid bill ID: ${id}`);
+    return;
+  }
+
+  // Store bill ID and timestamp in localStorage
+  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
+  if (!billIds.includes(id)) {
+    billIds.unshift(id); // Add to beginning of array
+    localStorage.setItem("billHistory", JSON.stringify(billIds));
+  }
+
+  // Store bill data with timestamp
+  const billData = {
+    timestamp: data.timestamp,
+    settleMatter: data.settleMatter || "No title",
+    members: data.members.map((m) => m.name).join(", "),
+    total: data.breakdown.total,
+  };
+
+  localStorage.setItem(`bill:${id}`, JSON.stringify(billData));
+}
+
+// Update this function for handling bill history loading
+function loadBillHistory() {
+  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
+
+  // Filter out any invalid IDs that might have been stored previously
+  const validBillIds = billIds.filter((id) => isValidBillId(id));
+
+  // If we filtered out any IDs, update the localStorage
+  if (validBillIds.length !== billIds.length) {
+    localStorage.setItem("billHistory", JSON.stringify(validBillIds));
+    console.warn(`Removed ${billIds.length - validBillIds.length} invalid bill IDs from history`);
+  }
+}

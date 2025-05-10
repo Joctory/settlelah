@@ -1,15 +1,35 @@
 {
+  "name": "settlelah",
+  "version": "1.0.0",
+  "description": "SettleLah - A bill splitting application with enhanced security",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "mocha test-security-rules.js",
+    "deploy-rules": "firebase deploy --only firestore:rules",
+    "security-setup": "./setup-security.sh"
   },
   "dependencies": {
-    "@vercel/edge-config": "^1.4.0",
-    "@vercel/kv": "^0.2.3",
     "express": "^4.18.2",
-    "firebase": "^11.6.0",
-    "form-data": "^4.0.2",
-    "multer": "^1.4.5-lts.2",
-    "node-fetch": "^3.3.2",
-    "sqlite3": "^5.1.6"
-  }
+    "express-rate-limit": "^6.11.2",
+    "firebase": "^9.22.0",
+    "firebase-admin": "^11.8.0",
+    "form-data": "^4.0.0",
+    "multer": "^1.4.5-lts.1",
+    "node-fetch": "^3.3.1",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^2.0.7",
+    "chai": "^4.3.7",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "private": true,
+  "author": "Joel Lee",
+  "license": "UNLICENSED"
 }
