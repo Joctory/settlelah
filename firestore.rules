@@ -65,6 +65,23 @@ service cloud.firestore {
       }
     }
     
+    // Rules for users collection with balanced security
+    match /users/{userId} {
+      // Allow creating new user accounts with proper validation
+      allow create: if request.resource.data.keys().hasAll(['name', 'email', 'passcode', 'created_at']);
+      
+      // Allow reading and querying for user data during login
+      allow list: if request.query.filters.size() == 2 && 
+                   request.query.filters[0].fieldPath == 'email' && 
+                   request.query.filters[1].fieldPath == 'passcode';
+      
+      // Allow specific user to read/update their own data
+      allow get, update: if true; // For development - in production, restrict this
+      
+      // Add a fallback for development
+      allow read: if true;  // For easier debugging - remove in production
+    }
+    
     // Default deny for all other collections
     match /{document=**} {
       allow read, write: if false;

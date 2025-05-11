@@ -153,11 +153,115 @@ app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
 });
 
-// Passcode validation endpoint
-app.post("/api/validate-passcode", (req, res) => {
-  const { passcode } = req.body;
+// Serve registration page
+app.get("/register", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "register.html"));
+});
 
-  // Get the correct passcode from environment variable
+// User registration endpoint
+app.post("/api/register", async (req, res) => {
+  try {
+    const { name, email, passcode } = req.body;
+
+    // Validate inputs
+    if (!name || !email || !passcode) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
+    }
+
+    if (passcode.length !== 6 || !/^\d{6}$/.test(passcode)) {
+      return res.status(400).json({ success: false, message: "Passcode must be exactly 6 digits" });
+    }
+
+    // Check if email already exists
+    const usersRef = firestore.collection(db, "users");
+    const emailQuery = firestore.query(usersRef, firestore.where("email", "==", email));
+    const emailSnapshot = await firestore.getDocs(emailQuery);
+
+    if (!emailSnapshot.empty) {
+      return res.status(400).json({ success: false, message: "Email already registered" });
+    }
+
+    // Create a new user
+    const userId = crypto.randomBytes(16).toString("hex");
+    const user = {
+      name,
+      email,
+      passcode, // In a production app, you should hash this
+      created_at: Date.now(),
+      last_login: null,
+    };
+
+    await firestore.setDoc(firestore.doc(usersRef, userId), user);
+
+    // Return success with userId (but not the passcode for security)
+    res.status(201).json({
+      success: true,
+      message: "Registration successful",
+      userId,
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
+    res.status(500).json({ success: false, message: "Registration failed" });
+  }
+});
+
+// Passcode validation endpoint
+app.post("/api/validate-passcode", async (req, res) => {
+  const { passcode, email } = req.body;
+
+  // If email is provided, validate against user database
+  if (email) {
+    try {
+      const usersRef = firestore.collection(db, "users");
+      const query = firestore.query(
+        usersRef,
+        firestore.where("email", "==", email),
+        firestore.where("passcode", "==", passcode)
+      );
+
+      const snapshot = await firestore.getDocs(query);
+
+      if (snapshot.empty) {
+        // Add a slight delay to prevent brute force attacks
+        setTimeout(() => {
+          res.json({
+            valid: false,
+            message: "Invalid email or passcode. Please try again.",
+          });
+        }, 1000);
+        return;
+      }
+
+      // Get the first matching user
+      const userDoc = snapshot.docs[0];
+      const userData = userDoc.data();
+
+      // Update last login timestamp
+      await firestore.updateDoc(firestore.doc(usersRef, userDoc.id), {
+        last_login: Date.now(),
+      });
+
+      // Generate token for API calls (in a real app, use JWT or similar)
+      const token = userDoc.id; // Using userId as token for simplicity
+
+      res.json({
+        valid: true,
+        token,
+        userId: userDoc.id,
+        name: userData.name,
+        message: "Authentication successful",
+      });
+    } catch (error) {
+      console.error("Authentication error:", error);
+      res.status(500).json({
+        valid: false,
+        message: "Authentication failed. Please try again.",
+      });
+    }
+    return;
+  }
+
+  // Get the correct passcode from environment variable (fallback for legacy authentication)
   const correctPasscode = process.env.APP_PASSCODE || "123456"; // Default for development
 
   // Validate the passcode (use strict equality to avoid timing attacks)
@@ -188,6 +292,139 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
+// New API endpoint to fetch bill history from Firebase
+app.get("/api/history", async (req, res) => {
+  try {
+    // Get user ID from session storage
+    const userId = req.headers["x-user-id"];
+
+    // Query Firestore for bills
+    const billsRef = firestore.collection(db, "bills");
+    let query = billsRef;
+
+    // If user is authenticated, filter by their bills
+    if (userId) {
+      query = firestore.query(
+        billsRef,
+        firestore.where("userId", "==", userId),
+        firestore.orderBy("timestamp", "desc"),
+        firestore.limit(20)
+      );
+    } else {
+      // For unauthenticated users, just get the most recent bills (limited number)
+      query = firestore.query(billsRef, firestore.orderBy("timestamp", "desc"), firestore.limit(10));
+    }
+
+    const snapshot = await firestore.getDocs(query);
+
+    // Convert snapshot to array of bills with IDs
+    const bills = [];
+    snapshot.forEach((doc) => {
+      bills.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    res.json({ bills });
+  } catch (error) {
+    console.error("Error fetching bill history:", error);
+    res.status(500).json({ error: "Failed to fetch bill history" });
+  }
+});
+
+// New API endpoint to get latest bill from Firebase
+app.get("/api/history/latest", async (req, res) => {
+  try {
+    // Get user ID from session storage
+    const userId = req.headers["x-user-id"];
+
+    // Query Firestore for bills
+    const billsRef = firestore.collection(db, "bills");
+    let query = billsRef;
+
+    // If user is authenticated, filter by their bills
+    if (userId) {
+      query = firestore.query(
+        billsRef,
+        firestore.where("userId", "==", userId),
+        firestore.orderBy("timestamp", "desc"),
+        firestore.limit(1)
+      );
+    } else {
+      // For unauthenticated users, get the most recent bill
+      query = firestore.query(billsRef, firestore.orderBy("timestamp", "desc"), firestore.limit(1));
+    }
+
+    const snapshot = await firestore.getDocs(query);
+
+    if (snapshot.empty) {
+      return res.json({ bill: null });
+    }
+
+    // Get the first (most recent) bill
+    const doc = snapshot.docs[0];
+    const bill = {
+      id: doc.id,
+      ...doc.data(),
+    };
+
+    res.json({ bill });
+  } catch (error) {
+    console.error("Error fetching latest bill:", error);
+    res.status(500).json({ error: "Failed to fetch latest bill" });
+  }
+});
+
+// New API endpoint to clear bill history from Firebase
+app.delete("/api/history/clear", async (req, res) => {
+  try {
+    // Get user ID from session storage
+    const userId = req.headers["x-user-id"];
+
+    // Query Firestore for bills
+    const billsRef = firestore.collection(db, "bills");
+    let query = billsRef;
+
+    // If user is authenticated, filter by their bills
+    if (userId) {
+      query = firestore.query(billsRef, firestore.where("userId", "==", userId), firestore.limit(100));
+    } else {
+      // For unauthenticated users, get the most recent bills
+      query = firestore.query(billsRef, firestore.orderBy("timestamp", "desc"), firestore.limit(50));
+    }
+
+    // Get the bills to delete
+    const snapshot = await firestore.getDocs(query);
+
+    // If no bills found, return success
+    if (snapshot.empty) {
+      return res.json({ success: true, message: "No bills to delete", count: 0 });
+    }
+
+    // Delete the bills in batches (Firestore limits batch operations to 500)
+    const batch = firestore.writeBatch(db);
+    let count = 0;
+
+    snapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+      count++;
+    });
+
+    // Commit the batch delete
+    await batch.commit();
+
+    res.json({
+      success: true,
+      message: `Successfully deleted ${count} bills`,
+      count,
+    });
+  } catch (error) {
+    console.error("Error clearing bill history:", error);
+    res.status(500).json({ error: "Failed to clear bill history" });
+  }
+});
+
 app.post("/calculate", billCreateLimiter, async (req, res) => {
   const {
     members,
@@ -207,7 +444,9 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
   // Get the host from request headers if available, otherwise fall back to environment variables
   const baseUrl =
     req.headers && req.headers.host
-      ? `https://${req.headers.host}`
+      ? req.headers.host.includes("localhost")
+        ? `http://${req.headers.host}`
+        : `https://${req.headers.host}`
       : process.env.CUSTOM_DOMAIN
       ? `https://${process.env.CUSTOM_DOMAIN}`
       : process.env.VERCEL_URL
@@ -294,10 +533,12 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
     serviceChargeRate: `${parseFloat(serviceChargeValue || 10)}%`, // Include service charge rate
     gstRate: `${(gstRate * 100).toFixed(0)}%`, // Include GST rate as a percentage
     // Add ownership information for security
-    createdBy: req.headers.authorization ? req.headers.authorization.split(" ")[1] : null,
+    createdBy: req.headers["x-user-id"] || null,
     createdIP: req.ip || req.headers["x-forwarded-for"] || "unknown",
     // Add a creation date string for easier reference
     createdDate: new Date().toISOString(),
+    // Associate with user if authenticated
+    userId: req.headers["x-user-id"] || null,
   };
 
   // Verify that sum of individual totals matches the bill total
@@ -406,30 +647,6 @@ app.get("/bill/:id", resultViewLimiter, async (req, res) => {
 
   // Serve the bill.html page
   res.sendFile(path.join(__dirname, "public", "bill.html"));
-});
-
-app.delete("/history", deleteLimiter, async (req, res) => {
-  const { ids } = req.body; // Expect an array of IDs
-
-  if (!Array.isArray(ids) || ids.length === 0) {
-    return res.status(400).json({ error: "No bill IDs provided" });
-  }
-
-  try {
-    // Add logging for security monitoring
-    console.log(`Deletion request for ${ids.length} bills from IP: ${req.ip}`);
-
-    const result = await deleteBills(ids);
-
-    if (result.deleted === 0) {
-      return res.status(400).json({ error: result.message });
-    }
-
-    res.json({ message: result.message });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Error clearing history" });
-  }
 });
 
 app.post("/api/scan-receipt", upload.single("document"), async (req, res) => {

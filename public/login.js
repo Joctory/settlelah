@@ -27,7 +27,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const passcodeLength = 6;
   const dots = document.querySelectorAll(".passcode-dot");
   const errorElement = document.getElementById("login-error");
+  const emailInput = document.getElementById("loginEmail");
+  const emailError = document.getElementById("email-error");
   let isProcessingInput = false; // Flag to track if we're processing input
+
+  // Check for "registered=true" parameter in URL
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("registered") === "true") {
+    // Show success message
+    showLoginMessage("Registration successful! Please log in with your email and passcode.", "success");
+  }
 
   // Vibration utility function
   function vibrate(pattern) {
@@ -183,6 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Validate the entered passcode
   function validatePasscode() {
+    // Validate email first
+    const email = emailInput.value.trim();
+    if (!isValidEmail(email)) {
+      showEmailError("Please enter a valid email address");
+      return;
+    }
+
     // Add pulsing animation to dots to indicate validation in progress
     dots.forEach((dot) => {
       if (dot.classList.contains("filled")) {
@@ -190,13 +206,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     });
 
-    // Simulate network request (replace with actual validation)
+    // Send both email and passcode to server
     fetch("/api/validate-passcode", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ passcode }),
+      body: JSON.stringify({ email, passcode }),
     })
       .then((response) => response.json())
       .then((data) => {
@@ -204,9 +220,20 @@ document.addEventListener("DOMContentLoaded", () => {
         dots.forEach((dot) => dot.classList.remove("pulse"));
 
         if (data.valid) {
+          // Store user info in localStorage if available
+          if (data.userId) {
+            localStorage.setItem("settlelah_user_id", data.userId);
+          }
+          if (data.name) {
+            localStorage.setItem("settlelah_user_name", data.name);
+          }
+          if (data.token) {
+            localStorage.setItem("settlelah_user_token", data.token);
+          }
+
           handleSuccessfulLogin();
         } else {
-          handleFailedLogin(data.message || "Invalid passcode. Please try again.");
+          handleFailedLogin(data.message || "Invalid email or passcode. Please try again.");
         }
       })
       .catch((error) => {
@@ -216,6 +243,56 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
+  // Helper function to validate email format
+  function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  // Show email-specific error
+  function showEmailError(message) {
+    emailError.textContent = message;
+    emailError.classList.add("visible");
+    emailInput.style.borderColor = "var(--error-color)";
+
+    // Vibrate with a pattern for error feedback
+    vibrate([50, 50, 50]);
+  }
+
+  // Show a message above the login form
+  function showLoginMessage(message, type) {
+    // Create message element if it doesn't exist
+    let messageElement = document.querySelector(".login-message");
+
+    if (!messageElement) {
+      messageElement = document.createElement("div");
+      messageElement.classList.add("login-message");
+      const container = document.querySelector(".login-container");
+      container.insertBefore(messageElement, container.firstChild);
+    }
+
+    // Set message content and style
+    messageElement.textContent = message;
+    messageElement.className = "login-message";
+
+    if (type === "success") {
+      messageElement.classList.add("success");
+    } else if (type === "error") {
+      messageElement.classList.add("error");
+    }
+
+    // Show the message
+    messageElement.style.display = "block";
+
+    // Hide after 5 seconds
+    setTimeout(() => {
+      messageElement.style.opacity = "0";
+      setTimeout(() => {
+        messageElement.style.display = "none";
+      }, 300);
+    }, 5000);
+  }
+
   // Handle successful login
   function handleSuccessfulLogin() {
     // Add success animation to dots
@@ -223,12 +300,12 @@ document.addEventListener("DOMContentLoaded", () => {
       dot.classList.add("success");
     });
 
-    // Store authentication in sessionStorage
-    sessionStorage.setItem("settlelah_authenticated", "true");
+    // Store authentication in localStorage instead of sessionStorage for persistence
+    localStorage.setItem("settlelah_authenticated", "true");
 
     // Add timestamp for session expiration (24 hours)
     const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
-    sessionStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
+    localStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
 
     // Redirect to main page after animation
     setTimeout(() => {
@@ -251,7 +328,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateDots();
       passcodeContainer.classList.remove("shake");
       showError(message);
-    }, 400);
+    }, 600);
   }
 
   // Show error message
@@ -263,14 +340,14 @@ document.addEventListener("DOMContentLoaded", () => {
   // Hide error message
   function hideError() {
     errorElement.classList.remove("visible");
+    emailError.classList.remove("visible");
+    emailInput.style.borderColor = "";
   }
 
   // Check if user is already authenticated
   function checkAuthentication() {
-    const isAuthenticated = sessionStorage.getItem("settlelah_authenticated") === "true";
-    const authExpiry = parseInt(sessionStorage.getItem("settlelah_auth_expiry") || "0");
-
-    // If authenticated and not expired, redirect to main page
+    const isAuthenticated = localStorage.getItem("settlelah_authenticated") === "true";
+    const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
     if (isAuthenticated && authExpiry > Date.now()) {
       window.location.href = "/";
     }

@@ -46,7 +46,11 @@
           <img src="assets/lock.svg" alt="Lock" />
         </div>
         <h1 class="login-title">SettleLah</h1>
-        <p class="login-subtitle">Enter your 6-digit passcode to continue</p>
+        <p class="login-subtitle">Enter your email and 6-digit passcode to continue</p>
+      </div>
+      <div class="email-input-container">
+        <input type="email" id="loginEmail" name="email" placeholder="Enter your email" autocomplete="email" />
+        <div class="error-message" id="email-error"></div>
       </div>
       <div class="passcode-dots-container">
         <div class="passcode-dots">
@@ -97,6 +101,9 @@
           </div>
         </div>
       </div>
+    </div>
+    <div class="register-prompt">
+      <p>New to SettleLah? <a href="/register">Create an account</a></p>
     </div>
     <div class="login-footer">
       <p>App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span></p>

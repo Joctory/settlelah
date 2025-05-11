@@ -1,13 +1,13 @@
 // Authentication check
 function checkAuthentication() {
-  const isAuthenticated = sessionStorage.getItem("settlelah_authenticated") === "true";
-  const authExpiry = parseInt(sessionStorage.getItem("settlelah_auth_expiry") || "0");
+  const isAuthenticated = localStorage.getItem("settlelah_authenticated") === "true";
+  const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
 
   // If not authenticated or token expired, redirect to login
   if (!isAuthenticated || authExpiry <= Date.now()) {
     // Clear any existing auth data
-    sessionStorage.removeItem("settlelah_authenticated");
-    sessionStorage.removeItem("settlelah_auth_expiry");
+    localStorage.removeItem("settlelah_authenticated");
+    localStorage.removeItem("settlelah_auth_expiry");
 
     // Redirect to login page
     window.location.href = "/login";
@@ -15,6 +15,28 @@ function checkAuthentication() {
   }
 
   return true;
+}
+
+// Helper function to get user ID from local storage
+function getUserId() {
+  return localStorage.getItem("settlelah_user_id");
+}
+
+// Helper function to add user ID to fetch requests
+function fetchWithUserId(url, options = {}) {
+  const userId = getUserId();
+
+  // Initialize headers if they don't exist
+  if (!options.headers) {
+    options.headers = {};
+  }
+
+  // Add user ID header if it exists
+  if (userId) {
+    options.headers["x-user-id"] = userId;
+  }
+
+  return fetch(url, options);
 }
 
 // Initialize pull-to-refresh functionality
@@ -183,32 +205,31 @@ document.addEventListener("click", extendAuthSession);
 document.addEventListener("keydown", extendAuthSession);
 
 function extendAuthSession() {
-  if (sessionStorage.getItem("settlelah_authenticated") === "true") {
+  if (localStorage.getItem("settlelah_authenticated") === "true") {
     // Extend session by another 24 hours from now
     const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
-    sessionStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
+    localStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
   }
 }
 
 // Logout function
 function logout() {
-  // Show confirmation
+  // Get confirmation from user
   const confirmLogout = confirm("Are you sure you want to log out?");
 
   if (confirmLogout) {
-    // Clear auth data
-    sessionStorage.removeItem("settlelah_authenticated");
-    sessionStorage.removeItem("settlelah_auth_expiry");
+    // Clear auth data from localStorage
+    localStorage.removeItem("settlelah_authenticated");
+    localStorage.removeItem("settlelah_auth_expiry");
+    localStorage.removeItem("settlelah_user_id");
+    localStorage.removeItem("settlelah_user_name");
+    localStorage.removeItem("settlelah_user_token");
 
     // Show short feedback message
-    const logoutToast = document.createElement("div");
-    logoutToast.className = "logout-toast";
-    logoutToast.textContent = "Logging out...";
-    document.body.appendChild(logoutToast);
+    showToast("logoutToast");
 
-    // Short delay for visual feedback
+    // Wait a moment before redirecting
     setTimeout(() => {
-      // Redirect to login page
       window.location.href = "/login";
     }, 500);
   }
@@ -329,7 +350,7 @@ function scanReceipt() {
   formData.append("document", file);
 
   // Make the API request to our backend instead of directly to Mindee
-  fetch("/api/scan-receipt", {
+  fetchWithUserId("/api/scan-receipt", {
     method: "POST",
     body: formData,
   })
@@ -973,7 +994,7 @@ function showFinaliseSettleBillScreen() {
       serviceChargeValue,
     };
 
-    fetch("/calculate", {
+    fetchWithUserId("/calculate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(billData),
@@ -1749,7 +1770,6 @@ function updateGroupSelect() {
 }
 
 function fetchHistory() {
-  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
   const historyList = document.querySelector(".history-list");
   const historyLoading = document.querySelector(".history-loading");
 
@@ -1761,8 +1781,8 @@ function fetchHistory() {
   // Clear previous content
   historyList.innerHTML = "";
 
-  // Show skeleton loading placeholders
-  const placeholdersCount = billIds.length > 0 ? Math.min(billIds.length, 5) : 3;
+  // Show skeleton loading placeholders - default to 3
+  const placeholdersCount = 3;
 
   for (let i = 0; i < placeholdersCount; i++) {
     const placeholder = document.createElement("div");
@@ -1770,45 +1790,20 @@ function fetchHistory() {
     historyList.appendChild(placeholder);
   }
 
-  if (billIds.length === 0) {
-    // Add slight delay before showing no history message for better UX
-    setTimeout(() => {
-      // Hide loading spinner
-      if (historyLoading) {
-        historyLoading.classList.remove("active");
+  // Fetch bills from Firebase instead of localStorage
+  fetchWithUserId("/api/history", {
+    method: "GET",
+    headers: {
+      Accept: "application/json",
+    },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
       }
-      historyList.innerHTML = "<p class='no-history'>No history yet.</p>";
-      document.getElementById("clearHistoryBtn").style.display = "none";
-    }, 800);
-    return;
-  } else {
-    document.getElementById("clearHistoryBtn").style.display = "block";
-  }
-
-  Promise.all(
-    billIds.map((id) =>
-      fetch(`/result/${id}`, {
-        headers: {
-          Accept: "application/json",
-        },
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Bill not found");
-          return res.json();
-        })
-        .then((data) => {
-          // Use the full data object for creating UI elements
-          const timestamp =
-            JSON.parse(localStorage.getItem(`bill:${id}`) || "{}").timestamp || data.timestamp || Date.now();
-          return { ...data, id, timestamp };
-        })
-        .catch((error) => {
-          console.error("Error fetching bill:", error);
-          return null;
-        })
-    )
-  )
-    .then((bills) => {
+      return response.json();
+    })
+    .then((data) => {
       // Add slight delay for better UX
       setTimeout(() => {
         // Hide loading spinner
@@ -1819,18 +1814,25 @@ function fetchHistory() {
         // Clear skeleton loaders
         historyList.innerHTML = "";
 
-        const validBills = bills.filter((bill) => bill);
-        if (validBills.length === 0) {
-          historyList.innerHTML = "<p class='no-history'>No valid history found.</p>";
+        // Check if we have any bills
+        if (!data || !data.bills || data.bills.length === 0) {
+          historyList.innerHTML = "<p class='no-history'>No history yet.</p>";
+          document.getElementById("clearHistoryBtn").style.display = "none";
           return;
         }
 
-        validBills
+        // Show clear history button if we have bills
+        document.getElementById("clearHistoryBtn").style.display = "block";
+
+        // Process the bills
+        const bills = data.bills;
+
+        bills
           .sort((a, b) => b.timestamp - a.timestamp) // Newest first
           .forEach((bill) => {
             // Create a settle item that matches the design
             const settleItem = document.createElement("a");
-            settleItem.href = `/result/${bill.id}`;
+            settleItem.href = `/bill/${bill.id}`;
             settleItem.target = "_blank";
             settleItem.className = "settle-item";
 
@@ -1855,8 +1857,8 @@ function fetchHistory() {
               .map(
                 (member) =>
                   `<div class="avatar">
-                <img class="avatar-img" src="assets/cat-icon/cat-${member.avatar || 1}.svg" />
-              </div>`
+              <img class="avatar-img" src="assets/cat-icon/cat-${member.avatar || 1}.svg" />
+            </div>`
               )
               .join("");
 
@@ -1864,28 +1866,28 @@ function fetchHistory() {
             const plusIndicator = members.length > 5 ? "+" : "";
 
             settleItem.innerHTML = `
-              <div class="settle-top">
-                <div class="settle-info">
-                  <p class="settle-info-amount">${formattedTotal}</p>
-                  <p class="settle-info-matter">${settleMatter}</p>
-                  <p class="settle-info-group">${members.length} members</p>
-                </div>
-                <div class="settle-arrow">
-                  <img src="assets/arrow.svg" alt="arrow" />
+            <div class="settle-top">
+              <div class="settle-info">
+                <p class="settle-info-amount">${formattedTotal}</p>
+                <p class="settle-info-matter">${settleMatter}</p>
+                <p class="settle-info-group">${members.length} members</p>
+              </div>
+              <div class="settle-arrow">
+                <img src="assets/arrow.svg" alt="arrow" />
+              </div>
+            </div>
+            <div class="settle-bottom">
+              <div class="settle-info-date">
+                <span>${formattedDate}</span>
+              </div>
+              <div class="settle-avatar">
+                <div class="avatar-group">
+                  ${membersAvatars}
+                  ${plusIndicator}
                 </div>
               </div>
-              <div class="settle-bottom">
-                <div class="settle-info-date">
-                  <span>${formattedDate}</span>
-                </div>
-                <div class="settle-avatar">
-                  <div class="avatar-group">
-                    ${membersAvatars}
-                    ${plusIndicator}
-                  </div>
-                </div>
-              </div>
-            `;
+            </div>
+          `;
 
             historyList.appendChild(settleItem);
           });
@@ -2757,72 +2759,45 @@ function clearHistory() {
 
 // Function to actually clear the history after confirmation
 function confirmClearHistory() {
-  // Get bill IDs from localStorage before removing them
-  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
-
   // Show loading in the history list
   const historyList = document.querySelector(".history-list");
   if (historyList) {
     historyList.innerHTML = "<p class='no-history'>Clearing history...</p>";
   }
 
-  // Only proceed with server deletion if there are IDs to delete
-  if (billIds && billIds.length > 0) {
-    // First delete from the server/database
-    fetch("/history", {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ ids: billIds }),
+  // Call the API to clear history from Firebase
+  fetchWithUserId("/api/history/clear", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Failed to clear history from server");
+      }
+      return response.json();
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to clear history from server");
-        }
-        return response.text();
-      })
-      .then(() => {
-        // Successfully deleted from server, now clear localStorage
-        localStorage.removeItem("billHistory");
-        Object.keys(localStorage)
-          .filter((key) => key.startsWith("bill:"))
-          .forEach((key) => localStorage.removeItem(key));
+    .then((data) => {
+      // Refresh the history list
+      fetchHistory();
 
-        // Refresh the history list
-        fetchHistory();
+      // Hide the confirmation modal
+      hideModal("clearHistoryConfirmModal");
 
-        // Hide the confirmation modal
-        hideModal("clearHistoryConfirmModal");
+      // Show success toast
+      showToast("historyClearedToast");
+    })
+    .catch((error) => {
+      console.error("Error clearing history:", error);
 
-        // Show success toast
-        showToast("historyClearedToast");
-      })
-      .catch((error) => {
-        console.error("Error clearing history:", error);
+      // Refresh the history list anyway to restore display
+      fetchHistory();
 
-        // Refresh the history list anyway to restore display
-        fetchHistory();
-
-        // Hide the confirmation modal
-        hideModal("clearHistoryConfirmModal");
-      });
-  } else {
-    // No IDs to delete from server, just clear localStorage
-    localStorage.removeItem("billHistory");
-    Object.keys(localStorage)
-      .filter((key) => key.startsWith("bill:"))
-      .forEach((key) => localStorage.removeItem(key));
-
-    // Refresh the history list
-    fetchHistory();
-
-    // Hide the confirmation modal
-    hideModal("clearHistoryConfirmModal");
-
-    // Show the toast notification
-    showToast("historyClearedToast");
-  }
+      // Hide the confirmation modal
+      hideModal("clearHistoryConfirmModal");
+    });
 }
 
 // Function to show a toast notification
@@ -3401,6 +3376,17 @@ document.addEventListener("DOMContentLoaded", function () {
     window.dishes = [];
   }
 
+  // Update welcome message with user's name from localStorage
+  const welcomeHeading = document.querySelector(".welcome-section h1");
+  if (welcomeHeading) {
+    const userName = localStorage.getItem("settlelah_user_name");
+    if (userName) {
+      welcomeHeading.textContent = `Welcome back, ${userName}!`;
+    } else {
+      welcomeHeading.textContent = "Welcome back!";
+    }
+  }
+
   // Initialize the tax profile dropdown
   initTaxProfileDropdown();
 
@@ -3970,77 +3956,71 @@ function updateLastSettle() {
   // Show skeleton loading
   settleCard.classList.add("loading");
 
-  // Get bill history IDs
-  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
-
-  if (billIds.length === 0) {
-    // No history found, show empty state message after loading animation
-    setTimeout(() => {
-      // Update header to indicate empty state
-      const arrowIcon = settleCard.querySelector(".arrow-icon");
-      if (arrowIcon) {
-        arrowIcon.style.display = "none";
-      }
-
-      // Clear existing content and add empty state message
-      const settleInfo = settleCard.querySelector(".settle-info");
-      if (settleInfo) {
-        // Clear amount, matter, group info
-        const amountEl = settleInfo.querySelector(".settle-info-amount");
-        const matterEl = settleInfo.querySelector(".settle-info-matter");
-        const groupEl = settleInfo.querySelector(".settle-info-group");
-
-        if (amountEl) amountEl.textContent = "No settlements yet";
-        if (matterEl) matterEl.textContent = "Start settling bills with your friends";
-        if (groupEl) groupEl.textContent = "Tap 'Settle Now' to begin";
-      }
-
-      // Clear date and avatars
-      const dateEl = settleCard.querySelector(".settle-info-date span");
-      if (dateEl) dateEl.textContent = "";
-
-      const avatarGroup = settleCard.querySelector(".avatar-group");
-      if (avatarGroup) {
-        avatarGroup.innerHTML = "";
-      }
-
-      // Remove the link behavior when there's no data
-      settleCard.href = "javascript:void(0)";
-      settleCard.style.cursor = "default";
-
-      // Remove loading state
-      settleCard.classList.remove("loading");
-    }, 800);
-    return;
-  }
-
-  // Get the most recent bill ID (last in the array)
-  const lastBillId = billIds[billIds.length - 1];
-
-  // Set the link to the result page
-  settleCard.href = `/result/${lastBillId}`;
-  settleCard.style.cursor = "pointer";
-
-  // Fetch the bill data
-  fetch(`/result/${lastBillId}`, {
+  // Fetch the most recent bill from Firebase
+  fetchWithUserId("/api/history/latest", {
+    method: "GET",
     headers: {
       Accept: "application/json",
     },
   })
-    .then((res) => {
-      if (!res.ok) throw new Error("Bill not found");
-      return res.json();
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      return response.json();
     })
     .then((data) => {
-      // Update the card with fetched data (with slight delay to show the loading animation)
+      // Add slight delay to show the loading animation
       setTimeout(() => {
-        // Make sure arrow icon is visible for valid data
-        const arrowIcon = settleCard.querySelector(".arrow-icon");
-        if (arrowIcon) {
-          arrowIcon.style.display = "";
-        }
+        // If no bill found
+        if (!data || !data.bill) {
+          // Update header to indicate empty state
+          const arrowIcon = settleCard.querySelector(".arrow-icon");
+          if (arrowIcon) {
+            arrowIcon.style.display = "none";
+          }
 
-        updateSettleCardContent(settleCard, lastBillId, data);
+          // Clear existing content and add empty state message
+          const settleInfo = settleCard.querySelector(".settle-info");
+          if (settleInfo) {
+            // Clear amount, matter, group info
+            const amountEl = settleInfo.querySelector(".settle-info-amount");
+            const matterEl = settleInfo.querySelector(".settle-info-matter");
+            const groupEl = settleInfo.querySelector(".settle-info-group");
+
+            if (amountEl) amountEl.textContent = "No settlements yet";
+            if (matterEl) matterEl.textContent = "Start settling bills with your friends";
+            if (groupEl) groupEl.textContent = "Tap 'Settle Now' to begin";
+          }
+
+          // Clear date and avatars
+          const dateEl = settleCard.querySelector(".settle-info-date span");
+          if (dateEl) dateEl.textContent = "";
+
+          const avatarGroup = settleCard.querySelector(".avatar-group");
+          if (avatarGroup) {
+            avatarGroup.innerHTML = "";
+          }
+
+          // Remove the link behavior when there's no data
+          settleCard.href = "javascript:void(0)";
+          settleCard.style.cursor = "default";
+        } else {
+          // We have a bill, update the card
+          const bill = data.bill;
+
+          // Make sure arrow icon is visible for valid data
+          const arrowIcon = settleCard.querySelector(".arrow-icon");
+          if (arrowIcon) {
+            arrowIcon.style.display = "";
+          }
+
+          // Set the link to the result page
+          settleCard.href = `/bill/${bill.id}`;
+          settleCard.style.cursor = "pointer";
+
+          updateSettleCardContent(settleCard, bill.id, bill);
+        }
 
         // Remove loading state
         settleCard.classList.remove("loading");
@@ -4071,7 +4051,7 @@ function updateSettleCardContent(card, billId, data) {
   if (!data) return;
 
   // Set the link to the result page
-  card.href = `/result/${billId}`;
+  card.href = `/bill/${billId}`;
   card.target = "_blank";
 
   // Update amount

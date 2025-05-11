@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#fff" />
+    <title>Register - SettleLah</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="apple-touch-icon" href="assets/icon-512.png" />
+    <link rel="manifest" href="manifest.json" />
+    <style>
+      .registration-container {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        width: 100%;
+        max-width: 500px;
+        margin: 0 auto;
+      }
+
+      .logo {
+        margin-bottom: 40px;
+        margin-top: -40px;
+      }
+
+      .logo img {
+        width: 180px;
+      }
+
+      .form-container {
+        width: 100%;
+        height: 100%;
+        background: white;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        overflow: auto;
+      }
+
+      .form-header {
+        position: relative;
+        text-align: center;
+        margin-bottom: 24px;
+      }
+
+      .form-header h1 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #212529;
+        margin-bottom: 0px;
+      }
+
+      .form-header p {
+        color: #6c757d;
+        font-size: 16px;
+      }
+
+      .input-container {
+        margin-bottom: 20px;
+      }
+
+      .input-field {
+        position: relative;
+        margin-bottom: 16px;
+      }
+
+      .input-field label {
+        display: block;
+        margin-bottom: 8px;
+        color: #495057;
+        font-weight: 500;
+        font-size: 14px;
+      }
+
+      .input-field input {
+        width: 100%;
+        padding: 14px 16px;
+        border-radius: 8px;
+        border: 1px solid #ced4da;
+        font-size: 16px;
+        transition: border-color 0.2s;
+      }
+
+      .input-field input:focus {
+        outline: none;
+        border-color: #007bff;
+      }
+
+      .input-field.error input {
+        border-color: #ff4c4c;
+      }
+
+      .error-message {
+        font-size: 12px;
+        color: #ff4c4c;
+        margin-top: 4px;
+        display: none;
+      }
+
+      .error-message.visible {
+        display: block;
+      }
+
+      .passcode-field input {
+        letter-spacing: 0.5em;
+        text-align: center;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .helper-text {
+        color: #6c757d;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .register-btn {
+        width: 100%;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background-color 0.2s;
+      }
+
+      .register-btn:hover {
+        background: #0069d9;
+      }
+
+      .register-btn:disabled {
+        background: #b3d7ff;
+        cursor: not-allowed;
+      }
+
+      .separator {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 24px 0;
+        color: #6c757d;
+      }
+
+      .separator::before,
+      .separator::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #dee2e6;
+      }
+
+      .separator::before {
+        margin-right: 12px;
+      }
+
+      .separator::after {
+        margin-left: 12px;
+      }
+
+      .login-prompt {
+        text-align: center;
+        margin-top: 24px;
+        color: #6c757d;
+      }
+
+      .login-prompt a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: 500;
+      }
+
+      .back-button {
+        position: absolute;
+        top: 0;
+        left: 0;
+        background: none;
+        border: none;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        color: #212529;
+        font-size: 16px;
+        font-weight: 500;
+      }
+
+      .back-button img {
+        width: 24px;
+        margin-right: 8px;
+      }
+
+      /* Animation for success */
+      @keyframes successPulse {
+        0% {
+          transform: scale(0.95);
+          opacity: 0;
+        }
+        70% {
+          transform: scale(1.05);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      .success-message {
+        display: none;
+        text-align: center;
+        color: #28a745;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-weight: 500;
+        background-color: rgba(40, 167, 69, 0.1);
+        animation: successPulse 0.5s ease-out forwards;
+      }
+
+      .success-message.visible {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="registration-container">
+      <div class="form-container">
+        <div class="form-header">
+          <button class="back-button" onclick="window.location.href='/login'">
+            <img src="assets/back.svg" alt="Back" />
+          </button>
+          <h1>Create an Account</h1>
+          <p>Still waiting? SettleLah!</p>
+        </div>
+
+        <div class="success-message" id="successMessage">Registration successful! Redirecting you to login...</div>
+
+        <form id="registrationForm">
+          <div class="input-container">
+            <div class="input-field">
+              <label for="name">Full Name</label>
+              <input type="text" id="name" name="name" placeholder="Enter your name" autocomplete="name" />
+              <div class="error-message" id="nameError">Please enter your name</div>
+            </div>
+
+            <div class="input-field">
+              <label for="email">Email Address</label>
+              <input type="email" id="email" name="email" placeholder="Enter your email" autocomplete="email" />
+              <div class="error-message" id="emailError">Please enter a valid email address</div>
+            </div>
+
+            <div class="input-field passcode-field">
+              <label for="passcode">6-Digit Passcode</label>
+              <input
+                type="text"
+                id="passcode"
+                name="passcode"
+                placeholder="123456"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                inputmode="numeric"
+                autocomplete="new-password"
+              />
+              <div class="helper-text">Your passcode must be exactly 6 digits</div>
+              <div class="error-message" id="passcodeError">Please enter a valid 6-digit passcode</div>
+            </div>
+          </div>
+
+          <button type="submit" class="register-btn" id="registerBtn">Create Account</button>
+        </form>
+
+        <div class="separator">or</div>
+
+        <div class="login-prompt">Already have an account? <a href="/login">Log In</a></div>
+      </div>
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const registerForm = document.getElementById("registrationForm");
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const passcodeInput = document.getElementById("passcode");
+        const registerBtn = document.getElementById("registerBtn");
+        const successMessage = document.getElementById("successMessage");
+
+        // Force numeric input for passcode
+        passcodeInput.addEventListener("input", function (e) {
+          this.value = this.value.replace(/[^0-9]/g, "");
+        });
+
+        // Form submission
+        registerForm.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          // Reset error states
+          document.querySelectorAll(".input-field").forEach((field) => {
+            field.classList.remove("error");
+          });
+          document.querySelectorAll(".error-message").forEach((msg) => {
+            msg.classList.remove("visible");
+          });
+
+          // Validate inputs
+          let isValid = true;
+
+          // Name validation
+          if (!nameInput.value.trim()) {
+            document.getElementById("nameError").classList.add("visible");
+            nameInput.closest(".input-field").classList.add("error");
+            isValid = false;
+          }
+
+          // Email validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(emailInput.value.trim())) {
+            document.getElementById("emailError").classList.add("visible");
+            emailInput.closest(".input-field").classList.add("error");
+            isValid = false;
+          }
+
+          // Passcode validation
+          if (!/^\d{6}$/.test(passcodeInput.value.trim())) {
+            document.getElementById("passcodeError").classList.add("visible");
+            passcodeInput.closest(".input-field").classList.add("error");
+            isValid = false;
+          }
+
+          if (isValid) {
+            // Disable button to prevent multiple submissions
+            registerBtn.disabled = true;
+            registerBtn.textContent = "Creating Account...";
+
+            // Prepare data for submission
+            const userData = {
+              name: nameInput.value.trim(),
+              email: emailInput.value.trim(),
+              passcode: passcodeInput.value.trim(),
+            };
+
+            // Send registration request to server
+            fetch("/api/register", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(userData),
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  return response.json().then((data) => {
+                    throw new Error(data.message || "Registration failed");
+                  });
+                }
+                return response.json();
+              })
+              .then((data) => {
+                // Show success message
+                successMessage.classList.add("visible");
+                registerForm.style.display = "none";
+
+                // Redirect to login after 2 seconds
+                setTimeout(() => {
+                  window.location.href = "/login?registered=true";
+                }, 2000);
+              })
+              .catch((error) => {
+                // Handle error
+                registerBtn.disabled = false;
+                registerBtn.textContent = "Create Account";
+
+                // Show appropriate error
+                if (error.message.includes("email")) {
+                  document.getElementById("emailError").textContent = error.message;
+                  document.getElementById("emailError").classList.add("visible");
+                  emailInput.closest(".input-field").classList.add("error");
+                } else {
+                  alert("Registration failed: " + error.message);
+                }
+              });
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
