@@ -148,6 +148,18 @@ async function deleteBills(ids) {
   return await firebaseAdapter.deleteBills(ids);
 }
 
+// New function to save a group to Firebase
+async function saveGroup(groupName, groupData) {
+  try {
+    await firestore.setDoc(firestore.doc(db, "groups", groupName), groupData);
+    console.log(`Group ${groupName} saved successfully`);
+    return true;
+  } catch (error) {
+    console.error(`Error saving group ${groupName}:`, error);
+    throw error;
+  }
+}
+
 // Make sure login page is served correctly
 app.get("/login", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "login.html"));
@@ -721,6 +733,126 @@ app.post("/api/scan-receipt", upload.single("document"), async (req, res) => {
   } catch (error) {
     console.error("Error scanning receipt:", error);
     res.status(500).json({ error: "Error scanning receipt", details: error.message });
+  }
+});
+
+// New API endpoint to save a group to Firebase
+app.post("/api/groups/save", async (req, res) => {
+  try {
+    const { groupName, groupData } = req.body;
+
+    if (!groupName || !groupData) {
+      return res.status(400).json({
+        success: false,
+        message: "Group name and data are required",
+      });
+    }
+
+    // Add userId from headers if available
+    const userId = req.headers["x-user-id"];
+    if (userId) {
+      groupData.userId = userId;
+    }
+
+    // Save timestamp
+    groupData.timestamp = Date.now();
+
+    await saveGroup(groupName, groupData);
+
+    res.json({
+      success: true,
+      message: `Group "${groupName}" saved successfully`,
+      groupName,
+    });
+  } catch (error) {
+    console.error("Error saving group:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save group",
+      error: error.message,
+    });
+  }
+});
+
+// New API endpoint to get user's groups from Firebase
+app.get("/api/groups", async (req, res) => {
+  try {
+    // Get user ID from session storage
+    const userId = req.headers["x-user-id"];
+
+    // Query Firestore for groups
+    const groupsRef = firestore.collection(db, "groups");
+    let query;
+
+    // If user is authenticated, filter by their groups
+    if (userId) {
+      query = firestore.query(
+        groupsRef,
+        firestore.where("userId", "==", userId),
+        firestore.orderBy("timestamp", "desc")
+      );
+    } else {
+      // For unauthenticated users, return empty array
+      return res.json({ groups: [] });
+    }
+
+    const snapshot = await firestore.getDocs(query);
+
+    // Convert snapshot to array of groups with IDs
+    const groups = {};
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      groups[doc.id] = data.members;
+    });
+
+    res.json({ groups });
+  } catch (error) {
+    console.error("Error fetching groups:", error);
+    res.status(500).json({ error: "Failed to fetch groups" });
+  }
+});
+
+// API endpoint to delete a group from Firebase
+app.delete("/api/groups/:groupName", async (req, res) => {
+  try {
+    const { groupName } = req.params;
+    const userId = req.headers["x-user-id"];
+
+    if (!groupName) {
+      return res.status(400).json({
+        success: false,
+        message: "Group name is required",
+      });
+    }
+
+    // Check if the group exists and belongs to the user (optional in development mode)
+    if (userId) {
+      const groupRef = firestore.doc(db, "groups", groupName);
+      const groupDoc = await firestore.getDoc(groupRef);
+
+      if (groupDoc.exists() && groupDoc.data().userId && groupDoc.data().userId !== userId) {
+        return res.status(403).json({
+          success: false,
+          message: "Not authorized to delete this group",
+        });
+      }
+    }
+
+    // Delete the group
+    await firestore.deleteDoc(firestore.doc(db, "groups", groupName));
+
+    res.json({
+      success: true,
+      message: `Group "${groupName}" deleted successfully`,
+      groupName,
+    });
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete group",
+      error: error.message,
+    });
   }
 });
 

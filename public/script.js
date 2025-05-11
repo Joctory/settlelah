@@ -225,6 +225,11 @@ function logout() {
     localStorage.removeItem("settlelah_user_name");
     localStorage.removeItem("settlelah_user_token");
 
+    // Clear groups from localStorage
+    localStorage.removeItem("groups");
+    // Reset groups variable
+    groups = {};
+
     // Show short feedback message
     showToast("logoutToast");
 
@@ -2170,6 +2175,8 @@ function hideSettleNowScreen() {
   if (overlay) {
     overlay.classList.remove("active");
   }
+
+  updateHomePageCards();
 }
 
 // Function to switch between views
@@ -2282,7 +2289,26 @@ function handleSettleBackButton() {
     showModal("backConfirmModal");
   } else if (currentSettleView === "savedGroupsView") {
     // If on saved groups view, go back to settle choice
+
+    // Check if there are any saved groups before showing settleChoiceView
+    const hasSavedGroups = Object.keys(groups).length > 0;
+
+    // Update the UI based on whether we have saved groups
+    if (!hasSavedGroups) {
+      document.querySelector(".saved-group-option").style.display = "none";
+      document.querySelector(".or-divider").style.display = "none";
+      document.querySelector(".new-group-option").classList.add("selected");
+    } else {
+      document.querySelector(".saved-group-option").style.display = "flex";
+      document.querySelector(".or-divider").style.display = "flex";
+
+      // Make sure the Get Started button is enabled
+      document.querySelector(".get-started-btn").disabled = false;
+      settleChoiceError.style.display = "none";
+    }
+
     showSettleView("settleChoiceView");
+
     if (billSummaryModal) {
       billSummaryModal.style.display = "none";
     }
@@ -2293,6 +2319,66 @@ function handleSettleBackButton() {
 
 // Function to load and render saved groups
 function loadSavedGroups() {
+  // First load from localStorage
+  const localGroups = JSON.parse(localStorage.getItem("groups")) || {};
+
+  // Initialize groups with local data
+  groups = { ...localGroups };
+
+  showSettleView("savedGroupsView");
+
+  // Show loading state on Get Started button
+  const savedGroupsLoading = document.querySelector(".saved-groups-loading");
+  savedGroupsLoading.classList.add("active");
+  savedGroupsLoading.disabled = true;
+
+  // Then try to fetch from Firebase and merge
+  fetchGroupsFromFirebase()
+    .then(() => {
+      renderSavedGroups();
+    })
+    .catch((error) => {
+      console.error("Error fetching groups from Firebase:", error);
+      // Continue with local groups only
+      renderSavedGroups();
+    })
+    .finally(() => {
+      // Remove loading state from button
+      if (savedGroupsLoading) {
+        savedGroupsLoading.classList.remove("active");
+        savedGroupsLoading.disabled = false;
+      }
+    });
+}
+
+// Function to fetch groups from Firebase
+async function fetchGroupsFromFirebase() {
+  try {
+    // Use fetchWithUserId to handle the API call
+    const response = await fetchWithUserId("/api/groups");
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch groups from Firebase: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.groups) {
+      // Merge Firebase groups with local groups (Firebase takes precedence)
+      groups = { ...groups, ...data.groups };
+      // Save the merged groups to localStorage for offline access
+      localStorage.setItem("groups", JSON.stringify(groups));
+      // console.log(`Fetched ${Object.keys(data.groups).length} groups from Firebase`);
+    }
+  } catch (error) {
+    console.error("Error fetching groups from Firebase:", error);
+    // Rethrow the error to be handled by the caller
+    throw error;
+  }
+}
+
+// Function to render the saved groups UI
+function renderSavedGroups() {
   const groupsList = Object.keys(groups);
   const container = document.querySelector(".saved-groups-list-container");
   const noGroupsMessage = document.querySelector(".no-saved-groups");
@@ -2581,6 +2667,46 @@ function saveGroupToStorage() {
     groups[currentGroup] = [...members];
     localStorage.setItem("groups", JSON.stringify(groups));
     console.log(`Saved group "${currentGroup}" with ${members.length} members`);
+
+    // Also save to Firebase
+    saveGroupToFirebase(currentGroup, [...members]);
+  }
+}
+
+// Function to save the group to Firebase
+async function saveGroupToFirebase(groupName, groupMembers) {
+  try {
+    // Get user ID for ownership tracking
+    const userId = await getUserId();
+
+    const groupData = {
+      name: groupName,
+      members: groupMembers,
+      timestamp: Date.now(),
+      userId: userId || null,
+    };
+
+    // Use fetchWithUserId to handle the API call
+    const response = await fetchWithUserId("/api/groups/save", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        groupName: groupName,
+        groupData: groupData,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to save group to Firebase: ${response.statusText}`);
+    }
+
+    const result = await response.json();
+    // console.log(`Group "${groupName}" saved to Firebase successfully`, result);
+  } catch (error) {
+    console.error(`Error saving group "${groupName}" to Firebase:`, error);
+    // Continue silently - the group is still saved in localStorage
   }
 }
 
@@ -2853,9 +2979,8 @@ function initPageNavigation() {
     if (savedGroupSelected) {
       // Check if we have saved groups
       if (Object.keys(groups).length > 0) {
-        // Load and show saved groups view
+        // Load and show saved groups view with loading indicator
         loadSavedGroups();
-        showSettleView("savedGroupsView");
       } else {
         // No saved groups, show message
         alert("No saved groups found. Please create a new group first.");
@@ -3215,6 +3340,9 @@ if (confirmGroupBtn) {
     localStorage.setItem("groups", JSON.stringify(groups));
     currentGroup = groupName;
 
+    // Also save to Firebase
+    saveGroupToFirebase(currentGroup, [...members]);
+
     // Hide the modal
     hideModal("createGroupModal");
 
@@ -3273,14 +3401,31 @@ if (groupUpdatedConfirmBtn) {
 // Delete group confirmation
 const deleteConfirmBtn = document.querySelector(".delete-confirm-btn");
 if (deleteConfirmBtn) {
-  deleteConfirmBtn.addEventListener("click", function () {
+  deleteConfirmBtn.addEventListener("click", async function () {
     const modal = document.getElementById("deleteGroupModal");
     const groupName = modal.dataset.groupName;
 
     if (groupName) {
-      // Delete the group
+      // First delete from local storage
       delete groups[groupName];
       localStorage.setItem("groups", JSON.stringify(groups));
+
+      // Then try to delete from Firebase
+      try {
+        const response = await fetchWithUserId(`/api/groups/${encodeURIComponent(groupName)}`, {
+          method: "DELETE",
+        });
+
+        if (!response.ok) {
+          console.error(`Failed to delete group from Firebase: ${response.statusText}`);
+          // Continue with the UI update even if Firebase delete fails
+        } else {
+          // console.log(`Group "${groupName}" deleted from Firebase successfully`);
+        }
+      } catch (error) {
+        console.error(`Error deleting group "${groupName}" from Firebase:`, error);
+        // Continue with the UI update even if Firebase delete fails
+      }
 
       // Refresh the saved groups list
       loadSavedGroups();
@@ -3605,7 +3750,7 @@ function showSavedGroupsModal() {
   // Get all saved groups
   const groupsList = Object.keys(groups);
   const savedGroupsList = document.querySelector(".saved-groups-list");
-  const noGroupsMessage = document.querySelector(".no-groups-message");
+  const noGroupsMessage = document.querySelector(".no-saved-groups");
 
   // Clear previous items
   savedGroupsList.innerHTML = "";
@@ -4115,63 +4260,6 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// Initialize app functionality after window loads
-window.onload = function () {
-  // Wait a short amount of time to ensure everything is ready
-  setTimeout(() => {
-    // Initialize pull-to-refresh functionality
-    initializePullToRefresh();
-
-    // Initialize all needed components
-    document.getElementById("taxProfile").value = "singapore";
-    document.getElementById("serviceRate").textContent = "10%";
-    document.getElementById("gstRate").textContent = "9%";
-
-    // Initialize page navigation
-    initPageNavigation();
-
-    // Initialize UI components
-    initializeSwipeGesture();
-    initializeBillSummaryDrag();
-    initTaxProfileDropdown();
-    initThemeToggle();
-
-    // Get weather data
-    fetchWeatherData();
-
-    // Update home page cards
-    updateHomePageCards();
-
-    // Add animation classes after a delay for smoother experience
-    setTimeout(() => {
-      document.querySelectorAll(".card-widget").forEach((card, index) => {
-        setTimeout(() => {
-          card.classList.add("animated");
-        }, index * 100); // Stagger animations
-      });
-    }, 100);
-
-    setTimeout(() => {
-      document.querySelectorAll(".group-card").forEach((card, index) => {
-        setTimeout(() => {
-          card.classList.add("animated");
-        }, index * 100); // Stagger animations
-      });
-    }, 100);
-
-    // If a preloader exists, hide it
-    const preloader = document.getElementById("preloader");
-    if (preloader) {
-      preloader.classList.add("fade-out");
-      setTimeout(() => {
-        if (preloader.parentNode) {
-          preloader.parentNode.removeChild(preloader);
-        }
-      }, 500);
-    }
-  }, 100);
-};
-
 // Function to round amounts to the nearest 0.05
 function roundToNearest5Cents(value) {
   if (typeof value === "string") {
@@ -4223,40 +4311,6 @@ function showNotification(message) {
     }, 300);
   }, 3000);
 }
-
-// Add this CSS to the bottom of script.js
-document.addEventListener("DOMContentLoaded", () => {
-  const style = document.createElement("style");
-  style.textContent = `
-    .toast-notification {
-      position: fixed;
-      bottom: -60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #212529;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      z-index: 10000;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: bottom 0.3s ease;
-    }
-    
-    .toast-notification.show {
-      bottom: 20px;
-    }
-    
-    @media (prefers-color-scheme: dark) {
-      .toast-notification {
-        background-color: #f8f9fa;
-        color: #212529;
-      }
-    }
-  `;
-  document.head.appendChild(style);
-});
 
 // Function to sync the tax profile dropdown with localStorage value
 function syncTaxProfileDropdown() {
@@ -4348,3 +4402,127 @@ function loadBillHistory() {
     console.warn(`Removed ${billIds.length - validBillIds.length} invalid bill IDs from history`);
   }
 }
+
+// Function to synchronize data from Firebase to localStorage on page load
+async function syncDataFromFirebase() {
+  try {
+    // Show subtle loading indicator or handle in a non-blocking way
+    console.log("Syncing data from Firebase...");
+
+    // Fetch groups from Firebase
+    await fetchGroupsFromFirebase();
+
+    // Fetch bill history from Firebase
+    await fetchHistoryFromFirebase();
+
+    console.log("Firebase sync complete");
+  } catch (error) {
+    console.error("Error syncing data from Firebase:", error);
+    // Continue with local data if Firebase sync fails
+  }
+}
+
+// Function to fetch bill history from Firebase and update localStorage
+async function fetchHistoryFromFirebase() {
+  try {
+    const response = await fetchWithUserId("/api/history");
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch history from Firebase: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.bills && data.bills.length > 0) {
+      // Sort bills by timestamp, newest first
+      const sortedBills = data.bills.sort((a, b) => b.timestamp - a.timestamp);
+
+      // Create array of bill IDs for history tracking
+      const billIds = sortedBills.map((bill) => bill.id);
+
+      // Store in localStorage
+      localStorage.setItem("billHistory", JSON.stringify(billIds));
+
+      // Store individual bill data for quick access
+      sortedBills.forEach((bill) => {
+        localStorage.setItem(
+          `bill:${bill.id}`,
+          JSON.stringify({
+            timestamp: bill.timestamp,
+            settleMatter: bill.settleMatter || "No title",
+            members: bill.members,
+            total: bill.breakdown?.total || 0,
+          })
+        );
+      });
+
+      // console.log(`Synced ${billIds.length} bills from Firebase`);
+    }
+  } catch (error) {
+    console.error("Error fetching bill history from Firebase:", error);
+    throw error;
+  }
+}
+
+// Initialize app functionality after window loads
+window.onload = function () {
+  // First sync data from Firebase to localStorage
+  syncDataFromFirebase().then(() => {
+    console.log("Data synchronization complete");
+    updateHomePageCards();
+  });
+
+  // Wait a short amount of time to ensure everything is ready
+  setTimeout(() => {
+    // Initialize pull-to-refresh functionality
+    initializePullToRefresh();
+
+    // Initialize all needed components
+    document.getElementById("taxProfile").value = "singapore";
+    document.getElementById("serviceRate").textContent = "10%";
+    document.getElementById("gstRate").textContent = "9%";
+
+    // Initialize page navigation
+    initPageNavigation();
+
+    // Initialize UI components
+    initializeSwipeGesture();
+    initializeBillSummaryDrag();
+    initTaxProfileDropdown();
+    initThemeToggle();
+
+    // Get weather data
+    fetchWeatherData();
+
+    // Update home page cards
+    updateHomePageCards();
+
+    // Add animation classes after a delay for smoother experience
+    setTimeout(() => {
+      document.querySelectorAll(".card-widget").forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add("animated");
+        }, index * 100); // Stagger animations
+      });
+    }, 100);
+
+    setTimeout(() => {
+      document.querySelectorAll(".group-card").forEach((card, index) => {
+        setTimeout(() => {
+          card.classList.add("animated");
+        }, index * 100); // Stagger animations
+      });
+    }, 100);
+
+    // If a preloader exists, hide it
+    const preloader = document.getElementById("preloader");
+    if (preloader) {
+      preloader.classList.add("fade-out");
+      setTimeout(() => {
+        if (preloader.parentNode) {
+          preloader.parentNode.removeChild(preloader);
+        }
+      }, 500);
+    }
+  }, 100);
+};

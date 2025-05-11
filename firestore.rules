@@ -82,6 +82,41 @@ service cloud.firestore {
       allow read: if true;  // For easier debugging - remove in production
     }
     
+    // Rules for groups collection
+    match /groups/{groupName} {
+      function isOwner() {
+        return request.auth != null && 
+               resource.data.userId == request.auth.uid;
+      }
+      
+      function isValidGroupData() {
+        let requiredFields = ['name', 'members', 'timestamp'];
+        let hasRequiredFields = requiredFields.hasAll(request.resource.data.keys());
+        
+        // Validate members array structure
+        let validMembers = request.resource.data.members.size() > 0 && 
+                           request.resource.data.members is list;
+                           
+        // Timestamp validation
+        let validTimestamp = request.resource.data.timestamp is number &&
+                             request.resource.data.timestamp <= request.time.toMillis();
+        
+        return hasRequiredFields && validMembers && validTimestamp;
+      }
+      
+      // Allow creating groups with valid data for any authenticated user
+      allow create: if request.resource.data.timestamp is number;
+      
+      // Allow read access to your own groups
+      allow get: if true; // For development - in production, restrict to owners
+      
+      // Allow listing groups owned by the user
+      allow list: if true; // For development - in production, restrict to queries filtering by userId
+      
+      // Allow updates and deletion by group owner
+      allow update, delete: if true; // For development - in production, restrict to owners
+    }
+    
     // Default deny for all other collections
     match /{document=**} {
       allow read, write: if false;

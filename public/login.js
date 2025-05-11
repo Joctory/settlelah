@@ -29,7 +29,138 @@ document.addEventListener("DOMContentLoaded", () => {
   const errorElement = document.getElementById("login-error");
   const emailInput = document.getElementById("loginEmail");
   const emailError = document.getElementById("email-error");
+  const continueBtn = document.getElementById("continueBtn");
+  const authStepEmail = document.querySelector(".auth-step-email");
+  const authStepPasscode = document.querySelector(".auth-step-passcode");
+  const displayedEmail = document.getElementById("displayedEmail");
+  const changeEmailBtn = document.getElementById("changeEmailBtn");
   let isProcessingInput = false; // Flag to track if we're processing input
+
+  // Initially ensure the passcode step is hidden
+  // (We also have CSS and inline styles as fallbacks)
+  authStepPasscode.style.display = "none";
+  authStepPasscode.style.opacity = "0";
+
+  // Listen for email input changes
+  emailInput.addEventListener("input", validateEmail);
+  emailInput.addEventListener("blur", validateEmailOnBlur);
+  emailInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && isValidEmail(emailInput.value.trim())) {
+      proceedToPasscode();
+    }
+  });
+
+  // Continue button
+  continueBtn.addEventListener("click", proceedToPasscode);
+
+  // Change Email button
+  changeEmailBtn.addEventListener("click", switchToEmailInput);
+
+  // Function to validate email as user types
+  function validateEmail() {
+    const email = emailInput.value.trim();
+
+    // Update continue button state
+    continueBtn.disabled = !isValidEmail(email);
+
+    // Just visual validation feedback while typing
+    if (email !== "" && !isValidEmail(email)) {
+      emailInput.classList.add("invalid-email");
+      emailInput.classList.remove("valid-email");
+    } else {
+      emailInput.classList.remove("invalid-email");
+      if (isValidEmail(email)) {
+        emailInput.classList.add("valid-email");
+      } else {
+        emailInput.classList.remove("valid-email");
+      }
+    }
+  }
+
+  // Function to validate email when focus leaves the field
+  function validateEmailOnBlur() {
+    const email = emailInput.value.trim();
+
+    if (email !== "" && !isValidEmail(email)) {
+      showEmailError("Please enter a valid email address");
+    } else {
+      hideError();
+    }
+  }
+
+  // Function to proceed to passcode step
+  function proceedToPasscode() {
+    const email = emailInput.value.trim();
+
+    if (!isValidEmail(email)) {
+      showEmailError("Please enter a valid email address");
+      return;
+    }
+
+    // Update displayed email
+    displayedEmail.textContent = email;
+
+    // Update subtitle
+    document.querySelector(".login-subtitle").textContent = "Enter your 6-digit passcode";
+
+    // Switch to passcode step with animation
+    authStepEmail.classList.remove("active");
+
+    // Small delay before showing passcode step for smoother animation
+    setTimeout(() => {
+      // First make it display: flex before animating
+      authStepPasscode.style.display = "flex";
+
+      // Force a reflow to ensure the browser registers the display change
+      void authStepPasscode.offsetWidth;
+
+      // Then add active class to trigger animation
+      authStepPasscode.classList.add("active");
+
+      // Apply staggered animation to dots
+      dots.forEach((dot, index) => {
+        setTimeout(() => {
+          dot.classList.add("bounce");
+          setTimeout(() => dot.classList.remove("bounce"), 400);
+        }, 100 + index * 60);
+      });
+
+      // Animate in the keys with staggered timing
+      document.querySelectorAll(".keypad-key").forEach((key, index) => {
+        key.style.opacity = "0";
+        key.style.transform = "translateY(8px)";
+
+        setTimeout(() => {
+          key.style.opacity = "1";
+          key.style.transform = "translateY(0)";
+        }, 300 + index * 40);
+      });
+
+      // Clear any errors
+      hideError();
+    }, 250);
+  }
+
+  // Function to switch back to email input
+  function switchToEmailInput() {
+    // Hide passcode step first
+    authStepPasscode.classList.remove("active");
+
+    // After animation completes, actually hide the element and show email step
+    setTimeout(() => {
+      authStepPasscode.style.display = "none";
+      authStepEmail.classList.add("active");
+
+      // Focus the email input
+      emailInput.focus();
+
+      // Reset subtitle
+      document.querySelector(".login-subtitle").textContent = "Enter your email to continue";
+
+      // Clear passcode
+      handleClear();
+    }, 300);
+  }
 
   // Check for "registered=true" parameter in URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -110,6 +241,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Listen for keyboard input as well
   document.addEventListener("keydown", (e) => {
+    // Only process keyboard input if the passcode screen is shown
+    if (!authStepPasscode.classList.contains("active")) {
+      return;
+    }
+
     if (e.key >= "0" && e.key <= "9") {
       // Visual feedback for keyboard presses
       const keyElement = document.querySelector(`.keypad-key[data-value="${e.key}"]`);
@@ -150,11 +286,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Update dots display - directly manipulate the specific dot for performance
     const currentDot = dots[passcode.length - 1];
-    if (currentDot) currentDot.classList.add("filled");
+    if (currentDot) {
+      currentDot.classList.add("filled");
+
+      // Add a small bounce animation
+      currentDot.classList.add("bounce");
+      setTimeout(() => currentDot.classList.remove("bounce"), 300);
+    }
 
     // If passcode is complete, validate it with a slight delay
     if (passcode.length === passcodeLength) {
-      setTimeout(validatePasscode, 200);
+      setTimeout(validatePasscode, 300);
     }
   }
 
@@ -179,22 +321,12 @@ document.addEventListener("DOMContentLoaded", () => {
     hideError();
   }
 
-  // Update the visual dots to reflect current passcode
-  function updateDots() {
-    dots.forEach((dot, index) => {
-      if (index < passcode.length) {
-        dot.classList.add("filled");
-      } else {
-        dot.classList.remove("filled");
-      }
-    });
-  }
-
   // Validate the entered passcode
   function validatePasscode() {
-    // Validate email first
-    const email = emailInput.value.trim();
+    // Get the email from the displayed field
+    const email = displayedEmail.textContent;
     if (!isValidEmail(email)) {
+      switchToEmailInput();
       showEmailError("Please enter a valid email address");
       return;
     }
@@ -254,6 +386,8 @@ document.addEventListener("DOMContentLoaded", () => {
     emailError.textContent = message;
     emailError.classList.add("visible");
     emailInput.style.borderColor = "var(--error-color)";
+    emailInput.classList.add("invalid-email");
+    emailInput.classList.remove("valid-email");
 
     // Vibrate with a pattern for error feedback
     vibrate([50, 50, 50]);
@@ -303,8 +437,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Store authentication in localStorage instead of sessionStorage for persistence
     localStorage.setItem("settlelah_authenticated", "true");
 
-    // Add timestamp for session expiration (24 hours)
-    const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+    // Add timestamp for session expiration (15 days)
+    const expiryTime = Date.now() + 15 * 24 * 60 * 60 * 1000;
     localStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
 
     // Redirect to main page after animation
@@ -325,7 +459,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Clear the passcode
     setTimeout(() => {
       passcode = "";
-      updateDots();
+      dots.forEach((dot) => dot.classList.remove("filled"));
       passcodeContainer.classList.remove("shake");
       showError(message);
     }, 600);
@@ -342,6 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
     errorElement.classList.remove("visible");
     emailError.classList.remove("visible");
     emailInput.style.borderColor = "";
+    emailInput.classList.remove("invalid-email");
   }
 
   // Check if user is already authenticated

@@ -38,6 +38,13 @@
         );
       })();
     </script>
+    <style>
+      /* Critical inline styles to ensure elements are hidden before CSS loads */
+      .auth-step-passcode {
+        display: none;
+        opacity: 0;
+      }
+    </style>
   </head>
   <body class="login-page">
     <div class="login-container">
@@ -46,46 +53,38 @@
           <img src="assets/lock.svg" alt="Lock" />
         </div>
         <h1 class="login-title">SettleLah</h1>
-        <p class="login-subtitle">Enter your email and 6-digit passcode to continue</p>
+        <p class="login-subtitle">Enter your email to continue</p>
       </div>
-      <div class="email-input-container">
-        <input type="email" id="loginEmail" name="email" placeholder="Enter your email" autocomplete="email" />
-        <div class="error-message" id="email-error"></div>
-      </div>
-      <div class="passcode-dots-container">
-        <div class="passcode-dots">
-          <div class="passcode-dot" data-index="0"></div>
-          <div class="passcode-dot" data-index="1"></div>
-          <div class="passcode-dot" data-index="2"></div>
-          <div class="passcode-dot" data-index="3"></div>
-          <div class="passcode-dot" data-index="4"></div>
-          <div class="passcode-dot" data-index="5"></div>
+
+      <div class="auth-step auth-step-email active">
+        <div class="email-input-container">
+          <label for="loginEmail" class="visually-hidden">Email Address</label>
+          <input
+            type="email"
+            id="loginEmail"
+            name="email"
+            placeholder="Enter your email"
+            autocomplete="email"
+            autofocus
+          />
+          <div class="email-instruction">Enter a valid email to proceed</div>
+          <div class="error-message" id="email-error"></div>
         </div>
-        <div class="error-message" id="login-error"></div>
+        <div class="auth-step-actions">
+          <button id="continueBtn" class="action-button" disabled>Continue</button>
+        </div>
       </div>
-      <div class="passcode-container">
-        <div class="numeric-keypad">
-          <div class="keypad-row">
-            <button class="keypad-key" data-value="1">1</button>
-            <button class="keypad-key" data-value="2">2</button>
-            <button class="keypad-key" data-value="3">3</button>
-          </div>
-          <div class="keypad-row">
-            <button class="keypad-key" data-value="4">4</button>
-            <button class="keypad-key" data-value="5">5</button>
-            <button class="keypad-key" data-value="6">6</button>
-          </div>
-          <div class="keypad-row">
-            <button class="keypad-key" data-value="7">7</button>
-            <button class="keypad-key" data-value="8">8</button>
-            <button class="keypad-key" data-value="9">9</button>
-          </div>
-          <div class="keypad-row">
-            <button class="keypad-key keypad-key-clear" data-action="clear">Clear</button>
-            <button class="keypad-key" data-value="0">0</button>
-            <button class="keypad-key keypad-key-delete" data-action="delete">
+
+      <div class="auth-step auth-step-passcode">
+        <!-- Validated email display -->
+        <div class="validated-email-container">
+          <div class="validated-email-display">
+            <span id="displayedEmail"></span>
+            <button id="changeEmailBtn" class="change-email-btn">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -93,21 +92,78 @@
                 stroke-linecap="round"
                 stroke-linejoin="round"
               >
-                <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
-                <line x1="18" y1="9" x2="12" y2="15"></line>
-                <line x1="12" y1="9" x2="18" y2="15"></line>
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
+              Change
             </button>
           </div>
         </div>
+
+        <!-- Passcode dots -->
+        <div class="passcode-dots-container">
+          <div class="error-message" id="login-error"></div>
+          <div class="passcode-dots">
+            <div class="passcode-dot" data-index="0"></div>
+            <div class="passcode-dot" data-index="1"></div>
+            <div class="passcode-dot" data-index="2"></div>
+            <div class="passcode-dot" data-index="3"></div>
+            <div class="passcode-dot" data-index="4"></div>
+            <div class="passcode-dot" data-index="5"></div>
+          </div>
+        </div>
+
+        <!-- Keypad -->
+        <div class="passcode-container">
+          <div class="numeric-keypad">
+            <div class="keypad-row">
+              <button class="keypad-key" data-value="1">1</button>
+              <button class="keypad-key" data-value="2">2</button>
+              <button class="keypad-key" data-value="3">3</button>
+            </div>
+            <div class="keypad-row">
+              <button class="keypad-key" data-value="4">4</button>
+              <button class="keypad-key" data-value="5">5</button>
+              <button class="keypad-key" data-value="6">6</button>
+            </div>
+            <div class="keypad-row">
+              <button class="keypad-key" data-value="7">7</button>
+              <button class="keypad-key" data-value="8">8</button>
+              <button class="keypad-key" data-value="9">9</button>
+            </div>
+            <div class="keypad-row">
+              <button class="keypad-key keypad-key-clear" data-action="clear">Clear</button>
+              <button class="keypad-key" data-value="0">0</button>
+              <button class="keypad-key keypad-key-delete" data-action="delete">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
+                  <line x1="18" y1="9" x2="12" y2="15"></line>
+                  <line x1="12" y1="9" x2="18" y2="15"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-container">
+        <div class="register-prompt">
+          <p>New to SettleLah? <a href="/register">Create an account</a></p>
+        </div>
+        <div class="login-footer">
+          <p>App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span></p>
+        </div>
       </div>
     </div>
-    <div class="register-prompt">
-      <p>New to SettleLah? <a href="/register">Create an account</a></p>
-    </div>
-    <div class="login-footer">
-      <p>App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span></p>
-    </div>
-    <script src="login.js"></script>
   </body>
+
+  <script src="login.js"></script>
 </html>
