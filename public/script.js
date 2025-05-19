@@ -1601,89 +1601,124 @@ function resetLoadingAnimation() {
 
 // Initialize swipe detection for the add item view and finalise bill screen
 function initializeSwipeGesture() {
-  const addSettleItemView = document.getElementById("addSettleItemView");
-  const finaliseSettleBillScreen = document.getElementById("finaliseSettleBillScreen");
-  let startY = 0;
-  let startX = 0;
-  let startTime = 0;
-  let isProcessingGesture = false;
-  const swipeTimeout = 400; // Timeout to prevent swipe detection during scrolling
-  const minTouchDuration = 300; // Minimum touch duration in ms to consider it intentional
-  const maxTouchDuration = 1300; // Maximum touch duration to consider it a swipe (not a long press)
+  // Get elements once
+  const addSettleItemView = document.getElementById("billSummaryModal");
 
-  // Function to handle touch start for both screens
-  const handleTouchStart = function (e) {
-    startY = e.touches[0].clientY;
-    startX = e.touches[0].clientX;
-    startTime = new Date().getTime();
-    isProcessingGesture = false;
+  // Exit early if elements don't exist
+  if (!addSettleItemView) return;
+
+  // Constants for swipe detection - moved outside handler for better performance
+  const SWIPE_THRESHOLD = 80; // Minimum distance for swipe
+  const MIN_VELOCITY = 0.6; // Minimum velocity (px/ms)
+  const MIN_ANGLE = 45; // Minimum vertical angle (degrees)
+  const MAX_HORIZONTAL_RATIO = 0.8; // Maximum horizontal/vertical ratio
+  const DEBOUNCE_TIMEOUT = 400; // Debounce timeout (ms)
+  const MIN_TOUCH_DURATION = 100; // Minimum touch duration (ms)
+  const MAX_TOUCH_DURATION = 1300; // Maximum touch duration (ms)
+
+  // Touch tracking variables
+  let touchData = {
+    startY: 0,
+    startX: 0,
+    startTime: 0,
+    isProcessingGesture: false,
+    isScrolling: false,
   };
 
-  // Function to handle touch end for both screens
+  // Trigger haptic feedback - moved outside handlers
+  const triggerHapticFeedback = () => {
+    if (navigator.vibrate) {
+      navigator.vibrate(10); // Short, subtle vibration
+    }
+  };
+
+  // Handle touch start
+  const handleTouchStart = function (e) {
+    // Reset tracking state
+    touchData.isScrolling = false;
+    touchData.isProcessingGesture = false;
+
+    // Store initial touch position and time
+    touchData.startY = e.touches[0].clientY;
+    touchData.startX = e.touches[0].clientX;
+    touchData.startTime = performance.now(); // More accurate than Date.getTime()
+  };
+
+  // Handle touch move to detect scrolling
+  const handleTouchMove = function (e) {
+    // Skip if already detected as scrolling
+    if (touchData.isScrolling || touchData.isProcessingGesture) return;
+
+    const deltaY = Math.abs(e.touches[0].clientY - touchData.startY);
+
+    // If significant vertical movement and the element can scroll
+    const element = e.currentTarget;
+    if (deltaY > 10 && element.scrollTop > 0) {
+      touchData.isScrolling = true;
+    }
+  };
+
+  // Handle touch end
   const handleTouchEnd = function (e) {
-    if (isProcessingGesture) return; // Prevent multiple triggers
+    // Skip if already processing a gesture or detected scrolling
+    if (touchData.isProcessingGesture || touchData.isScrolling) return;
 
     const endY = e.changedTouches[0].clientY;
     const endX = e.changedTouches[0].clientX;
-    const endTime = new Date().getTime();
-    const touchDuration = endTime - startTime;
+    const endTime = performance.now();
+    const touchDuration = endTime - touchData.startTime;
 
-    // Check if touch duration is within the desired range
-    if (touchDuration < minTouchDuration) {
-      // Touch was too short - likely accidental
-      return;
-    }
+    // Early return if touch duration is outside desired range
+    if (touchDuration < MIN_TOUCH_DURATION || touchDuration > MAX_TOUCH_DURATION) return;
 
-    if (touchDuration > maxTouchDuration) {
-      // Touch was too long - likely user is reading or doing something else
-      return;
-    }
-
-    // Calculate deltas for swipe detection
-    const deltaY = startY - endY;
-    const deltaX = Math.abs(startX - endX);
-
-    // Calculate velocity in pixels per millisecond
+    // Calculate swipe metrics
+    const deltaY = touchData.startY - endY;
+    const deltaX = Math.abs(touchData.startX - endX);
     const velocity = Math.abs(deltaY) / touchDuration;
-
-    // Angle constraint to ensure it's a vertical swipe (in degrees)
     const angle = (Math.atan2(Math.abs(deltaY), deltaX) * 180) / Math.PI;
 
-    // Improved swipe detection conditions:
-    // 1. Must be primarily vertical (angle > 45 degrees)
-    // 2. Must have sufficient velocity (> 0.6 pixels/ms)
-    // 3. Must have minimum distance (> 80px)
-    // 4. Time constraint for quick gestures
-    if (deltaY > 80 && velocity > 0.6 && angle > 45 && deltaX < deltaY * 0.8) {
-      isProcessingGesture = true;
+    // Check if this is a valid upward swipe
+    if (
+      deltaY > SWIPE_THRESHOLD &&
+      velocity > MIN_VELOCITY &&
+      angle > MIN_ANGLE &&
+      deltaX < deltaY * MAX_HORIZONTAL_RATIO
+    ) {
+      touchData.isProcessingGesture = true;
 
-      // Provide subtle haptic feedback
+      // Provide feedback and show summary
       triggerHapticFeedback();
+      requestAnimationFrame(() => showSummary("fully-open"));
 
-      showSummary("fully-open");
-
-      // Add debounce timeout to reset the processing flag
+      // Reset processing flag after timeout
       setTimeout(() => {
-        isProcessingGesture = false;
-      }, swipeTimeout);
+        touchData.isProcessingGesture = false;
+      }, DEBOUNCE_TIMEOUT);
     }
   };
 
-  // Add touch event listeners to both screens
-  addSettleItemView.addEventListener("touchstart", handleTouchStart, { passive: true });
-  addSettleItemView.addEventListener("touchend", handleTouchEnd);
+  // Handle touch cancel (e.g. system interruptions)
+  const handleTouchCancel = function () {
+    touchData.isProcessingGesture = false;
+    touchData.isScrolling = false;
+  };
 
-  // Keep existing functionality for other contexts if needed
+  // Attach events with options object - reuse for multiple elements
+  const touchOptions = { passive: true };
 
-  // Initialize the bill summary drag functionality
+  // Helper to attach events to an element
+  const attachSwipeEvents = (element) => {
+    element.addEventListener("touchstart", handleTouchStart, touchOptions);
+    element.addEventListener("touchmove", handleTouchMove, touchOptions);
+    element.addEventListener("touchend", handleTouchEnd);
+    element.addEventListener("touchcancel", handleTouchCancel);
+  };
+
+  // Attach events to both screens
+  attachSwipeEvents(addSettleItemView);
+
+  // Initialize bill summary drag functionality
   initializeBillSummaryDrag();
-
-  // Add a slight haptic feedback if supported by device
-  const triggerHapticFeedback = () => {
-    if (navigator.vibrate) {
-      navigator.vibrate(10); // 10ms subtle vibration
-    }
-  };
 }
 
 function editMember(index) {

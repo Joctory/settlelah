@@ -128,7 +128,7 @@ body {
   background-color: var(--body-bg);
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
+  justify-content: center;
   align-items: center;
   overflow: visible;
   z-index: 11;

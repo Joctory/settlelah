@@ -2394,7 +2394,7 @@ input:checked + .slider:before {
 }
 
 .bill-summary-modal.half-open {
-  bottom: -21vh;
+  bottom: -17vh;
 }
 
 .bill-summary-modal.fully-open {
@@ -2460,7 +2460,7 @@ input:checked + .slider:before {
 }
 
 .half-open #dishSummaryContainer {
-  min-height: 200px;
+  min-height: 220px;
   max-height: calc(100% - 550px);
 }
 
@@ -4786,7 +4786,8 @@ textarea:focus,
     flex-direction: column;
   }
 
-  .a.share-btn img {
+  a.share-btn img,
+  button.share-btn img {
     width: 35px;
     height: 35px;
     padding-right: 0;
@@ -4877,8 +4878,8 @@ textarea:focus,
   }
 
   .cat-image {
-    width: 60px;
-    height: 60px;
+    width: 120px;
+    height: 120px;
   }
 
   .welcome-section h1 {

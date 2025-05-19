@@ -687,11 +687,16 @@ function roundToNearest5Cents(value) {
 // Function to render bill data
 function renderBillData(data) {
   // Format currency values
-  const formatCurrency = (value, isFinalTotal = false) => {
-    if (typeof value === "number") {
-      return isFinalTotal ? `$${roundToNearest5Cents(value)}` : `$${value.toFixed(2)}`;
+  const formatCurrency = (value, isFinalTotal = false, shouldRound = true) => {
+    // Convert to number if it's a string
+    const numValue = typeof value === "number" ? value : parseFloat(value);
+
+    // Apply rounding only if shouldRound is true and it's a final total
+    if (isFinalTotal && shouldRound) {
+      return `$${roundToNearest5Cents(numValue)}`;
+    } else {
+      return `$${numValue.toFixed(2)}`;
     }
-    return isFinalTotal ? `$${roundToNearest5Cents(parseFloat(value))}` : `$${parseFloat(value).toFixed(2)}`;
   };
 
   // Format timestamp to date and time strings
@@ -843,11 +848,16 @@ function createMemberData(data) {
   if (!data.members || !data.perPersonBreakdown || !data.dishes) return;
 
   // Format currency values
-  const formatCurrency = (value, isFinalTotal = false) => {
-    if (typeof value === "number") {
-      return isFinalTotal ? `$${roundToNearest5Cents(value)}` : `$${value.toFixed(2)}`;
+  const formatCurrency = (value, isFinalTotal = false, shouldRound = false) => {
+    // Convert to number if it's a string
+    const numValue = typeof value === "number" ? value : parseFloat(value);
+
+    // Apply rounding only if shouldRound is true and it's a final total
+    if (isFinalTotal && shouldRound) {
+      return `$${roundToNearest5Cents(numValue)}`;
+    } else {
+      return `$${numValue.toFixed(2)}`;
     }
-    return isFinalTotal ? `$${roundToNearest5Cents(parseFloat(value))}` : `$${parseFloat(value).toFixed(2)}`;
   };
 
   // Create member data for each member
