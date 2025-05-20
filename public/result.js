@@ -1101,3 +1101,15 @@ function showError(message, errorType = "generic") {
     }
   }, 300);
 }
+
+function isRunningAsPWA() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+// Initialize app functionality after window loads
+window.onload = function () {
+  if (isRunningAsPWA()) {
+    // PWA-specific logic here
+    document.body.style.height = "100vh";
+  }
+};

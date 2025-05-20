@@ -569,8 +569,14 @@ function editDish(index) {
   deleteDish(index);
   updateDishList();
   clearError();
-  // showSummary();
   closeBillSummaryModal();
+
+  // Ensure modal is peeking after any possible reflows
+  setTimeout(() => {
+    const modal = document.getElementById("billSummaryModal");
+    modal.classList.remove("fully-open", "half-open");
+    modal.classList.add("peeking");
+  }, 50);
 }
 
 function deleteDish(index, fromSummary = false) {
@@ -3483,6 +3489,8 @@ if (backConfirmBtn) {
     }
     document.querySelector(".assigned-members").innerHTML = "";
     document.getElementById("dishSummaryContainer").innerHTML = "";
+    document.getElementById("itemName").value = "";
+    document.getElementById("itemPrice").value = "";
     // Clear dishes array and update the dish list
     dishes = [];
 
@@ -4499,8 +4507,19 @@ async function fetchHistoryFromFirebase() {
   }
 }
 
+// Check if the app is running as a PWA
+function isRunningAsPWA() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
 // Initialize app functionality after window loads
 window.onload = function () {
+  if (isRunningAsPWA()) {
+    // PWA-specific logic here
+    document.body.style.height = "100vh";
+    document.body.classList.add("pwa-mode");
+  }
+
   // First sync data from Firebase to localStorage
   syncDataFromFirebase().then(() => {
     console.log("Data synchronization complete");

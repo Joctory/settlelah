@@ -34,6 +34,11 @@
   overscroll-behavior: none;
 }
 
+.login-page {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
 /* Dark mode styles */
 .dark-mode .login-page {
   --primary-color: #6366f1;
@@ -52,7 +57,13 @@
   background: linear-gradient(135deg, var(--bg-color) 0%, #0f172a 100%);
 }
 
-html,
+html {
+  height: 100%;
+  touch-action: pan-x pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
 body {
   height: 100%;
   touch-action: pan-x pan-y;

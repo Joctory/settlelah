@@ -95,13 +95,18 @@ a {
 
 html,
 body {
+  overscroll-behavior: none; /* Not fully supported on iOS, but helps elsewhere */
+  touch-action: none; /* Prevents gestures */
+}
+
+html {
   height: 100%;
 }
 
 body {
-  background: var(--body-bg);
+  background: var(--navbar-bg);
   width: 100vw;
-  /* height: 100vh; */
+  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -114,6 +119,9 @@ body {
   font-style: normal;
   line-height: 34px;
   letter-spacing: 0.3px;
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Light mode theme colors */
@@ -165,7 +173,7 @@ body {
   bottom: 0;
   z-index: 10;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 -8px 10px rgba(0, 0, 0, 0.05);
 }
 
 #bubbleWrapper {
@@ -932,7 +940,7 @@ input:checked + .slider:before {
 
 .white-slide-container {
   width: 100%;
-  height: calc(100% - 60px);
+  height: calc(100% - 50px);
   border-radius: 30px 30px 0px 0px;
   background: var(--card-bg);
   box-shadow: 0px -3px 10px rgba(0, 0, 0, 0.1);
@@ -1238,6 +1246,14 @@ input:checked + .slider:before {
   height: 100%;
   box-shadow: none;
   overflow: hidden;
+}
+
+.bill-summary-modal.peeking .bill-summary-modal-content {
+  display: none;
+}
+
+e {
+  display: none;
 }
 
 .bill-summary-modal-content .modal-header {
@@ -2017,6 +2033,7 @@ input:checked + .slider:before {
   opacity: 0;
   transform: translateY(20px);
   transition: all var(--transition-speed) ease-in-out;
+  padding-top: env(safe-area-inset-top);
 }
 
 #historyContainer.active,
@@ -2320,6 +2337,10 @@ input:checked + .slider:before {
   width: 100%;
 }
 
+.back-home-btn-container {
+  margin-top: 10px !important;
+}
+
 .group-action-btn {
   width: 32px;
   height: 32px;
@@ -2391,6 +2412,7 @@ input:checked + .slider:before {
 .bill-summary-modal.peeking {
   bottom: -86.6%; /* Show just a little bit at the bottom */
   pointer-events: all;
+  position: absolute;
 }
 
 .bill-summary-modal.half-open {
@@ -2433,6 +2455,10 @@ input:checked + .slider:before {
   position: relative;
   overflow: hidden;
   height: calc(100% - 70px); /* Account for header */
+}
+
+.pwa-mode .bill-summary-body {
+  height: calc(100% - 45px);
 }
 
 .bill-summary-error-message {
@@ -2509,7 +2535,7 @@ input:checked + .slider:before {
 .dish-members-divider {
   display: flex;
   align-items: center;
-  margin: 8px 0;
+  margin: 10px 0;
   color: var(--body-desc-2);
 }
 
@@ -2677,6 +2703,7 @@ input:checked + .slider:before {
   width: 100%;
   height: calc(100% - 60px);
   margin-top: 10px;
+  padding-top: 0;
   padding-bottom: 0;
   z-index: 20;
   display: flex;
@@ -2987,6 +3014,7 @@ input:checked + .slider:before {
   align-items: center;
   overflow-y: auto;
   z-index: 20;
+  padding-top: env(safe-area-inset-top);
 }
 
 .success-screen.active {
@@ -3251,6 +3279,20 @@ input:checked + .slider:before {
   transition: background-color 0.2s ease, transform 0.2s ease;
   width: 100%;
   text-align: center;
+}
+
+.back-home-btn {
+  flex: 1;
+  padding: 13px;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-color);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+  width: 100%;
+  text-align: center;
+  background-color: var(--card-bg);
 }
 
 .share-bill-btn {
@@ -4211,7 +4253,7 @@ textarea:focus,
 .pull-to-refresh {
   pointer-events: none;
   position: fixed;
-  top: 0;
+  top: env(safe-area-inset-top);
   left: 0;
   width: 100%;
   height: 60px;
@@ -4845,7 +4887,8 @@ textarea:focus,
 
 @media (max-width: 480px) {
   .page-container {
-    padding: 2px 15px 90px 15px;
+    padding: 0px 15px 90px 15px;
+    padding-top: env(safe-area-inset-top);
   }
 
   .weather-temp h1 {
