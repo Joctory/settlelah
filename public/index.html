@@ -810,7 +810,7 @@
           <div class="modal-body">
             <p class="scan-receipt-helper-text">Upload a receipt image to scan for items:</p>
             <div class="input-field file-upload-container">
-              <input type="file" id="receiptImage" accept="image/*" capture="environment" class="hidden-file-input" />
+              <input type="file" id="receiptImage" accept="image/*" class="hidden-file-input" />
               <label for="receiptImage" class="file-upload-button">
                 <span class="upload-icon">📤</span>
                 <span class="upload-text">Choose Receipt Image</span>
@@ -1009,6 +1009,15 @@
         <div class="toast-message">
           <p class="toast-title">History Cleared</p>
           <p class="toast-count">All history items have been removed</p>
+        </div>
+      </div>
+
+      <!-- Item deleted toast notification -->
+      <div id="itemDeletedToast" class="success-toast">
+        <div class="toast-icon">✓</div>
+        <div class="toast-message">
+          <p class="toast-title">Item Deleted</p>
+          <p class="toast-count">Bill removed successfully</p>
         </div>
       </div>
 

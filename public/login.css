@@ -587,6 +587,7 @@ body {
 /* Media Queries */
 @media (max-width: 480px) {
   .login-header {
+    margin-top: 30px;
     gap: 0.3rem;
   }
   .login-container {

@@ -538,6 +538,11 @@ body {
   margin-left: -12px;
 }
 
+#lastCreatedGroup .avatar {
+  width: 70px;
+  height: 70px;
+}
+
 .avatar:first-child {
   margin-left: 0;
 }
@@ -550,6 +555,7 @@ body {
 
 /* Settle item */
 .settle-item {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -718,6 +724,44 @@ body {
   transition: all 0.1s ease;
 }
 
+/* Individual delete button styling */
+.settle-delete {
+  position: relative;
+  margin-left: 10px;
+}
+
+.delete-history-btn {
+  background-color: var(--danger-color, #ff6b6b);
+  border: none;
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  opacity: 0.9;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.delete-history-btn:hover {
+  background-color: var(--danger-hover-color, #ff5252);
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.delete-history-btn:active {
+  transform: scale(0.95);
+}
+
+.delete-history-btn img {
+  width: 16px;
+  height: 16px;
+  filter: invert(1); /* Make the icon white */
+}
+
 /* No history message animation */
 .no-history {
   text-align: center;
@@ -736,11 +780,13 @@ body {
 }
 
 .clear-history-btn {
+  width: 35px;
+  height: 35px;
   background-color: var(--danger-color, #ff6b6b);
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 8px 16px;
+  padding: 10px;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -2630,6 +2676,10 @@ e {
   z-index: 1;
   margin-bottom: 0;
   min-height: 105px; /* Ensure consistent height */
+}
+
+.pwa-mode .bill-summary-footer {
+  margin-bottom: 30px;
 }
 
 .bill-summary-subtotal {

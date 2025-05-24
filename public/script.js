@@ -1918,8 +1918,10 @@ function fetchHistory() {
                 <p class="settle-info-matter">${settleMatter}</p>
                 <p class="settle-info-group">${members.length} members</p>
               </div>
-              <div class="settle-arrow">
-                <img src="assets/arrow.svg" alt="arrow" />
+              <div class="settle-delete">
+              <button class="delete-history-btn" data-bill-id="${bill.id}" title="Delete">
+                <img src="assets/bin.svg" alt="Delete" />
+              </button>
               </div>
             </div>
             <div class="settle-bottom">
@@ -1935,7 +1937,25 @@ function fetchHistory() {
             </div>
           `;
 
+            // <div class="settle-arrow">
+            //   <img src="assets/arrow.svg" alt="arrow" />
+            // </div>
+
             historyList.appendChild(settleItem);
+
+            // After historyList.appendChild(settleItem);
+            const deleteBtn = settleItem.querySelector(".delete-history-btn");
+            if (deleteBtn) {
+              deleteBtn.addEventListener("click", function (e) {
+                e.preventDefault();
+                e.stopPropagation(); // Prevent opening the bill link
+
+                const billId = this.getAttribute("data-bill-id");
+                if (confirm("Are you sure you want to delete this record?")) {
+                  deleteHistoryRecord(billId, settleItem);
+                }
+              });
+            }
           });
       }, 800); // Delay for better UX
     })
@@ -4580,3 +4600,36 @@ window.onload = function () {
     }
   }, 100);
 };
+
+function deleteHistoryRecord(billId, itemElement) {
+  fetchWithUserId(`/api/history/${encodeURIComponent(billId)}`, {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("Failed to delete record");
+      // Remove the item from the UI with animation
+      if (itemElement && itemElement.parentNode) {
+        // Add fade out animation before removing
+        itemElement.style.transition = "all 0.3s ease";
+        itemElement.style.opacity = "0";
+        itemElement.style.transform = "translateX(-100%)";
+
+        setTimeout(() => {
+          if (itemElement.parentNode) {
+            itemElement.parentNode.removeChild(itemElement);
+          }
+        }, 300);
+      }
+
+      // Show success toast
+      showToast("itemDeletedToast");
+    })
+    .catch((err) => {
+      alert("Error deleting record. Please try again.");
+      console.error(err);
+    });
+}

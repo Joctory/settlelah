@@ -437,6 +437,46 @@ app.delete("/api/history/clear", async (req, res) => {
   }
 });
 
+// New API endpoint to delete individual bill from Firebase
+app.delete("/api/history/:id", async (req, res) => {
+  try {
+    const billId = req.params.id;
+    const userId = req.headers["x-user-id"];
+
+    // Validate bill ID format
+    if (!isValidBillId(billId)) {
+      return res.status(400).json({ error: "Invalid bill ID format" });
+    }
+
+    // First, try to get the bill to verify it exists and check ownership
+    const billRef = firestore.doc(db, "bills", billId);
+    const billDoc = await firestore.getDoc(billRef);
+
+    if (!billDoc.exists()) {
+      return res.status(404).json({ error: "Bill not found" });
+    }
+
+    const billData = billDoc.data();
+
+    // If user is authenticated, verify ownership
+    if (userId && billData.userId && billData.userId !== userId) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    // Delete the bill
+    await firestore.deleteDoc(billRef);
+
+    res.json({
+      success: true,
+      message: "Bill deleted successfully",
+      billId: billId,
+    });
+  } catch (error) {
+    console.error("Error deleting individual bill:", error);
+    res.status(500).json({ error: "Failed to delete bill" });
+  }
+});
+
 app.post("/calculate", billCreateLimiter, async (req, res) => {
   const {
     members,
