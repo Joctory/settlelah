@@ -159,10 +159,10 @@ function initializePullToRefresh() {
 }
 
 // Function to refresh content based on current active page
-function refreshCurrentPage() {
+async function refreshCurrentPage() {
   if (activePage === "home") {
     // Refresh home page
-    updateHomePageCards();
+    await updateHomePageCards();
     updateLastSettle();
     fetchWeatherData();
   } else if (activePage === "history") {
@@ -4061,24 +4061,47 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Function to update home page cards with latest data
-function updateHomePageCards() {
-  // Update Last Created Group card
-  updateLastCreatedGroup();
+async function updateHomePageCards() {
+  // Update Last Created Group card (now async)
+  await updateLastCreatedGroup();
 
   // Update Last Settle card
   updateLastSettle();
 }
 
 // Function to update the Last Created Group card
-function updateLastCreatedGroup() {
+async function updateLastCreatedGroup() {
   const groupCard = document.querySelector(".group-card:nth-child(4)");
   if (!groupCard) return;
 
   // Show skeleton loading
   groupCard.classList.add("loading");
 
-  // Get all groups from localStorage
-  const groups = JSON.parse(localStorage.getItem("groups") || "{}");
+  let groups = {};
+  let fromFirebase = false;
+
+  try {
+    // First try to fetch from Firebase
+    const response = await fetchWithUserId("/api/groups");
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.groups) {
+        groups = data.groups;
+        fromFirebase = true;
+        // Update localStorage with latest Firebase data
+        localStorage.setItem("groups", JSON.stringify(groups));
+      }
+    } else {
+      throw new Error(`Firebase fetch failed: ${response.statusText}`);
+    }
+  } catch (error) {
+    console.error("Error fetching groups from Firebase, falling back to localStorage:", error);
+    // Fallback to localStorage
+    groups = JSON.parse(localStorage.getItem("groups") || "{}");
+    fromFirebase = false;
+  }
+
   const groupNames = Object.keys(groups);
 
   if (groupNames.length === 0) {
@@ -4103,7 +4126,7 @@ function updateLastCreatedGroup() {
 
   // Find most recent group (assuming the last one in the object is the newest)
   // In a real app with timestamps, you'd sort by creation time
-  const lastGroupName = groupNames[groupNames.length - 1];
+  const lastGroupName = groupNames[0];
   const members = groups[lastGroupName];
 
   // Update content with slight delay to show the loading animation
@@ -4533,7 +4556,7 @@ function isRunningAsPWA() {
 }
 
 // Initialize app functionality after window loads
-window.onload = function () {
+window.onload = async function () {
   if (isRunningAsPWA()) {
     // PWA-specific logic here
     document.body.style.height = "100vh";
@@ -4541,13 +4564,15 @@ window.onload = function () {
   }
 
   // First sync data from Firebase to localStorage
-  syncDataFromFirebase().then(() => {
+  await syncDataFromFirebase().then(() => {
     console.log("Data synchronization complete");
-    updateHomePageCards();
   });
 
+  // Update home page cards after sync
+  await updateHomePageCards();
+
   // Wait a short amount of time to ensure everything is ready
-  setTimeout(() => {
+  setTimeout(async () => {
     // Initialize pull-to-refresh functionality
     initializePullToRefresh();
 
@@ -4568,8 +4593,8 @@ window.onload = function () {
     // Get weather data
     fetchWeatherData();
 
-    // Update home page cards
-    updateHomePageCards();
+    // Update home page cards again to ensure latest data
+    await updateHomePageCards();
 
     // Add animation classes after a delay for smoother experience
     setTimeout(() => {
