@@ -489,6 +489,7 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
     paynowName,
     paynowID,
     serviceChargeValue,
+    birthdayPerson,
   } = req.body;
 
   // Replace simple random ID with secure ID
@@ -570,6 +571,30 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
     totals[member] = perPersonBreakdown[member].total;
   }
 
+  // Handle birthday person logic - redistribute their cost to other members
+  if (birthdayPerson && totals[birthdayPerson] !== undefined) {
+    const birthdayPersonTotal = totals[birthdayPerson];
+    const otherMembers = Object.keys(totals).filter(member => member !== birthdayPerson);
+    
+    if (otherMembers.length > 0) {
+      // Calculate how much each other member needs to pay extra
+      const redistributeAmount = birthdayPersonTotal / otherMembers.length;
+      
+      // Add the redistributed amount to each other member
+      otherMembers.forEach(member => {
+        totals[member] += redistributeAmount;
+        // Also update their breakdown for accurate display
+        perPersonBreakdown[member].total += redistributeAmount;
+        perPersonBreakdown[member].birthdayShare = redistributeAmount;
+      });
+      
+      // Set birthday person's total to zero
+      totals[birthdayPerson] = 0;
+      perPersonBreakdown[birthdayPerson].total = 0;
+      perPersonBreakdown[birthdayPerson].birthdayPerson = true;
+    }
+  }
+
   const breakdown = { subtotal, serviceCharge, afterService, discountAmount, afterDiscount, gst, total };
   const billData = {
     members,
@@ -582,8 +607,10 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
     timestamp: Date.now(), // Store timestamp in Firebase
     paynowName,
     paynowID,
+    discount, // Save the original discount input value (e.g., "10%" or "5")
     serviceChargeRate: `${parseFloat(serviceChargeValue || 10)}%`, // Include service charge rate
     gstRate: `${(gstRate * 100).toFixed(0)}%`, // Include GST rate as a percentage
+    birthdayPerson: birthdayPerson || null, // Include birthday person information
     // Add ownership information for security
     createdBy: req.headers["x-user-id"] || null,
     createdIP: req.ip || req.headers["x-forwarded-for"] || "unknown",
@@ -671,8 +698,11 @@ app.get("/result/:id", resultViewLimiter, async (req, res) => {
     settleMatter: bill.settleMatter,
     paynowName: bill.paynowName,
     paynowID: bill.paynowID,
+    discount: bill.discount, // Include the original discount input value
     serviceChargeRate: bill.serviceChargeRate,
     gstRate: bill.gstRate,
+    birthdayPerson: bill.birthdayPerson || null, // Include birthday person information
+    paymentStatus: bill.paymentStatus || {}, // Include payment status
   });
 });
 
@@ -892,6 +922,79 @@ app.delete("/api/groups/:groupName", async (req, res) => {
       success: false,
       message: "Failed to delete group",
       error: error.message,
+    });
+  }
+});
+
+// API endpoint to update payment status for a bill member
+app.patch("/api/bills/:billId/payment-status", async (req, res) => {
+  try {
+    const { billId } = req.params;
+    const { memberName, hasPaid } = req.body;
+
+    // Basic validation
+    if (!memberName || typeof hasPaid !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: "Member name and payment status are required"
+      });
+    }
+
+    // Validate bill ID format
+    const validIdPattern = /^[a-z0-9]+-[a-z0-9]+-[a-z0-9]+$/i;
+    if (!validIdPattern.test(billId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid bill ID format"
+      });
+    }
+
+    // Get the bill document
+    const billRef = firestore.doc(db, "bills", billId);
+    const billDoc = await firestore.getDoc(billRef);
+
+    if (!billDoc.exists()) {
+      return res.status(404).json({
+        success: false,
+        message: "Bill not found"
+      });
+    }
+
+    const billData = billDoc.data();
+
+    // Check if member exists in the bill
+    const memberExists = billData.members.some(member => member.name === memberName);
+    if (!memberExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Member not found in this bill"
+      });
+    }
+
+    // Initialize paymentStatus object if it doesn't exist
+    const paymentStatus = billData.paymentStatus || {};
+    paymentStatus[memberName] = {
+      hasPaid: hasPaid,
+      timestamp: Date.now()
+    };
+
+    // Update the bill document
+    await firestore.updateDoc(billRef, {
+      paymentStatus: paymentStatus,
+      lastUpdated: Date.now()
+    });
+
+    res.json({
+      success: true,
+      message: `Payment status updated for ${memberName}`,
+      paymentStatus: paymentStatus[memberName]
+    });
+
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update payment status"
     });
   }
 });

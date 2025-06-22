@@ -454,6 +454,110 @@ body.dark-mode .member-close-modal:hover {
   color: #e0e0e0;
 }
 
+/* Payment confirmation modal styles */
+.payment-confirm-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  width: 90%;
+  max-width: 400px;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  visibility: hidden;
+  z-index: 25;
+  transition: all 0.3s ease;
+}
+
+.payment-confirm-modal.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.payment-confirm-modal-content {
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  box-shadow: none;
+}
+
+.payment-confirm-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 20px 0 20px;
+  text-align: center;
+  position: relative;
+}
+
+.payment-confirm-modal .modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  margin: 0;
+  color: #333;
+}
+
+.payment-confirm-close-modal {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #aaa;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+}
+
+.payment-confirm-close-modal:hover {
+  color: #333;
+}
+
+.payment-confirm-modal-body {
+  padding: 20px;
+  text-align: center;
+}
+
+.payment-confirm-modal-body p {
+  margin-bottom: 20px;
+  font-size: 16px;
+  color: #333;
+}
+
+.payment-confirm-buttons {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.payment-confirm-buttons .action-button {
+  flex: 1;
+  max-width: 150px;
+}
+
+/* Dark mode styles for payment confirmation modal */
+body.dark-mode .payment-confirm-modal {
+  background-color: #1c1c1e;
+}
+
+body.dark-mode .payment-confirm-modal .modal-header h2 {
+  color: #e0e0e0;
+}
+
+body.dark-mode .payment-confirm-close-modal {
+  color: #a0a0a0;
+}
+
+body.dark-mode .payment-confirm-close-modal:hover {
+  color: #e0e0e0;
+}
+
+body.dark-mode .payment-confirm-modal-body p {
+  color: #e0e0e0;
+}
+
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -538,7 +642,7 @@ body.dark-mode .member-close-modal:hover {
 
 .member-bill-modal-details {
   width: 100%;
-  height: 85%;
+  height: 100%;
   background-color: var(--details-bg);
   padding: 15px;
   border-radius: 10px;
@@ -956,6 +1060,590 @@ body.dark-mode .paynow-qr-container {
   height: 100%;
   user-select: none;
   pointer-events: none; /* This prevents the image from interfering with drag */
+}
+
+/* Payment status styles */
+.member-avatar.paid {
+  border: 3px solid #28a745;
+  box-shadow: 0 0 15px rgba(40, 167, 69, 0.3);
+}
+
+.paid-indicator {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 25px;
+  height: 25px;
+  background-color: #28a745;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  border: 2px solid white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  animation: paymentConfirm 0.5s ease-in-out;
+}
+
+@keyframes paymentConfirm {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.payment-status-indicator {
+  padding: 10px 15px;
+  border-radius: 8px;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.payment-status-indicator.paid {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.payment-status-text {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+/* Payer View Styles */
+.payer-view {
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 2px solid #28a745;
+  border-radius: 15px;
+  margin-top: 15px;
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.1);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Payer Bill Details Section */
+.payer-bill-details {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payer-bill-details h4 {
+  color: #155724;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 2px solid #28a745;
+  padding-bottom: 8px;
+}
+
+.payer-amount-display {
+  text-align: center;
+  padding: 15px;
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.payer-total-amount {
+  font-size: 32px;
+  font-weight: 700;
+  color: #155724;
+  margin: 0;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.payer-items-section,
+.payer-breakdown-section {
+  margin-bottom: 20px;
+}
+
+.payer-items-section h5,
+.payer-breakdown-section h5 {
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.payer-item-container {
+  margin-bottom: 15px;
+}
+
+.payer-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.payer-item-label,
+.payer-breakdown-label {
+  color: #6c757d;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.payer-item-value,
+.payer-breakdown-value {
+  color: #495057;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.payer-item-divider {
+  border: none;
+  height: 1px;
+  background-color: #e9ecef;
+  margin: 10px 0;
+}
+
+.payer-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f8f9fa;
+}
+
+.payer-breakdown-row:last-child {
+  border-bottom: none;
+  font-weight: 700;
+  padding-top: 12px;
+  border-top: 2px solid #e9ecef;
+}
+
+/* Payment Tracking Section */
+.payment-tracking-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-tracking-section h4 {
+  color: #dc3545;
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  border-bottom: 2px solid #dc3545;
+  padding-bottom: 8px;
+}
+
+.payment-tracking-section h5 {
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.payer-header {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.payer-header h3 {
+  color: #155724;
+  margin-bottom: 5px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.payer-header p {
+  color: #6c757d;
+  font-size: 14px;
+  margin: 0;
+}
+
+.payment-summary {
+  margin-bottom: 25px;
+}
+
+.summary-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.paid-stat {
+  border-left: 4px solid #28a745;
+}
+
+.pending-stat {
+  border-left: 4px solid #ffc107;
+}
+
+.amount-stat {
+  border-left: 4px solid #dc3545;
+}
+
+.stat-number {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 5px;
+}
+
+.paid-stat .stat-number {
+  color: #28a745;
+}
+
+.pending-stat .stat-number {
+  color: #ffc107;
+}
+
+.amount-stat .stat-number {
+  color: #dc3545;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #6c757d;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.progress-bar-container {
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background-color: #e9ecef;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  border-radius: 6px;
+  transition: width 0.8s ease-in-out;
+  animation: progressGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes progressGlow {
+  0% {
+    box-shadow: 0 0 5px rgba(40, 167, 69, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(40, 167, 69, 0.6);
+  }
+}
+
+.progress-text {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.members-status-list {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.members-status-list h4 {
+  background: #f8f9fa;
+  margin: 0;
+  padding: 15px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.member-status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border-bottom: 1px solid #f1f3f4;
+  transition: background-color 0.2s ease;
+}
+
+.member-status-item:last-child {
+  border-bottom: none;
+}
+
+.member-status-item:hover {
+  background-color: #f8f9fa;
+}
+
+.member-status-info {
+  flex: 1;
+}
+
+.member-status-name {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 4px;
+}
+
+.status-icon {
+  margin-right: 8px;
+  font-size: 16px;
+}
+
+.member-status-item.paid .status-icon {
+  color: #28a745;
+}
+
+.member-status-item.pending .status-icon {
+  color: #ffc107;
+}
+
+.member-status-amount {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.member-status-badge {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.member-status-badge.paid {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.member-status-badge.pending {
+  background-color: #fff3cd;
+  color: #856404;
+  border: 1px solid #ffeaa7;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .summary-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .stat-card {
+    padding: 12px;
+  }
+
+  .stat-number {
+    font-size: 20px;
+  }
+
+  .member-status-item {
+    padding: 12px 15px;
+  }
+
+  .member-status-name {
+    font-size: 14px;
+  }
+
+  .member-status-amount {
+    font-size: 13px;
+  }
+}
+
+/* Dark mode styles */
+body.dark-mode .payer-view {
+  background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
+  border-color: #28a745;
+}
+
+body.dark-mode .payer-bill-details,
+body.dark-mode .payment-tracking-section {
+  background: #2c2c2e;
+}
+
+body.dark-mode .payer-bill-details h4 {
+  color: #30d158;
+  border-bottom-color: #30d158;
+}
+
+body.dark-mode .payment-tracking-section h4 {
+  color: #ff6b6b;
+  border-bottom-color: #ff6b6b;
+}
+
+body.dark-mode .payer-amount-display {
+  background: linear-gradient(135deg, #1e3a28 0%, #155724 100%);
+}
+
+body.dark-mode .payer-total-amount {
+  color: #30d158;
+}
+
+body.dark-mode .payer-items-section h5,
+body.dark-mode .payer-breakdown-section h5,
+body.dark-mode .payment-tracking-section h5 {
+  color: #e0e0e0;
+  border-bottom-color: #333;
+}
+
+body.dark-mode .payer-item-label,
+body.dark-mode .payer-breakdown-label {
+  color: #a0a0a0;
+}
+
+body.dark-mode .payer-item-value,
+body.dark-mode .payer-breakdown-value {
+  color: #e0e0e0;
+}
+
+body.dark-mode .payer-item-divider {
+  background-color: #333;
+}
+
+body.dark-mode .payer-breakdown-row {
+  border-bottom-color: #333;
+}
+
+body.dark-mode .payer-breakdown-row:last-child {
+  border-top-color: #333;
+}
+
+body.dark-mode .payer-header h3 {
+  color: #30d158;
+}
+
+body.dark-mode .payer-header p {
+  color: #a0a0a0;
+}
+
+body.dark-mode .stat-card,
+body.dark-mode .progress-bar-container,
+body.dark-mode .members-status-list {
+  background: #2c2c2e;
+}
+
+body.dark-mode .members-status-list h4 {
+  background: #1c1c1e;
+  color: #e0e0e0;
+  border-bottom-color: #333;
+}
+
+body.dark-mode .member-status-item {
+  border-bottom-color: #333;
+}
+
+body.dark-mode .member-status-item:hover {
+  background-color: #1c1c1e;
+}
+
+body.dark-mode .member-status-name {
+  color: #e0e0e0;
+}
+
+body.dark-mode .member-status-amount {
+  color: #a0a0a0;
+}
+
+body.dark-mode .progress-text {
+  color: #e0e0e0;
+}
+
+/* Compact styles for payer tracking section */
+.payer-tracking-section {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: auto;
+}
+
+.payment-summary-compact {
+  margin-bottom: 20px;
+}
+
+.members-status-list-compact h4 {
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Mobile specific styles for payment tracking */
+.payment-summary-mobile .summary-stats {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.payer-tracking-container {
+  padding: 10px 0;
+  overflow: auto;
+}
+
+.members-status-list-mobile {
+  margin-top: 20px;
+}
+
+.members-status-list-mobile h4 {
+  color: #495057;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+/* Dark mode for new styles */
+body.dark-mode .payer-tracking-section {
+  background: #2c2c2e;
+}
+
+body.dark-mode .members-status-list-compact h4,
+body.dark-mode .members-status-list-mobile h4 {
+  color: #e0e0e0;
+  border-bottom-color: #333;
 }
 
 /* Modal content transition animations */
@@ -1550,4 +2238,472 @@ body.dark-mode #theme-toggle:hover {
 .amount-row {
   font-weight: bold;
   font-size: 1.1em;
+}
+
+/* Share bill button styles */
+.share-bill-button {
+  position: fixed;
+  top: 10px;
+  right: 60px;
+  z-index: 10;
+  width: 40px;
+  height: 40px;
+  background: #83978880;
+  color: #000000;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeInUp 0.4s 1s ease forwards;
+  box-shadow: 0 2px 8px rgba(131, 151, 136, 0.3);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  margin-top: env(safe-area-inset-top);
+  margin-bottom: env(safe-area-inset-bottom);
+  margin-left: env(safe-area-inset-left);
+  margin-right: env(safe-area-inset-right);
+}
+
+.share-bill-button:hover {
+  background: color-mix(in srgb, var(--accent-color) 85%, white);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(131, 151, 136, 0.4);
+}
+
+.share-bill-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(131, 151, 136, 0.3);
+}
+
+.share-bill-button svg {
+  transition: transform 0.3s ease;
+}
+
+.share-bill-button:hover svg {
+  transform: scale(1.1);
+}
+
+/* Dark mode styles for share button */
+body.dark-mode .share-bill-button {
+  color: #ffffff;
+  background: #85a99c8c;
+  box-shadow: 0 2px 8px rgba(133, 169, 156, 0.4);
+}
+
+body.dark-mode .share-bill-button:hover {
+  background: color-mix(in srgb, #85a99c80 85%, #ffffff78);
+  box-shadow: 0 4px 12px rgba(133, 169, 156, 0.5);
+}
+
+/* Completion celebration modal */
+.completion-celebration {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  text-align: center;
+  z-index: 10000;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  max-width: 90%;
+  width: 400px;
+}
+
+.completion-celebration h2 {
+  color: #28a745;
+  font-size: 32px;
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+.completion-celebration p {
+  color: #666;
+  font-size: 18px;
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+.completion-celebration .celebration-emoji {
+  font-size: 60px;
+  margin-bottom: 20px;
+  display: block;
+}
+
+.completion-celebration button {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 12px 30px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.completion-celebration button:hover {
+  background: #218838;
+}
+
+/* Dark mode for celebration */
+body.dark-mode .completion-celebration {
+  background: #2c2c2e;
+  color: #ffffff;
+}
+
+body.dark-mode .completion-celebration p {
+  color: #b0b0b0;
+}
+
+/* QR Download button styles */
+.download-qr-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.download-qr-btn:hover {
+  background: #0056b3;
+}
+
+.download-qr-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+body.dark-mode .download-qr-btn {
+  background: #0056b3;
+}
+
+body.dark-mode .download-qr-btn:hover {
+  background: #004085;
+}
+
+/* Birthday person items display styles */
+.birthday-person-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.birthday-item-detail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(139, 69, 19, 0.1);
+  border-radius: 6px;
+  border-left: 3px solid #ffd700;
+}
+
+.birthday-item-name {
+  font-weight: 600;
+  color: #8b4513;
+  flex-grow: 1;
+}
+
+.birthday-item-price {
+  font-weight: 700;
+  color: #ff6b35;
+  font-size: 14px;
+}
+
+.birthday-total-value {
+  font-weight: 700;
+  color: #8b4513;
+  font-size: 16px;
+}
+
+.no-items {
+  font-style: italic;
+  color: #666;
+  text-align: center;
+  padding: 12px;
+  background: rgba(139, 69, 19, 0.05);
+  border-radius: 6px;
+}
+
+/* Dark mode adjustments */
+body.dark-mode .birthday-item-detail {
+  background: rgba(184, 134, 11, 0.2);
+  border-left-color: #b8860b;
+}
+
+body.dark-mode .birthday-item-name,
+body.dark-mode .birthday-total-value {
+  color: #fff;
+}
+
+body.dark-mode .birthday-item-price {
+  color: #ff8e89;
+}
+
+body.dark-mode .no-items {
+  color: #ccc;
+  background: rgba(184, 134, 11, 0.1);
+}
+
+/* Birthday person breakdown for other members */
+.birthday-person-breakdown {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 179, 71, 0.1));
+  border: 2px solid #ffd700;
+  border-radius: 12px;
+  margin: 16px 0;
+  position: relative;
+}
+
+.birthday-breakdown-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 4px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 10px 10px 0 0;
+}
+
+.birthday-breakdown-icon {
+  font-size: 20px;
+  animation: bounce 2s infinite;
+}
+
+.birthday-breakdown-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #8b4513;
+}
+
+.birthday-breakdown-subtitle {
+  font-size: 12px;
+  font-style: italic;
+  color: #666;
+  text-align: center;
+  padding: 4px 16px 8px;
+  background: rgba(255, 215, 0, 0.15);
+  margin-bottom: 8px;
+}
+
+.birthday-person-items-reference {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 16px;
+}
+
+.birthday-reference-item {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 8px 12px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 6px;
+  border-left: 2px solid #ffd700;
+}
+
+.birthday-reference-name {
+  font-weight: 500;
+  color: #8b4513;
+  font-size: 14px;
+}
+
+.birthday-reference-total {
+  font-weight: 600;
+  color: #8b4513;
+  font-size: 14px;
+}
+
+.no-items-reference {
+  font-style: italic;
+  color: #888;
+  text-align: center;
+  padding: 8px;
+  background: rgba(255, 215, 0, 0.05);
+  border-radius: 6px;
+  font-size: 13px;
+}
+
+/* Dark mode adjustments for birthday breakdown */
+body.dark-mode .birthday-person-breakdown {
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.2), rgba(205, 133, 63, 0.2));
+  border-color: #b8860b;
+}
+
+body.dark-mode .birthday-breakdown-header {
+  background: rgba(184, 134, 11, 0.25);
+  border-bottom-color: rgba(184, 134, 11, 0.4);
+}
+
+body.dark-mode .birthday-breakdown-title,
+body.dark-mode .birthday-reference-total {
+  color: #fff;
+}
+
+body.dark-mode .birthday-breakdown-subtitle {
+  color: #ccc;
+  background: rgba(184, 134, 11, 0.25);
+}
+
+body.dark-mode .birthday-reference-item {
+  background: rgba(184, 134, 11, 0.15);
+  border-left-color: #b8860b;
+}
+
+body.dark-mode .birthday-reference-name {
+  color: #fff;
+}
+
+body.dark-mode .no-items-reference {
+  color: #aaa;
+  background: rgba(184, 134, 11, 0.1);
+}
+
+/* Happy Birthday Message Styles */
+.happy-birthday-message {
+  background: linear-gradient(135deg, #ff6b9d, #ff8e89, #ffd700);
+  border: 3px solid #ff6b9d;
+  border-radius: 16px;
+  margin: 16px 0;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+  animation: birthdayGlow 3s ease-in-out infinite alternate;
+}
+
+.happy-birthday-message::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes birthdayGlow {
+  0% {
+    box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+  }
+  100% {
+    box-shadow: 0 12px 32px rgba(255, 107, 157, 0.5);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.birthday-greeting-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.birthday-greeting-icon {
+  font-size: 28px;
+  animation: bounce 2s infinite;
+}
+
+.birthday-greeting-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.birthday-greeting-content {
+  padding: 20px;
+  text-align: center;
+  color: #fff;
+}
+
+.birthday-wish {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
+}
+
+.birthday-treat-message {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  line-height: 1.4;
+}
+
+.birthday-emojis {
+  font-size: 24px;
+  letter-spacing: 8px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Dark mode adjustments for birthday message */
+body.dark-mode .happy-birthday-message {
+  background: linear-gradient(135deg, #8e4ba8, #b8860b, #cd853f);
+  border-color: #8e4ba8;
+}
+
+body.dark-mode .birthday-greeting-header {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .birthday-greeting-title {
+    font-size: 18px;
+  }
+
+  .birthday-wish {
+    font-size: 15px;
+  }
+
+  .birthday-treat-message {
+    font-size: 13px;
+  }
+
+  .birthday-emojis {
+    font-size: 20px;
+    letter-spacing: 6px;
+  }
 }

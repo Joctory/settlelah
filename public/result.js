@@ -91,6 +91,12 @@
 // Member-specific bill data (will be populated from API)
 let memberData = {};
 
+// Global bill data and payment status
+let billData = {};
+let billId = "";
+let payerName = "";
+let paymentStatus = {};
+
 // Function to check if the user is on desktop mode
 function isDesktopMode() {
   return window.matchMedia("(min-width: 1100px)").matches;
@@ -129,7 +135,12 @@ function showShareModal(memberName) {
       const desktop = isDesktopMode();
 
       // Update modal title
-      modalHeader.textContent = `Settle Detail - ${memberName}`;
+      const isBirthdayPerson = data.isBirthdayPerson;
+      let memberDisplayName = memberName === payerName ? `💸 ${memberName}` : memberName;
+      if (isBirthdayPerson) {
+        memberDisplayName = `🎂 ${memberName} (Birthday)`;
+      }
+      modalHeader.textContent = `Settle Detail - ${memberDisplayName}`;
 
       if (desktop) {
         // In desktop mode, show both details and PayNow QR side by side
@@ -137,6 +148,15 @@ function showShareModal(memberName) {
 
         // Check tax profile to determine whether to show PayNow QR
         const isSingapore = data.taxProfile === "singapore";
+
+        // Check if this is a custom payer (payer with $0.00 total)
+        const isCustomPayer = memberName === payerName && data.totalAmount === "$0.00";
+
+        if (isCustomPayer) {
+          // For custom payers, directly show payment tracking
+          showPayerTracking(memberName);
+          return;
+        }
 
         // Create and populate modal content with a two-column layout
         modalBody.innerHTML = `
@@ -191,6 +211,61 @@ function showShareModal(memberName) {
                 `
                   )
                   .join("")}
+                
+                ${
+                  data.birthdayShare > 0
+                    ? `
+                  <div class="member-bill-item-container birthday-share-item">
+                    <div class="birthday-share-header">
+                      <span class="birthday-share-icon">🎂</span>
+                      <span class="birthday-share-title">Birthday Contribution</span>
+                    </div>
+                    <div class="member-bill-row">
+                      <span class="member-bill-row-label">Helping to celebrate</span>
+                      <span class="member-bill-row-value">${
+                        billData?.birthdayPerson || "Birthday person"
+                      }'s special day</span>
+                    </div>
+                    <div class="member-bill-row">
+                      <span class="member-bill-row-label">Your contribution</span>
+                      <span class="member-bill-row-value birthday-contribution">+$${data.birthdayShare.toFixed(
+                        2
+                      )}</span>
+                    </div>
+                  </div>
+                  `
+                    : ""
+                }
+                
+                ${
+                  // Show birthday person's breakdown to other members
+                  !data.isBirthdayPerson && billData?.birthdayPerson && memberData[billData.birthdayPerson]
+                    ? `
+                  <div class="member-bill-item-container birthday-person-breakdown">
+                    <div class="birthday-breakdown-header">
+                      <span class="birthday-breakdown-icon">🎂</span>
+                      <span class="birthday-breakdown-title">What ${billData.birthdayPerson} Ordered</span>
+                    </div>
+                    <div class="birthday-person-items-reference">
+                      ${memberData[billData.birthdayPerson].items
+                        .map(
+                          (item) => `
+                        <div class="birthday-reference-item">
+                          <span class="birthday-reference-name">${item.name}</span>
+                        </div>
+                      `
+                        )
+                        .join("")}
+                      ${
+                        memberData[billData.birthdayPerson].items.length === 0
+                          ? '<span class="no-items-reference">No items ordered</span>'
+                          : ""
+                      }
+                    </div>
+                  </div>
+                  `
+                    : ""
+                }
               </div>
               
               <hr class="member-bill-solid-divider">
@@ -219,7 +294,7 @@ function showShareModal(memberName) {
                   parseFloat(data.breakdown.discount.replace("$", "")) > 0
                     ? `
                   <div class="member-bill-row">
-                    <span class="member-bill-row-label">Discount</span>
+                    <span class="member-bill-row-label">Discount${data.discount ? ` (${data.discount})` : ""}</span>
                     <span class="member-bill-row-value">${data.breakdown.discount}</span>
                   </div>
                   <div class="member-bill-row">
@@ -244,6 +319,9 @@ function showShareModal(memberName) {
               </div>
             </div>
             
+            ${
+              memberName !== payerName && !data.isBirthdayPerson
+                ? `
             <div class="paynow-section modal-fade-in">
               <h2 class="paynow-title">Please Transfer to</h2>
               ${
@@ -270,6 +348,12 @@ function showShareModal(memberName) {
                 <button id="copyPhoneBtn" class="action-button secondary-button">
                   Copy Phone Number
                 </button>
+                <button id="downloadQRBtn" class="download-qr-btn">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+                  </svg>
+                  Download QR
+                </button>
                 `
                   : `
                 <div class="paynow-instructions">
@@ -281,7 +365,103 @@ function showShareModal(memberName) {
                 </button>
                 `
               }
+              
+              ${
+                paymentStatus[memberName]?.hasPaid
+                  ? `
+                <div class="payment-status-indicator paid">
+                  <span class="payment-status-text">✓ Payment Confirmed</span>
+                </div>
+              `
+                  : `
+                <button id="havePaidBtn" class="action-button primary-button" style="margin-top: 15px;">
+                  I have paid!
+                </button>
+              `
+              }
             </div>
+            `
+                : data.isBirthdayPerson
+                ? `
+            <div class="birthday-celebration-panel modal-fade-in">
+              <div style="text-align: center; padding: 20px;">
+                <h2 class="celebration-title">🎂 Happy Birthday!</h2>
+                <p class="celebration-message">Your friends are treating you today!</p>
+                <div class="birthday-gift-icon">🎁</div>
+                <p class="celebration-subtitle">Enjoy your special day!</p>
+              </div>
+            </div>
+            `
+                : data.totalAmount === "$0.00"
+                ? `
+            <div class="payer-tracking-section modal-fade-in">
+              <div class="payment-summary-compact">
+                <div class="summary-stats">
+                  <div class="stat-card paid-stat">
+                    <div class="stat-number">${getPaidMembersCount()}</div>
+                    <div class="stat-label">Paid</div>
+                  </div>
+                  <div class="stat-card pending-stat">
+                    <div class="stat-number">${getPendingMembersCount()}</div>
+                    <div class="stat-label">Pending</div>
+                  </div>
+                  <div class="stat-card amount-stat">
+                    <div class="stat-number">${getOutstandingAmount()}</div>
+                    <div class="stat-label">Outstanding</div>
+                  </div>
+                </div>
+                
+                <div class="progress-bar-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${getPaymentProgress()}%"></div>
+                  </div>
+                  <div class="progress-text">${getPaymentProgress()}% Complete</div>
+                </div>
+              </div>
+              
+              <div class="members-status-list-compact">
+                <h4>Member Payment Status</h4>
+                ${getMembersStatusList()}
+              </div>
+            </div>
+            `
+                : `
+            
+            
+            <div class="payer-tracking-section modal-fade-in">
+              <h2 class="paynow-title">Payment Tracking Dashboard</h2>
+              
+              <div class="payment-summary-compact">
+                <div class="summary-stats">
+                  <div class="stat-card paid-stat">
+                    <div class="stat-number">${getPaidMembersCount()}</div>
+                    <div class="stat-label">Paid</div>
+                  </div>
+                  <div class="stat-card pending-stat">
+                    <div class="stat-number">${getPendingMembersCount()}</div>
+                    <div class="stat-label">Pending</div>
+                  </div>
+                  <div class="stat-card amount-stat">
+                    <div class="stat-number">${getOutstandingAmount()}</div>
+                    <div class="stat-label">Outstanding</div>
+                  </div>
+                </div>
+                
+                <div class="progress-bar-container">
+                  <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${getPaymentProgress()}%"></div>
+                  </div>
+                  <div class="progress-text">${getPaymentProgress()}% Complete</div>
+                </div>
+              </div>
+              
+              <div class="members-status-list-compact">
+                <h4>Member Payment Status</h4>
+                ${getMembersStatusList()}
+              </div>
+            </div>
+            `
+            }
           </div>
         `;
 
@@ -311,15 +491,43 @@ function showShareModal(memberName) {
               });
           });
         }
+
+        // Add event listener for the "I have paid!" button
+        const havePaidBtn = document.getElementById("havePaidBtn");
+        if (havePaidBtn) {
+          havePaidBtn.addEventListener("click", () => {
+            showPaymentConfirmation(memberName);
+          });
+        }
+
+        // Add event listener for the download QR button (desktop)
+        const downloadQRBtn = document.getElementById("downloadQRBtn");
+        if (downloadQRBtn) {
+          downloadQRBtn.addEventListener("click", () => {
+            const qrImage = document.querySelector("#paynow-qr-container img");
+            if (qrImage) {
+              downloadQRCode(qrImage, memberName);
+            }
+          });
+        }
       } else {
         // On mobile, keep the original behavior with separate views
         modal.classList.remove("desktop-mode");
+
+        // Check if this is a custom payer (payer with $0.00 total)
+        const isCustomPayer = memberName === payerName && data.totalAmount === "$0.00";
+
+        if (isCustomPayer) {
+          // For custom payers, directly show payment tracking
+          showPayerTracking(memberName);
+          return;
+        }
 
         // Create and populate modal content
         modalBody.innerHTML = `
           <div class="member-bill-modal-details modal-fade-in">
             <div style="text-align: center;">
-              <h2 class="member-bill-title">Settle Detail</h2>
+              <h2 class="member-bill-title">${memberName === payerName ? "Your Bill Breakdown" : "Settle Detail"}</h2>
               <h1 class="member-bill-amount">${data.totalAmount}</h1>
             </div>
             
@@ -337,7 +545,9 @@ function showShareModal(memberName) {
                   </div>
                   <div class="member-bill-row">
                     <span class="member-bill-row-label">Shared With</span>
-                    <div class="shared-with-container">${item.sharedWith || "-"}</div>
+                    <div class="shared-with-container">${
+                      item.sharedWith || (memberName === payerName ? "Just You" : "-")
+                    }</div>
                   </div>
                   <div class="member-bill-row">
                     <span class="member-bill-row-label">Item Price</span>
@@ -367,6 +577,72 @@ function showShareModal(memberName) {
               `
                 )
                 .join("")}
+                
+              ${
+                data.birthdayShare > 0
+                  ? `
+                <div class="member-bill-item-container birthday-share-item">
+                  <div class="birthday-share-header">
+                    <span class="birthday-share-icon">🎂</span>
+                    <span class="birthday-share-title">Birthday Contribution</span>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Helping to celebrate</span>
+                    <span class="member-bill-row-value">${
+                      billData?.birthdayPerson || "Birthday person"
+                    }'s special day</span>
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Your contribution</span>
+                    <span class="member-bill-row-value birthday-contribution">+$${data.birthdayShare.toFixed(2)}</span>
+                  </div>
+                </div>
+                `
+                  : ""
+              }
+              
+              ${
+                // Show birthday person's breakdown to other members (mobile view)
+                !data.isBirthdayPerson && billData?.birthdayPerson && memberData[billData.birthdayPerson]
+                  ? `
+                <div class="member-bill-item-container birthday-person-breakdown">
+                  <div class="birthday-breakdown-header">
+                    <span class="birthday-breakdown-icon">🎂</span>
+                    <span class="birthday-breakdown-title">What ${billData.birthdayPerson} Ordered</span>
+                  </div>
+                  <div class="birthday-person-items-reference">
+                    ${memberData[billData.birthdayPerson].items
+                      .map(
+                        (item) => `
+                      <div class="birthday-reference-item">
+                        <span class="birthday-reference-name">${item.name}</span>
+                      </div>
+                    `
+                      )
+                      .join("")}
+                    ${
+                      memberData[billData.birthdayPerson].items.length === 0
+                        ? '<span class="no-items-reference">No items ordered</span>'
+                        : ""
+                    }
+                  </div>
+                  <div class="member-bill-row">
+                    <span class="member-bill-row-label">Total Value (Being Treated)</span>
+                    <span class="member-bill-row-value birthday-reference-total">$${memberData[
+                      billData.birthdayPerson
+                    ].items
+                      .reduce((total, item) => {
+                        const price = parseFloat(item.price.replace("$", ""));
+                        return total + price;
+                      }, 0)
+                      .toFixed(2)} (${memberData[billData.birthdayPerson].items.length} item${
+                      memberData[billData.birthdayPerson].items.length !== 1 ? "s" : ""
+                    })</span>
+                  </div>
+                </div>
+                `
+                  : ""
+              }
             </div>
             
             <hr class="member-bill-solid-divider">
@@ -395,7 +671,7 @@ function showShareModal(memberName) {
                 parseFloat(data.breakdown.discount.replace("$", "")) > 0
                   ? `
                 <div class="member-bill-row">
-                  <span class="member-bill-row-label">Discount</span>
+                  <span class="member-bill-row-label">Discount${data.discount ? ` (${data.discount})` : ""}</span>
                   <span class="member-bill-row-value">${data.breakdown.discount}</span>
                 </div>
                 <div class="member-bill-row">
@@ -420,9 +696,39 @@ function showShareModal(memberName) {
             </div>
           </div>
           
-          <button id="showPayNowBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
-            Show PayNow QR Code
-          </button>
+          ${
+            memberName !== payerName && !data.isBirthdayPerson
+              ? `
+            ${
+              paymentStatus[memberName]?.hasPaid
+                ? `
+              <div class="payment-status-indicator paid modal-fade-in" style="animation-delay: 0.3s;">
+                <span class="payment-status-text">✓ Payment Confirmed</span>
+              </div>
+            `
+                : `
+              <button id="showPayNowBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
+                Show PayNow QR Code
+              </button>
+              <button id="havePaidBtn" class="action-button secondary-button modal-fade-in" style="animation-delay: 0.4s;">
+                I have paid!
+              </button>
+            `
+            }
+          `
+              : data.isBirthdayPerson
+              ? `
+            <div class="birthday-celebration-message modal-fade-in" style="animation-delay: 0.3s; text-align: center; padding: 20px;">
+              <h3>🎂 Happy Birthday!</h3>
+              <p>Your friends are treating you today!</p>
+            </div>
+          `
+              : `
+            <button id="showPayerStatsBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
+              View Payment Tracking
+            </button>
+          `
+          }
         `;
 
         // Add event listener for the PayNow button
@@ -432,10 +738,35 @@ function showShareModal(memberName) {
             showPayNowQR(memberName);
           });
         }
+
+        // Add event listener for the "I have paid!" button
+        const havePaidBtn = document.getElementById("havePaidBtn");
+        if (havePaidBtn) {
+          havePaidBtn.addEventListener("click", () => {
+            showPaymentConfirmation(memberName);
+          });
+        }
+
+        // Add event listener for the "View Payment Tracking" button (mobile payer)
+        const payerStatsBtn = document.getElementById("showPayerStatsBtn");
+        if (payerStatsBtn) {
+          payerStatsBtn.addEventListener("click", () => {
+            showPayerTracking(memberName);
+          });
+        }
       }
 
       // Force reflow to ensure animations start correctly
       modal.offsetHeight;
+    } else {
+      // Fallback if member data doesn't exist
+      modalHeader.textContent = `Member Data Not Found - ${memberName}`;
+      modalBody.innerHTML = `
+        <div class="error-message" style="text-align: center; padding: 20px;">
+          <p>Unable to load data for ${memberName}</p>
+          <p>Please try refreshing the page.</p>
+        </div>
+      `;
     }
   }
 
@@ -469,7 +800,8 @@ function showPayNowQR(memberName) {
   // Wait for animation to complete before switching content
   setTimeout(() => {
     // Update modal title with animation
-    modalHeader.textContent = `PayNow - ${memberName}`;
+    const memberDisplayName = memberName === payerName ? `💸 ${memberName}` : memberName;
+    modalHeader.textContent = `PayNow - ${memberDisplayName}`;
 
     // Check tax profile to determine whether to show PayNow QR
     const isSingapore = data.taxProfile === "singapore";
@@ -501,6 +833,12 @@ function showPayNowQR(memberName) {
         
         <button id="copyPhoneBtn" class="action-button secondary-button modal-fade-in" style="animation-delay: 0.3s;">
           Copy Phone Number
+        </button>
+        <button id="downloadQRBtn" class="download-qr-btn modal-fade-in" style="animation-delay: 0.4s;">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
+          </svg>
+          Download QR
         </button>
         `
             : `
@@ -555,6 +893,90 @@ function showPayNowQR(memberName) {
         showShareModal(memberName);
       });
     }
+
+    // Add event listener for the download QR button (mobile)
+    const downloadQRBtn = document.getElementById("downloadQRBtn");
+    if (downloadQRBtn) {
+      downloadQRBtn.addEventListener("click", () => {
+        const qrImage = document.querySelector(".paynow-qr-container img");
+        if (qrImage) {
+          downloadQRCode(qrImage, memberName);
+        }
+      });
+    }
+  }, 300); // Match the fade-out duration
+}
+
+// Function to show payer tracking (used only in mobile mode)
+function showPayerTracking(memberName) {
+  // Skip if desktop mode
+  // if (isDesktopMode()) return;
+
+  const modalBody = document.querySelector(".member-bill-modal-body");
+  const modalHeader = document.querySelector(".member-bill-modal .modal-header h2");
+
+  // Fade out current content
+  Array.from(modalBody.children).forEach((child) => {
+    child.classList.add("modal-fade-out");
+  });
+
+  // Wait for animation to complete before switching content
+  setTimeout(() => {
+    // Update modal title with animation
+    const memberDisplayName = memberName === payerName ? `💸 ${memberName}` : memberName;
+    modalHeader.textContent = `Payment Tracking - ${memberDisplayName}`;
+
+    // Create payment tracking view
+    modalBody.innerHTML = `
+      <div class="payer-tracking-container modal-fade-in">
+        <div class="payment-summary-mobile">
+          <div class="summary-stats">
+            <div class="stat-card paid-stat">
+              <div class="stat-number">${getPaidMembersCount()}</div>
+              <div class="stat-label">Paid</div>
+            </div>
+            <div class="stat-card pending-stat">
+              <div class="stat-number">${getPendingMembersCount()}</div>
+              <div class="stat-label">Pending</div>
+            </div>
+            <div class="stat-card amount-stat">
+              <div class="stat-number">${getOutstandingAmount()}</div>
+              <div class="stat-label">Outstanding</div>
+            </div>
+          </div>
+          
+          <div class="progress-bar-container" style="animation-delay: 0.2s;">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${getPaymentProgress()}%"></div>
+            </div>
+            <div class="progress-text">${getPaymentProgress()}% Complete</div>
+          </div>
+        </div>
+        
+        <div class="members-status-list-mobile" style="animation-delay: 0.3s;">
+          <h4>Member Payment Status</h4>
+          ${getMembersStatusList()}
+        </div>
+      </div>
+      
+      ${
+        memberData[memberName]?.totalAmount !== "$0.00"
+          ? `
+      <button id="backToDetailBtn" class="action-button primary-button margin-top modal-fade-in" style="animation-delay: 0.4s;">
+        Back to Your Bill
+      </button>
+      `
+          : ""
+      }
+    `;
+
+    // Add event listener for back button
+    const backToDetailBtn = document.getElementById("backToDetailBtn");
+    if (backToDetailBtn) {
+      backToDetailBtn.addEventListener("click", () => {
+        showShareModal(memberName);
+      });
+    }
   }, 300); // Match the fade-out duration
 }
 
@@ -574,12 +996,332 @@ function closeShareModal() {
   setTimeout(() => {
     modal.classList.remove("active");
     overlay.classList.remove("active");
+    // Clear modal content to prevent showing old data during updates
+    const modalBody = document.querySelector(".member-bill-modal-body");
+    if (modalBody) {
+      modalBody.innerHTML = "";
+    }
     // Reset styles
     modal.style.transition = "";
     modal.style.bottom = "";
     overlay.style.transition = "";
     overlay.style.opacity = "";
   }, 300);
+}
+
+// Function to show payment confirmation modal
+function showPaymentConfirmation(memberName) {
+  const modal = document.getElementById("paymentConfirmModal");
+  const overlay = document.getElementById("paymentConfirmOverlay");
+  const closeBtn = document.querySelector(".payment-confirm-close-modal");
+  const confirmBtn = document.getElementById("confirmPaymentBtn");
+  const cancelBtn = document.getElementById("cancelPaymentBtn");
+
+  // Display the modal and overlay
+  modal.classList.add("active");
+  overlay.classList.add("active");
+
+  // Add event listeners
+  const closeModal = () => {
+    modal.classList.remove("active");
+    overlay.classList.remove("active");
+  };
+
+  closeBtn.onclick = closeModal;
+  cancelBtn.onclick = closeModal;
+  overlay.onclick = closeModal;
+
+  confirmBtn.onclick = () => {
+    updatePaymentStatus(memberName, true);
+    closeModal();
+  };
+}
+
+// Function to update payment status
+async function updatePaymentStatus(memberName, hasPaid) {
+  try {
+    const response = await fetch(`/api/bills/${billId}/payment-status`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        memberName: memberName,
+        hasPaid: hasPaid,
+      }),
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      // Update local payment status
+      paymentStatus[memberName] = result.paymentStatus;
+
+      // Update visual indicators
+      updateMemberAvatarStatus(memberName, hasPaid);
+
+      // Refresh the modal if it's open
+      if (document.getElementById("memberbillModal").classList.contains("active")) {
+        showShareModal(memberName);
+      }
+
+      // Check if all payments are complete and show celebration
+      if (hasPaid && checkPaymentCompletion()) {
+        setTimeout(() => {
+          showCompletionCelebration();
+        }, 1000); // Delay to let the modal refresh first
+      }
+
+      // Show success message
+      showToast(hasPaid ? `${memberName} marked as paid!` : `${memberName} payment status updated!`);
+    } else {
+      showToast("Failed to update payment status. Please try again.");
+    }
+  } catch (error) {
+    console.error("Error updating payment status:", error);
+    showToast("Error updating payment status. Please try again.");
+  }
+}
+
+// Function to update member avatar visual status
+function updateMemberAvatarStatus(memberName, hasPaid) {
+  const memberAvatars = document.querySelectorAll(`.member-avatar-wrapper[data-name="${memberName}"]`);
+
+  memberAvatars.forEach((avatar) => {
+    const avatarElement = avatar.querySelector(".member-avatar");
+
+    if (hasPaid) {
+      // Add paid status indicator
+      if (!avatarElement.querySelector(".paid-indicator")) {
+        const paidIndicator = document.createElement("div");
+        paidIndicator.className = "paid-indicator";
+        paidIndicator.innerHTML = "✓";
+        avatarElement.appendChild(paidIndicator);
+        avatarElement.classList.add("paid");
+      }
+    } else {
+      // Remove paid status indicator
+      const paidIndicator = avatarElement.querySelector(".paid-indicator");
+      if (paidIndicator) {
+        paidIndicator.remove();
+        avatarElement.classList.remove("paid");
+      }
+    }
+  });
+}
+
+// Function to refresh all payment statuses
+function refreshAllPaymentStatuses() {
+  if (!billData.members) return;
+
+  billData.members.forEach((member) => {
+    const hasPaid = paymentStatus[member.name]?.hasPaid || false;
+    updateMemberAvatarStatus(member.name, hasPaid);
+  });
+}
+
+// Payer dashboard helper functions
+function getPaidMembersCount() {
+  if (!billData.members) return 0;
+  // Don't count the payer in the paid count
+  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  return nonPayerMembers.filter((member) => paymentStatus[member.name]?.hasPaid).length;
+}
+
+function getPendingMembersCount() {
+  if (!billData.members) return 0;
+  // Don't count the payer in the pending count
+  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  return nonPayerMembers.filter((member) => !paymentStatus[member.name]?.hasPaid).length;
+}
+
+function getOutstandingAmount() {
+  if (!billData.members || !billData.totals) return "$0.00";
+
+  let totalOutstanding = 0;
+  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+
+  nonPayerMembers.forEach((member) => {
+    if (!paymentStatus[member.name]?.hasPaid) {
+      const memberTotal = billData.totals[member.name] || 0;
+      totalOutstanding += memberTotal;
+    }
+  });
+
+  return `$${totalOutstanding.toFixed(2)}`;
+}
+
+function getPaymentProgress() {
+  if (!billData.members) return 0;
+  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  if (nonPayerMembers.length === 0) return 100;
+
+  const paidCount = nonPayerMembers.filter((member) => paymentStatus[member.name]?.hasPaid).length;
+  return Math.round((paidCount / nonPayerMembers.length) * 100);
+}
+
+function getMembersStatusList() {
+  if (!billData.members || !billData.totals) return "";
+
+  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+
+  return nonPayerMembers
+    .map((member) => {
+      const memberName = member.name;
+      const memberTotal = billData.totals[memberName] || 0;
+      const hasPaid = paymentStatus[memberName]?.hasPaid || false;
+      const statusClass = hasPaid ? "paid" : "pending";
+      const statusIcon = hasPaid ? "✓" : "⏳";
+      const statusText = hasPaid ? "Paid" : "Pending";
+
+      return `
+      <div class="member-status-item ${statusClass}">
+        <div class="member-status-info">
+          <div class="member-status-name">
+            <span class="status-icon">${statusIcon}</span>
+            ${memberName}
+          </div>
+          <div class="member-status-amount">$${memberTotal.toFixed(2)}</div>
+        </div>
+        <div class="member-status-badge ${statusClass}">
+          ${statusText}
+        </div>
+      </div>
+    `;
+    })
+    .join("");
+}
+
+// Confetti celebration functions using confetti.js
+function createConfetti() {
+  // Create multiple bursts of confetti for a better effect
+  const duration = 3000;
+  const end = Date.now() + duration;
+
+  // First burst - from left
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { x: 0.2, y: 0.6 },
+  });
+
+  // Second burst - from right
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { x: 0.8, y: 0.6 },
+  });
+
+  // Continuous smaller bursts
+  const interval = setInterval(() => {
+    if (Date.now() > end) {
+      clearInterval(interval);
+      return;
+    }
+
+    confetti({
+      particleCount: 50,
+      spread: 60,
+      origin: { x: Math.random(), y: Math.random() * 0.5 + 0.5 },
+    });
+  }, 250);
+
+  // Final big burst from center
+  setTimeout(() => {
+    confetti({
+      particleCount: 200,
+      spread: 100,
+      origin: { x: 0.5, y: 0.5 },
+    });
+  }, 1000);
+}
+
+function showCompletionCelebration() {
+  const celebration = document.createElement("div");
+  celebration.className = "completion-celebration";
+  celebration.innerHTML = `
+    <span class="celebration-emoji">🎉</span>
+    <h2>Congratulations!</h2>
+    <p>Everyone has finished paying the bill!<br>All payments have been completed successfully.</p>
+    <button onclick="closeCompletionCelebration(this)">Awesome!</button>
+  `;
+
+  document.body.appendChild(celebration);
+  createConfetti();
+}
+
+function closeCompletionCelebration(button) {
+  const celebration = button.parentElement;
+  celebration.style.transform = "translate(-50%, -50%) scale(0.8)";
+  celebration.style.opacity = "0";
+  celebration.style.transition = "all 0.3s ease";
+
+  setTimeout(() => {
+    document.body.removeChild(celebration);
+  }, 300);
+}
+
+// Check if all payments are complete
+function checkPaymentCompletion() {
+  if (!billData.members) return false;
+
+  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  if (nonPayerMembers.length === 0) return false;
+
+  const allPaid = nonPayerMembers.every((member) => paymentStatus[member.name]?.hasPaid);
+  return allPaid;
+}
+
+// Download QR code function
+function downloadQRCode(qrElement, memberName) {
+  try {
+    // Create a canvas element
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    const img = new Image();
+
+    img.crossOrigin = "anonymous";
+    img.onload = function () {
+      // Set canvas size to image size
+      canvas.width = img.width;
+      canvas.height = img.height;
+
+      // Draw white background
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the QR code
+      ctx.drawImage(img, 0, 0);
+
+      // Convert canvas to blob and download
+      canvas.toBlob(function (blob) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `SettleLah-PayNow-${memberName || "QR"}.png`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, "image/png");
+    };
+
+    img.onerror = function () {
+      // Fallback: try to download directly
+      const a = document.createElement("a");
+      a.href = qrElement.src;
+      a.download = `SettleLah-PayNow-${memberName || "QR"}.png`;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    };
+
+    img.src = qrElement.src;
+  } catch (error) {
+    console.error("Error downloading QR code:", error);
+    alert("Unable to download QR code. Please try right-clicking and saving the image.");
+  }
 }
 
 // Add event listeners to member avatars with animation
@@ -592,7 +1334,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Extract bill ID from URL path
   const pathParts = window.location.pathname.split("/");
-  const billId = pathParts[pathParts.length - 1];
+  billId = pathParts[pathParts.length - 1];
 
   if (!billId) {
     showError("No bill ID found in URL", "invalid");
@@ -651,6 +1393,12 @@ document.addEventListener("DOMContentLoaded", function () {
       showShareModal(memberName);
     });
   });
+
+  // Add share button functionality
+  const shareButton = document.getElementById("share-bill-btn");
+  if (shareButton) {
+    shareButton.addEventListener("click", handleShareBill);
+  }
 });
 
 // Function to round amounts to the nearest 0.05
@@ -686,6 +1434,15 @@ function roundToNearest5Cents(value) {
 
 // Function to render bill data
 function renderBillData(data) {
+  // Store global bill data
+  billData = data;
+  payerName = data.paynowName || "";
+  paymentStatus = data.paymentStatus || {};
+
+  // Ensure payerName is properly set - fallback to first member if not found
+  if (!payerName && data.members && data.members.length > 0) {
+    payerName = data.members[0].name;
+  }
   // Format currency values
   const formatCurrency = (value, isFinalTotal = false, shouldRound = true) => {
     // Convert to number if it's a string
@@ -781,6 +1538,14 @@ function renderBillData(data) {
     if (data.breakdown.discountAmount > 0) {
       discountEl.textContent = formatCurrency(data.breakdown.discountAmount);
       discountRow.style.display = "";
+      // Set the discountRate variable to the discount-rate span element
+      const discountRate = discountRow.querySelector(".discount-rate");
+      // Set the discount rate display if available
+      if (discountRate && data.discount) {
+        discountRate.textContent = `(${data.discount})`;
+      } else if (discountRate) {
+        discountRate.textContent = "";
+      }
     } else {
       discountRow.style.display = "none";
     }
@@ -832,12 +1597,29 @@ function renderBillData(data) {
     amountEl.textContent = roundedTotal;
   }
 
-  // Create memberData for the modal
-  createMemberData(data);
-
   // Update group members display
   if (data.members && Array.isArray(data.members)) {
-    updateGroupMembers(data.members);
+    // Create a copy of members array to avoid modifying original data
+    let membersToDisplay = [...data.members];
+
+    // Check if the payer is in the members list, if not add them
+    if (payerName && !membersToDisplay.some((member) => member.name === payerName)) {
+      // Add the custom payer to the members list
+      membersToDisplay.push({
+        name: payerName,
+        avatar: "custom-payer", // Random avatar for custom payer
+      });
+    }
+
+    // Create memberData for the modal (after potentially adding custom payer)
+    createMemberData(data);
+
+    updateGroupMembers(membersToDisplay);
+
+    // Apply payment status to member avatars after they are created
+    setTimeout(() => {
+      refreshAllPaymentStatuses();
+    }, 200);
   }
 }
 
@@ -887,6 +1669,10 @@ function createMemberData(data) {
     memberData[name] = {
       taxProfile: data.taxProfile || "singapore", // Default to singapore if not specified
       serviceChargeRate: data.serviceChargeRate || "10%", // Add service charge rate
+      discount: data.discount || "", // Original discount input value
+      // Birthday person indication
+      isBirthdayPerson: data.birthdayPerson === name,
+      birthdayShare: breakdown.birthdayShare || 0, // Extra amount paid for birthday person
       // Original unrounded amount
       originalAmount: isRounded ? formatCurrency(totalValue) : null,
       // Final rounded amount
@@ -911,6 +1697,34 @@ function createMemberData(data) {
       },
     };
   });
+
+  // Add member data for custom payer if they're not in the regular members
+  if (payerName && !data.members.some((member) => member.name === payerName)) {
+    memberData[payerName] = {
+      totalAmount: "$0.00", // Payer doesn't pay anything
+      items: [], // No items for the payer
+      breakdown: {
+        subtotal: "$0.00",
+        serviceCharge: "$0.00",
+        afterService: "$0.00",
+        discount: "$0.00",
+        afterDiscount: "$0.00",
+        gst: "$0.00",
+      },
+      discount: data.discount || "",
+      serviceChargeRate: data.serviceChargeRate || "10%",
+      gstRate: data.gstRate || "9%",
+      taxProfile: data.taxProfile || "singapore",
+      paymentInfo: {
+        originalAmount: null,
+        amount: "$0.00",
+        phoneNumber: data.paynowID || "",
+        name: data.paynowName || "",
+        settleMatter: data.settleMatter || "",
+        uen: "N/A",
+      },
+    };
+  }
 }
 
 // Function to update group members
@@ -943,11 +1757,17 @@ function updateGroupMembers(members) {
     // Use the avatar from data or fallback to index
     const avatarIndex = member.avatar || Math.floor(Math.random() * 9) + 1;
 
+    const isPaid = paymentStatus[member.name]?.hasPaid || false;
+    const isBirthdayPerson = billData?.birthdayPerson === member.name;
+
     memberAvatar.innerHTML = `
-      <div class="member-avatar">
+      <div class="member-avatar ${isPaid ? "paid" : ""} ${isBirthdayPerson ? "birthday-person" : ""}">
         <img src="/assets/cat-icon/cat-${avatarIndex}.svg" alt="Cat avatar" class="cat-avatar-img" />
+        ${isPaid ? '<div class="paid-indicator">✓</div>' : ""}
       </div>
-      <div class="member-name">${member.name}</div>
+      <div class="member-name ${isBirthdayPerson ? "birthday-person" : ""}">${member.name === payerName ? "💸 " : ""}${
+      isBirthdayPerson ? "🎂 " : ""
+    }${member.name}</div>
     `;
 
     // Preload the image to track when it's loaded
@@ -993,6 +1813,18 @@ function updateGroupMembers(members) {
         loadingElement.classList.add("fade-out");
         // Add hidden class instead of inline display style
         loadingElement.classList.add("hidden");
+
+        // Refresh payment statuses once everything is loaded
+        setTimeout(() => {
+          refreshAllPaymentStatuses();
+        }, 500);
+
+        // Check if all payments are complete and show celebration on page load
+        setTimeout(() => {
+          if (checkPaymentCompletion()) {
+            showCompletionCelebration();
+          }
+        }, 1500); // Delay to ensure everything is loaded and visible
       }
     }
   }
@@ -1113,3 +1945,97 @@ window.onload = function () {
     document.body.style.height = "100vh";
   }
 };
+
+// Function to handle sharing the bill
+function handleShareBill() {
+  const currentUrl = window.location.href;
+  const settleMatter = document.querySelector(".successSettleMatter")?.textContent || "SettleLah Bill";
+
+  const shareData = {
+    title: `SettleLah! - ${settleMatter}`,
+    text: `SettleLah! about ${settleMatter}`,
+    url: currentUrl,
+  };
+
+  // Check if Web Share API is supported (mainly mobile devices)
+  if (navigator.share && navigator.canShare && navigator.canShare(shareData)) {
+    navigator
+      .share(shareData)
+      .then(() => {
+        showToast("Bill shared successfully!");
+      })
+      .catch((error) => {
+        // If user cancels or error occurs, fall back to copy to clipboard
+        if (error.name !== "AbortError") {
+          copyToClipboard(currentUrl);
+        }
+      });
+  } else {
+    // Fallback: Copy URL to clipboard
+    copyToClipboard(currentUrl);
+  }
+}
+
+// Function to copy URL to clipboard
+function copyToClipboard(url) {
+  if (navigator.clipboard && window.isSecureContext) {
+    // Use modern clipboard API
+    navigator.clipboard
+      .writeText(url)
+      .then(() => {
+        showToast("Bill URL copied to clipboard!");
+      })
+      .catch(() => {
+        // Fallback to legacy method
+        fallbackCopyToClipboard(url);
+      });
+  } else {
+    // Use legacy method
+    fallbackCopyToClipboard(url);
+  }
+}
+
+// Legacy clipboard copy method
+function fallbackCopyToClipboard(text) {
+  const textArea = document.createElement("textarea");
+  textArea.value = text;
+  textArea.style.position = "fixed";
+  textArea.style.left = "-999999px";
+  textArea.style.top = "-999999px";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    document.execCommand("copy");
+    showToast("Bill URL copied to clipboard!");
+  } catch (error) {
+    showToast("Unable to copy URL. Please copy manually.");
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
+
+// Function to show toast notification
+function showToast(message) {
+  // Remove any existing toast
+  const existingToast = document.querySelector(".toast-notification");
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const notification = document.createElement("div");
+  notification.textContent = message;
+  notification.className = "toast-notification";
+
+  document.body.appendChild(notification);
+
+  setTimeout(() => {
+    notification.classList.add("toast-fadeout");
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification);
+      }
+    }, 500);
+  }, 2500);
+}

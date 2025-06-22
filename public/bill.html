@@ -8,7 +8,7 @@
     <title>SettleLah! - Bill Details</title>
     <meta name="description" content="Bill Details for SettleLah!" />
     <link rel="icon" href="/icons/favicon.png" />
-    <link rel="stylesheet" type="text/css" href="/result.min.css" />
+    <link rel="stylesheet" type="text/css" href="/result.css" />
   </head>
   <body>
     <!-- Loading State -->
@@ -25,6 +25,16 @@
       <p id="error-message" class="error-message">Error loading data</p>
       <button id="error-retry-btn" class="action-button secondary-button">Try Again</button>
     </div>
+
+    <!-- Share Button -->
+    <button id="share-bill-btn" class="share-bill-button" title="Share this bill">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path
+          d="M18 8C19.6569 8 21 6.65685 21 5C21 3.34315 19.6569 2 18 2C16.3431 2 15 3.34315 15 5C15 5.18885 15.0116 5.37491 15.0343 5.55681L9.86424 8.72943C9.34051 8.26697 8.70138 8 8 8C6.34315 8 5 9.34315 5 11C5 12.6569 6.34315 14 8 14C8.70138 14 9.34051 13.733 9.86424 13.2706L15.0343 16.4432C15.0116 16.6251 15 16.8111 15 17C15 18.6569 16.3431 20 18 20C19.6569 20 21 18.6569 21 17C21 15.3431 19.6569 14 18 14C17.2986 14 16.6595 14.267 16.1358 14.7294L10.9657 11.5568C10.9884 11.3749 11 11.1889 11 11C11 10.8111 10.9884 10.6251 10.9657 10.4432L16.1358 7.27057C16.6595 7.73303 17.2986 8 18 8Z"
+          fill="currentColor"
+        />
+      </svg>
+    </button>
 
     <div id="bill-content" class="result-container bill-content">
       <!-- Success Screen -->
@@ -71,7 +81,7 @@
               <span class="detail-value successAfterService"></span>
             </div>
             <div class="detail-row discountRow" style="display: none">
-              <span class="detail-label">Discount</span>
+              <span class="detail-label">Discount <span class="discount-rate"></span></span>
               <span class="detail-value successDiscount"></span>
             </div>
             <div class="detail-row afterDiscountRow" style="display: none">
@@ -146,6 +156,25 @@
         </div>
       </div>
     </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div id="paymentConfirmOverlay" class="modal-overlay"></div>
+    <div id="paymentConfirmModal" class="payment-confirm-modal">
+      <div class="modal-content payment-confirm-modal-content">
+        <div class="modal-header">
+          <h2>Confirm Payment</h2>
+          <button class="payment-confirm-close-modal">&times;</button>
+        </div>
+        <div class="modal-body payment-confirm-modal-body">
+          <p>Are you sure you have paid your share?</p>
+          <div class="payment-confirm-buttons">
+            <button id="confirmPaymentBtn" class="action-button primary-button">Yes, I have paid</button>
+            <button id="cancelPaymentBtn" class="action-button secondary-button">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
-  <script type="text/javascript" src="/result.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script type="text/javascript" src="/result.js"></script>
 </html>

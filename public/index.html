@@ -345,6 +345,13 @@
               <div class="new-group-error-message">
                 <p>Please add at least two members.</p>
               </div>
+              <div class="edit-group-name-container" style="display: none;">
+                <div class="input-field">
+                  <label for="editGroupName">Group name</label>
+                  <input type="text" id="editGroupName" placeholder="Group name" />
+                  <div class="error-message">Please enter group's name</div>
+                </div>
+              </div>
               <div class="add-member-button">
                 <div class="add-member-icon">
                   <img class="add-member-icon-img" src="assets/add-member-img.svg" alt="add member" />
@@ -440,6 +447,10 @@
                 <span class="group-name-display"></span>
               </div>
               <div id="groupMembers" class="group-members"></div>
+              <button id="birthdayPersonBtn" class="birthday-person-btn" style="display: none">
+                <span class="birthday-icon">🎂</span>
+                <span class="birthday-text">Birthday Person</span>
+              </button>
               <div class="drag-instructions">Drag members to assign them to the dish</div>
             </div>
 
@@ -499,13 +510,12 @@
               <div class="input-field">
                 <label for="discountValue">Discount</label>
                 <input
-                  type="number"
+                  type="text"
                   id="discountValue"
-                  placeholder="Enter discount value"
+                  placeholder="Enter discount value (e.g. 5, 10%)"
                   value=""
-                  inputmode="decimal"
-                  min="0"
-                  step="0.01"
+                  autocomplete="off"
+                  maxlength="8"
                 />
                 <p class="helper-text">Enter discount value (5 for $5, 10% for 10%)</p>
               </div>
@@ -538,7 +548,13 @@
 
               <div class="input-field">
                 <label for="paynowName">PayNow Name</label>
-                <input type="text" id="paynowName" placeholder="Enter name" value="" required />
+                <div class="paynow-name-selection">
+                  <button id="selectPaynowMemberBtn" class="select-paynow-member-btn">
+                    <span class="btn-text">Select Member</span>
+                    <span class="btn-icon">→</span>
+                  </button>
+                  <input type="text" id="paynowName" placeholder="Enter name" value="" required />
+                </div>
                 <div id="paynowNameError" class="error-message">Please enter Payee name</div>
               </div>
 
@@ -617,7 +633,7 @@
                 <span class="detail-value successAfterService"></span>
               </div>
               <div class="detail-row discountRow" style="display: none">
-                <span class="detail-label">Discount</span>
+                <span class="detail-label">Discount <span class="discount-rate"></span></span>
                 <span class="detail-value successDiscount"></span>
               </div>
               <div class="detail-row afterDiscountRow" style="display: none">
@@ -635,6 +651,10 @@
               <div class="detail-row amount-row">
                 <span class="detail-label">Total Amount</span>
                 <span class="detail-value successAmount"></span>
+              </div>
+              <div class="detail-row payer-row">
+                <span class="detail-label">Payee</span>
+                <span class="detail-value successPayer"></span>
               </div>
             </div>
           </div>
@@ -688,7 +708,7 @@
                 <span class="detail-value successAfterService"></span>
               </div>
               <div class="detail-row discountRow" style="display: none">
-                <span class="detail-label">Discount</span>
+                <span class="detail-label">Discount <span class="discount-rate"></span></span>
                 <span class="detail-value successDiscount"></span>
               </div>
               <div class="detail-row afterDiscountRow" style="display: none">
@@ -706,6 +726,10 @@
               <div class="detail-row amount-row">
                 <span class="detail-label">Total Amount</span>
                 <span class="detail-value successAmount"></span>
+              </div>
+              <div class="detail-row payer-row">
+                <span class="detail-label">Payee</span>
+                <span class="detail-value successPayer"></span>
               </div>
             </div>
           </div>
@@ -727,7 +751,7 @@
       <!-- Bill Summary Modal -->
       <div id="billSummaryOverlay" class="modal-overlay"></div>
       <div id="billSummaryModal" class="modal bill-summary-modal">
-        <div class="bill-summary-drag-handle">
+        <div id="bill-summary-handle" class="bill-summary-drag-handle">
           <div class="drag-handle-line"></div>
         </div>
         <div class="modal-content bill-summary-modal-content">
@@ -924,6 +948,76 @@
 
       <!-- Share Bill Modal -->
       <div id="shareBillOverlay" class="modal-overlay"></div>
+
+      <!-- Birthday Person Selection Modal -->
+      <div id="birthdayPersonModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>🎂 Select Birthday Person</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <p class="birthday-helper-text">Who's celebrating their birthday? They won't pay anything!</p>
+            <div id="birthdayMembersList" class="group-members">
+              <!-- Members will be added dynamically here -->
+            </div>
+            <div class="birthday-status-display" style="display: none">
+              <div class="birthday-selected-member">
+                <span class="birthday-cake-icon">🎂</span>
+                <span class="birthday-member-name"></span>
+                <span class="birthday-status-text">is the birthday person!</span>
+              </div>
+            </div>
+            <div class="modal-actions">
+              <button class="modal-action-btn secondary-btn" id="clearBirthdayPersonBtn" style="display: none">
+                Remove Birthday Person
+              </button>
+              <div class="birthday-button-two">
+                <button class="modal-action-btn cancel-btn">Cancel</button>
+                <button class="modal-action-btn confirm-btn" id="confirmBirthdayPersonBtn">Confirm</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PayNow Member Selection Modal -->
+      <div id="paynowMemberModal" class="modal">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2>Select PayNow Member</h2>
+            <div class="modal-close-button">
+              <button class="close-modal">×</button>
+            </div>
+          </div>
+          <div class="modal-body">
+            <div id="paynowMembersList" class="group-members">
+              <!-- Members will be added dynamically here -->
+            </div>
+
+            <div class="custom-paynow-section">
+              <div class="custom-paynow-divider">
+                <span class="divider-line"></span>
+                <span class="divider-text">OR</span>
+                <span class="divider-line"></span>
+              </div>
+
+              <div class="input-field">
+                <label for="customPaynowName">Custom PayNow Name</label>
+                <input type="text" id="customPaynowName" placeholder="Enter custom name" />
+              </div>
+            </div>
+
+            <div class="modal-actions">
+              <button class="modal-action-btn cancel-btn">Cancel</button>
+              <button class="modal-action-btn confirm-btn" id="confirmPaynowMemberBtn">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="shareBillModal" class="share-bill-modal">
         <div class="modal-content share-bill-modal-content">
           <div class="modal-header">
@@ -1032,10 +1126,24 @@
 
       <!-- Permission error toast notification -->
       <div id="permissionErrorToast" class="error-toast">
-        <div class="toast-icon">!</div>
-        <div class="toast-message">
-          <p class="toast-title">Permission Error</p>
-          <p class="toast-error-message">You don't have permission to access this data.</p>
+        <div class="toast-content">
+          <span class="toast-icon">⚠️</span>
+          <span class="toast-message">Permission denied. Please check your permissions and try again.</span>
+        </div>
+      </div>
+
+      <!-- Birthday Person Toasts -->
+      <div id="birthdayPersonToast" class="success-toast">
+        <div class="toast-content">
+          <span class="toast-icon">🎂</span>
+          <span class="toast-message">Birthday person selected!</span>
+        </div>
+      </div>
+
+      <div id="birthdayPersonClearedToast" class="success-toast">
+        <div class="toast-content">
+          <span class="toast-icon">✨</span>
+          <span class="toast-message">Birthday person removed</span>
         </div>
       </div>
     </div>
@@ -1221,7 +1329,7 @@
         // Hide preloader with a minimum display time
         function hidePreloaderWithDelay() {
           // Ensure preloader shows for at least 800ms for smoother UX
-          const minimumLoadingTime = 800;
+          const minimumLoadingTime = 6500;
           const loadingStartTime = window.performance.timing.navigationStart;
           const currentTime = new Date().getTime();
           const timeElapsed = currentTime - loadingStartTime;
@@ -1242,7 +1350,7 @@
               if (preloader && preloader.parentNode) {
                 preloader.parentNode.removeChild(preloader);
               }
-            }, 500);
+            }, 5000);
           }
         }
 

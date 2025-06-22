@@ -206,8 +206,8 @@ document.addEventListener("keydown", extendAuthSession);
 
 function extendAuthSession() {
   if (localStorage.getItem("settlelah_authenticated") === "true") {
-    // Extend session by another 24 hours from now
-    const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+    // Extend session by another 15 days from now
+    const expiryTime = Date.now() + 15 * 24 * 60 * 60 * 1000;
     localStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
   }
 }
@@ -270,6 +270,9 @@ let previousView = "";
 
 // Add a variable to track if we're editing a group
 let isEditingGroup = false;
+
+// Birthday person tracking
+let birthdayPerson = null;
 
 function showError(message) {
   document.getElementById("error").textContent = message;
@@ -909,12 +912,34 @@ function showFinaliseSettleBillScreen() {
     finaliseScreen.classList.add("active");
   }
 
+  // Set up the PayNow name selection handling
+  setupPaynowMemberSelection();
+
   // Add event listener to the Settle Lah button
   const settleLahButton = finaliseScreen.querySelector(".settle-lah-btn");
   if (settleLahButton) {
     settleLahButton.onclick = function () {
       showLoadingScreen();
     };
+  }
+
+  // Remove all alphabetic characters from discountValue input on blur for smooth UX
+  const discountValueInput = document.getElementById("discountValue");
+  if (discountValueInput) {
+    discountValueInput.addEventListener("blur", function () {
+      // Only allow numbers, dot, and optional trailing %
+      let value = discountValueInput.value;
+      // Remove all alphabetic characters except for a trailing %
+      value = value.replace(/[a-zA-Z]+/g, "");
+      // If more than one %, keep only the last one
+      const percentMatch = value.match(/%/g);
+      if (percentMatch && percentMatch.length > 1) {
+        // Remove all % except the last one
+        value = value.replace(/%/g, "");
+        value += "%";
+      }
+      discountValueInput.value = value;
+    });
   }
 
   function showLoadingScreen() {
@@ -992,6 +1017,7 @@ function showFinaliseSettleBillScreen() {
     const paynowName = document.getElementById("paynowName").value;
     const paynowID = document.getElementById("paynowPhone").value;
     const serviceChargeValue = document.getElementById("serviceChargeValue").value || "10";
+
     const billData = {
       members,
       settleMatter,
@@ -1003,6 +1029,7 @@ function showFinaliseSettleBillScreen() {
       paynowName,
       paynowID,
       serviceChargeValue,
+      birthdayPerson,
     };
 
     fetchWithUserId("/calculate", {
@@ -1032,10 +1059,12 @@ function showFinaliseSettleBillScreen() {
           serviceChargeRate: result.billData.serviceChargeRate || "10%", // Add service charge rate
           afterService: `$${result.billData.breakdown.afterService.toFixed(2)}`,
           discount: `$${result.billData.breakdown.discountAmount.toFixed(2)}`,
+          discountInput: result.billData.discount || "", // Original discount input value
           afterDiscount: `$${result.billData.breakdown.afterDiscount.toFixed(2)}`,
           gst: `$${result.billData.breakdown.gst.toFixed(2)}`,
           gstRate: result.billData.gstRate || "9%", // Add GST rate
           totalAmount: `$${result.billData.breakdown.total.toFixed(2)}`,
+          payer: result.billData.payer || { name: result.billData.paynowName },
         };
 
         // Update the loading receipt with the processed data
@@ -1150,12 +1179,8 @@ function showFinaliseSettleBillScreen() {
           }
         }, 100);
 
-        // Store bill ID and timestamp in localStorage
-        const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
-        if (!billIds.includes(result.id)) {
-          billIds.push(result.id);
-          localStorage.setItem("billHistory", JSON.stringify(billIds));
-        }
+        // Add bill to history in Firebase (no localStorage needed)
+        addBillToHistory(result.id, result.billData);
       })
       .catch((err) => {
         clearInterval(loadingInterval);
@@ -1173,134 +1198,127 @@ function showFinaliseSettleBillScreen() {
   }
 }
 
-// Function to update any receipt with settlement details
-function updateReceiptDetails(receiptContainer, data) {
-  // Find all detail elements by their class names instead of IDs
-  const settleMatterEl = receiptContainer.querySelector(".successSettleMatter");
-  const dateEl = receiptContainer.querySelector(".successDate");
-  const timeEl = receiptContainer.querySelector(".successTime");
-  const itemCountEl = receiptContainer.querySelector(".successItemCount");
-  const subtotalEl = receiptContainer.querySelector(".successSubtotal");
-  const serviceChargeEl = receiptContainer.querySelector(".successServiceCharge");
-  const serviceChargeRow = receiptContainer.querySelector(".serviceChargeRow");
-  const serviceChargeRate = receiptContainer.querySelector(".serviceChargeRate");
-  const afterServiceEl = receiptContainer.querySelector(".successAfterService");
-  const afterServiceRow = receiptContainer.querySelector(".afterServiceRow");
-  const discountEl = receiptContainer.querySelector(".successDiscount");
-  const discountRow = receiptContainer.querySelector(".discountRow");
-  const afterDiscountEl = receiptContainer.querySelector(".successAfterDiscount");
-  const afterDiscountRow = receiptContainer.querySelector(".afterDiscountRow");
-  const gstEl = receiptContainer.querySelector(".successGST");
-  const gstRow = receiptContainer.querySelector(".gstRow");
-  const gstRate = receiptContainer.querySelector(".gstRate");
-  const amountEl = receiptContainer.querySelector(".successAmount");
-  const originalAmountEl = receiptContainer.querySelector(".successOriginalAmount");
-  const originalAmountRow = receiptContainer.querySelector(".originalAmountRow");
-
-  // Update the text content if elements exist
-  if (settleMatterEl) settleMatterEl.textContent = data.settleMatter || "No one ask!";
-  if (dateEl) dateEl.textContent = data.dateString;
-  if (timeEl) timeEl.textContent = data.timeString;
-  if (itemCountEl) itemCountEl.textContent = data.itemCount;
-  if (subtotalEl) subtotalEl.textContent = data.subtotal;
-
-  // Handle Service Charge
-  if (serviceChargeEl && serviceChargeRow) {
-    const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
-    if (serviceChargeValue > 0) {
-      serviceChargeEl.textContent = `$${serviceChargeValue.toFixed(2)}`;
-      serviceChargeRow.style.display = "";
-
-      // Set service charge rate
-      if (serviceChargeRate) {
-        serviceChargeRate.textContent = data.serviceChargeRate || "10%";
-      }
-    } else {
-      serviceChargeRow.style.display = "none";
-    }
+// Function to populate the PayNow name select with members
+function populatePaynowNameSelect() {
+  const paynowNameSelect = document.getElementById("paynowNameSelect");
+  // Clear existing options except the first two (placeholder and custom)
+  while (paynowNameSelect.options.length > 2) {
+    paynowNameSelect.remove(2);
   }
 
-  // Handle After Service
-  if (afterServiceEl && afterServiceRow) {
-    const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
-    if (serviceChargeValue > 0) {
-      // Calculate after service amount from subtotal + service charge
-      const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
-      const afterServiceValue = subtotalValue + serviceChargeValue;
-      afterServiceEl.textContent = `$${afterServiceValue.toFixed(2)}`;
-      afterServiceRow.style.display = "";
-    } else {
-      afterServiceRow.style.display = "none";
-    }
+  // Add members as options
+  if (members && members.length > 0) {
+    members.forEach((member) => {
+      const option = document.createElement("option");
+      option.value = member.name;
+      option.textContent = member.name;
+      paynowNameSelect.appendChild(option);
+    });
   }
+}
 
-  // Handle Discount
-  if (discountEl && discountRow) {
-    // Extract discount from data if available, otherwise don't show
-    const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
-    if (discountValue > 0) {
-      discountEl.textContent = `$${discountValue.toFixed(2)}`;
-      discountRow.style.display = "";
-    } else {
-      discountRow.style.display = "none";
+// Function to set up the PayNow name selection handling
+function setupPaynowNameSelection() {
+  setupPaynowMemberSelection();
+}
+
+// Function to show the PayNow member selection modal
+function showPaynowMemberModal() {
+  showModal("paynowMemberModal");
+  const membersList = document.getElementById("paynowMembersList");
+  const customNameInput = document.getElementById("customPaynowName");
+  const paynowNameInput = document.getElementById("paynowName");
+  const paynowNameSelection = document.querySelector(".paynow-name-selection");
+  const selectBtn = document.getElementById("selectPaynowMemberBtn");
+  const groupMembersDiv = document.getElementById("groupMembers");
+  const confirmBtn = document.getElementById("confirmPaynowMemberBtn");
+
+  // Clear previous content
+  membersList.innerHTML = "";
+  customNameInput.value = "";
+
+  // Get members from the groupMembers div
+  const memberElements = groupMembersDiv.querySelectorAll(".member-avatar-wrapper");
+
+  // Add members to the modal
+  memberElements.forEach((memberElement) => {
+    const memberName = memberElement.getAttribute("data-name");
+    const catIconImg = memberElement.querySelector(".cat-avatar-img").src;
+
+    const memberDiv = document.createElement("div");
+    memberDiv.className = "member-avatar-wrapper";
+    memberDiv.setAttribute("data-name", memberName);
+
+    // Check if this member is currently selected
+    if (paynowNameInput.value === memberName) {
+      memberDiv.classList.add("selected");
     }
-  }
 
-  // Handle After Discount
-  if (afterDiscountEl && afterDiscountRow) {
-    const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
-    if (discountValue > 0) {
-      // Calculate amount after discount
-      const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
-      const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
-      const afterServiceValue = subtotalValue + serviceChargeValue;
-      const afterDiscountValue = afterServiceValue - discountValue;
-      afterDiscountEl.textContent = `$${afterDiscountValue.toFixed(2)}`;
-      afterDiscountRow.style.display = "";
-    } else {
-      afterDiscountRow.style.display = "none";
+    memberDiv.innerHTML = `
+      <div class="member-avatar">
+        <img src="${catIconImg}" alt="Cat avatar" class="cat-avatar-img">
+      </div>
+      <div class="member-name">${memberName}</div>
+    `;
+
+    memberDiv.addEventListener("click", () => {
+      // Remove selected class from all members
+      document
+        .querySelectorAll("#paynowMembersList .member-avatar-wrapper")
+        .forEach((m) => m.classList.remove("selected"));
+      // Add selected class to clicked member
+      memberDiv.classList.add("selected");
+    });
+
+    membersList.appendChild(memberDiv);
+  });
+
+  // Handle custom name input
+  customNameInput.addEventListener("input", () => {
+    // Remove selected class from all members
+    document
+      .querySelectorAll("#paynowMembersList .member-avatar-wrapper")
+      .forEach((m) => m.classList.remove("selected"));
+  });
+
+  // Handle confirm button click
+  confirmBtn.addEventListener("click", () => {
+    let selectedName = "";
+    const selectedMember = membersList.querySelector(".member-avatar-wrapper.selected");
+
+    if (selectedMember) {
+      selectedName = selectedMember.getAttribute("data-name");
+      paynowNameSelection.classList.add("member-selected");
+    } else if (customNameInput.value.trim()) {
+      selectedName = customNameInput.value.trim();
+      paynowNameSelection.classList.remove("member-selected");
     }
-  }
 
-  // Handle GST
-  if (gstEl && gstRow) {
-    const gstValue = parseFloat(data.gst.replace("$", ""));
-    if (gstValue > 0) {
-      gstEl.textContent = `$${gstValue.toFixed(2)}`;
-      gstRow.style.display = "";
-
-      // Set GST rate
-      if (gstRate) {
-        gstRate.textContent = data.gstRate || "9%";
-      }
-    } else {
-      gstRow.style.display = "none";
+    if (selectedName) {
+      paynowNameInput.value = selectedName;
+      selectBtn.querySelector(".btn-text").textContent = selectedName;
+      closePaynowMemberModal();
     }
-  }
+  });
+}
 
-  // Display both original and rounded amounts for final total
-  if (originalAmountEl && originalAmountRow && amountEl) {
-    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
-    const roundedTotal = roundToNearest5Cents(totalValue);
+// Function to close the PayNow member selection modal
+function closePaynowMemberModal() {
+  hideModal("paynowMemberModal");
+}
 
-    // Show original amount row only if rounding was applied
-    if (Math.abs(totalValue - roundedTotal) > 0.001) {
-      // Using a small epsilon for float comparison
-      originalAmountEl.textContent = `$${totalValue.toFixed(2)}`;
-      originalAmountRow.style.display = "";
-      // Show the rounded amount
-      amountEl.textContent = `$${roundedTotal}`;
-    } else {
-      // No rounding needed, hide original amount row
-      originalAmountRow.style.display = "none";
-      amountEl.textContent = `$${totalValue.toFixed(2)}`;
-    }
-  } else if (amountEl) {
-    // Fallback if original amount elements don't exist
-    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
-    const roundedTotal = roundToNearest5Cents(totalValue);
-    amountEl.textContent = `$${roundedTotal}`;
-  }
+// Function to set up the PayNow member selection
+function setupPaynowMemberSelection() {
+  const selectBtn = document.getElementById("selectPaynowMemberBtn");
+  const closeBtn = document.getElementById("paynowMemberModal").querySelector(".close-modal");
+  const cancelBtn = document.getElementById("paynowMemberModal").querySelector(".cancel-btn");
+
+  selectBtn.addEventListener("click", () => {
+    showPaynowMemberModal();
+  });
+
+  closeBtn.addEventListener("click", closePaynowMemberModal);
+  cancelBtn.addEventListener("click", closePaynowMemberModal);
 }
 
 function showSuccessScreen() {
@@ -1608,7 +1626,7 @@ function resetLoadingAnimation() {
 // Initialize swipe detection for the add item view and finalise bill screen
 function initializeSwipeGesture() {
   // Get elements once
-  const addSettleItemView = document.getElementById("billSummaryModal");
+  const addSettleItemView = document.getElementById("bill-summary-handle");
 
   // Exit early if elements don't exist
   if (!addSettleItemView) return;
@@ -1836,7 +1854,7 @@ function fetchHistory() {
     historyList.appendChild(placeholder);
   }
 
-  // Fetch bills from Firebase instead of localStorage
+  // Fetch bills directly from Firebase
   fetchWithUserId("/api/history", {
     method: "GET",
     headers: {
@@ -1871,9 +1889,7 @@ function fetchHistory() {
         document.getElementById("clearHistoryBtn").style.display = "block";
 
         // Process the bills
-        const bills = data.bills;
-
-        bills
+        data.bills
           .sort((a, b) => b.timestamp - a.timestamp) // Newest first
           .forEach((bill) => {
             // Create a settle item that matches the design
@@ -1903,8 +1919,8 @@ function fetchHistory() {
               .map(
                 (member) =>
                   `<div class="avatar">
-              <img class="avatar-img" src="assets/cat-icon/cat-${member.avatar || 1}.svg" />
-            </div>`
+                    <img class="avatar-img" src="assets/cat-icon/cat-${member.avatar || 1}.svg" />
+                  </div>`
               )
               .join("");
 
@@ -1912,34 +1928,30 @@ function fetchHistory() {
             const plusIndicator = members.length > 5 ? "+" : "";
 
             settleItem.innerHTML = `
-            <div class="settle-top">
-              <div class="settle-info">
-                <p class="settle-info-amount">${formattedTotal}</p>
-                <p class="settle-info-matter">${settleMatter}</p>
-                <p class="settle-info-group">${members.length} members</p>
-              </div>
-              <div class="settle-delete">
-              <button class="delete-history-btn" data-bill-id="${bill.id}" title="Delete">
-                <img src="assets/bin.svg" alt="Delete" />
-              </button>
-              </div>
-            </div>
-            <div class="settle-bottom">
-              <div class="settle-info-date">
-                <span>${formattedDate}</span>
-              </div>
-              <div class="settle-avatar">
-                <div class="avatar-group">
-                  ${membersAvatars}
-                  ${plusIndicator}
+              <div class="settle-top">
+                <div class="settle-info">
+                  <p class="settle-info-amount">${formattedTotal}</p>
+                  <p class="settle-info-matter">${settleMatter}</p>
+                  <p class="settle-info-group">${members.length} members</p>
+                </div>
+                <div class="settle-delete">
+                  <button class="delete-history-btn" data-bill-id="${bill.id}" title="Delete">
+                    <img src="assets/bin.svg" alt="Delete" />
+                  </button>
                 </div>
               </div>
-            </div>
-          `;
-
-            // <div class="settle-arrow">
-            //   <img src="assets/arrow.svg" alt="arrow" />
-            // </div>
+              <div class="settle-bottom">
+                <div class="settle-info-date">
+                  <span>${formattedDate}</span>
+                </div>
+                <div class="settle-avatar">
+                  <div class="avatar-group">
+                    ${membersAvatars}
+                    ${plusIndicator}
+                  </div>
+                </div>
+              </div>
+            `;
 
             historyList.appendChild(settleItem);
 
@@ -1959,15 +1971,12 @@ function fetchHistory() {
           });
       }, 800); // Delay for better UX
     })
-    .catch((err) => {
-      // Hide loading spinner
+    .catch((error) => {
+      console.error("Error fetching history:", error);
+      historyList.innerHTML = "<p class='error'>Failed to load history. Please try again later.</p>";
       if (historyLoading) {
         historyLoading.classList.remove("active");
       }
-
-      historyList.innerHTML = "";
-      historyList.innerHTML = "<p class='no-history'>Error loading history. Please try again.</p>";
-      console.error("Error loading history:", err);
     });
 }
 
@@ -2332,6 +2341,9 @@ function handleSettleBackButton() {
       billSummaryModal.style.display = "none";
     }
   } else if (currentSettleView === "newGroupMembersView") {
+    // Reset birthday person selection when going back
+    birthdayPerson = null;
+
     // If editing a group, return to saved groups view
     if (isEditingGroup) {
       isEditingGroup = false;
@@ -2349,6 +2361,9 @@ function handleSettleBackButton() {
     // Show the back confirmation modal
     showModal("backConfirmModal");
   } else if (currentSettleView === "savedGroupsView") {
+    // Reset birthday person selection when going back
+    birthdayPerson = null;
+
     // If on saved groups view, go back to settle choice
 
     // Check if there are any saved groups before showing settleChoiceView
@@ -2611,10 +2626,25 @@ function editSavedGroup(groupName, event) {
   showSettleView("newGroupMembersView");
 
   // Update the title to show we're editing
-  document.querySelector(".new-group-members-container h2").textContent = "Edit Group Members";
+  document.querySelector(".new-group-members-container h2").textContent = "Edit Group";
 
   // Change the Next button text to Done
   document.querySelector(".next-btn").textContent = "Done";
+
+  // Show and populate the group name input field
+  const groupNameContainer = document.querySelector(".edit-group-name-container");
+  const groupNameInput = document.getElementById("editGroupName");
+  if (groupNameContainer && groupNameInput) {
+    groupNameContainer.style.display = "block";
+    groupNameInput.value = groupName;
+    
+    // Clear any existing error message
+    const errorElement = groupNameInput.parentElement.querySelector(".error-message");
+    if (errorElement) {
+      errorElement.style.display = "none";
+      errorElement.textContent = "Please enter group's name";
+    }
+  }
 
   // Initialize the member list with the loaded members
   initializeMemberList();
@@ -2712,6 +2742,9 @@ function showGroupMembersView(groupName) {
     currentGroup = "";
   }
 
+  // Reset birthday person selection when loading a group
+  birthdayPerson = null;
+
   // Update the UI to show members
   initializeMemberList();
 
@@ -2725,12 +2758,62 @@ function showGroupMembersView(groupName) {
 // Save the current members to localStorage
 function saveGroupToStorage() {
   if (currentGroup) {
-    groups[currentGroup] = [...members];
+    let groupNameToSave = currentGroup;
+    
+    // If we're editing a group, check if the name has changed
+    if (isEditingGroup) {
+      const groupNameInput = document.getElementById("editGroupName");
+      if (groupNameInput) {
+        const newGroupName = groupNameInput.value.trim();
+        const errorElement = groupNameInput.parentElement.querySelector(".error-message");
+        
+        // Validate that the group name is not empty
+        if (!newGroupName) {
+          if (errorElement) {
+            errorElement.textContent = "Please enter group's name";
+            errorElement.style.display = "block";
+          }
+          return; // Don't save if name is empty
+        }
+        
+        // If the name has changed, we need to delete the old group and create a new one
+        if (newGroupName !== currentGroup) {
+          // Validate that the new name doesn't already exist
+          if (groups[newGroupName]) {
+            // Show error - group name already exists
+            if (errorElement) {
+              errorElement.textContent = "A group with this name already exists";
+              errorElement.style.display = "block";
+            }
+            return; // Don't save if name conflicts
+          }
+          
+          // Remove the old group from local storage
+          delete groups[currentGroup];
+          
+          // Also delete the old group from Firebase
+          deleteGroupFromFirebase(currentGroup);
+          
+          // Update the current group name
+          groupNameToSave = newGroupName;
+          currentGroup = newGroupName;
+          
+          console.log(`Renamed group to "${newGroupName}"`);
+        }
+        
+        // Clear any error messages if validation passed
+        if (errorElement) {
+          errorElement.style.display = "none";
+        }
+      }
+    }
+    
+    groups[groupNameToSave] = [...members];
     localStorage.setItem("groups", JSON.stringify(groups));
-    console.log(`Saved group "${currentGroup}" with ${members.length} members`);
+    console.log(`Saved group "${groupNameToSave}" with ${members.length} members`);
 
     // Also save to Firebase
-    saveGroupToFirebase(currentGroup, [...members]);
+    saveGroupToFirebase(groupNameToSave, [...members]);
   }
 }
 
@@ -2768,6 +2851,23 @@ async function saveGroupToFirebase(groupName, groupMembers) {
   } catch (error) {
     console.error(`Error saving group "${groupName}" to Firebase:`, error);
     // Continue silently - the group is still saved in localStorage
+  }
+}
+
+// Function to delete a group from Firebase
+async function deleteGroupFromFirebase(groupName) {
+  try {
+    const response = await fetchWithUserId(`/api/groups/${encodeURIComponent(groupName)}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to delete group from Firebase: ${response.statusText}`);
+    } else {
+      console.log(`Group "${groupName}" deleted from Firebase successfully`);
+    }
+  } catch (error) {
+    console.error(`Error deleting group "${groupName}" from Firebase:`, error);
   }
 }
 
@@ -3052,6 +3152,9 @@ function initPageNavigation() {
       members = [];
       currentGroup = "";
 
+      // Reset birthday person selection for new group
+      birthdayPerson = null;
+
       // Make sure Next button says "Next"
       const nextBtn = document.querySelector(".next-btn");
       if (nextBtn) nextBtn.textContent = "Next";
@@ -3059,6 +3162,12 @@ function initPageNavigation() {
       // Make sure title is correct
       const title = document.querySelector(".new-group-members-container h2");
       if (title) title.textContent = "Settle With New Group";
+
+      // Hide the group name input field for new groups
+      const groupNameContainer = document.querySelector(".edit-group-name-container");
+      if (groupNameContainer) {
+        groupNameContainer.style.display = "none";
+      }
 
       // Reset editing flag
       isEditingGroup = false;
@@ -3192,6 +3301,14 @@ function initPageNavigation() {
   document.getElementById("editMemberName").addEventListener("keypress", function (e) {
     if (e.key === "Enter") {
       saveEditedMember();
+    }
+  });
+
+  // Handle input in group name field to clear error messages
+  document.getElementById("editGroupName").addEventListener("input", function () {
+    const errorElement = this.parentElement.querySelector(".error-message");
+    if (errorElement && errorElement.style.display !== "none") {
+      errorElement.style.display = "none";
     }
   });
 
@@ -3513,6 +3630,9 @@ if (backConfirmBtn) {
     document.getElementById("itemPrice").value = "";
     // Clear dishes array and update the dish list
     dishes = [];
+
+    // Reset birthday person selection when going back
+    birthdayPerson = null;
 
     // Close the bill summary if it's open
     closeSummary();
@@ -3899,6 +4019,9 @@ function updateSettleItemMembersUI() {
     groupMembers.appendChild(memberWrapper);
   });
 
+  // Show birthday person button if we have members
+  updateBirthdayPersonButton();
+
   // Initialize drag functionality for the members
   initializeMemberDragForSettleItem();
 
@@ -4120,7 +4243,7 @@ async function updateLastCreatedGroup() {
 
       // Remove loading state
       groupCard.classList.remove("loading");
-    }, 800);
+    }, 2000);
     return;
   }
 
@@ -4176,7 +4299,7 @@ async function updateLastCreatedGroup() {
 
     // Remove loading state
     groupCard.classList.remove("loading");
-  }, 800);
+  }, 2000);
 }
 
 // Function to update the Last Settle card
@@ -4203,6 +4326,9 @@ function updateLastSettle() {
     .then((data) => {
       // Add slight delay to show the loading animation
       setTimeout(() => {
+        // Remove loading state
+        settleCard.classList.remove("loading");
+
         // If no bill found
         if (!data || !data.bill) {
           // Update header to indicate empty state
@@ -4235,45 +4361,24 @@ function updateLastSettle() {
 
           // Remove the link behavior when there's no data
           settleCard.href = "javascript:void(0)";
-          settleCard.style.cursor = "default";
-        } else {
-          // We have a bill, update the card
-          const bill = data.bill;
-
-          // Make sure arrow icon is visible for valid data
-          const arrowIcon = settleCard.querySelector(".arrow-icon");
-          if (arrowIcon) {
-            arrowIcon.style.display = "";
-          }
-
-          // Set the link to the result page
-          settleCard.href = `/bill/${bill.id}`;
-          settleCard.style.cursor = "pointer";
-
-          updateSettleCardContent(settleCard, bill.id, bill);
+          return;
         }
 
-        // Remove loading state
-        settleCard.classList.remove("loading");
-      }, 800);
+        // Update the card with the latest bill data
+        const bill = data.bill;
+        updateSettleCardContent(settleCard, bill.id, bill);
+      }, 300);
     })
     .catch((error) => {
-      console.error("Error fetching last bill:", error);
+      console.error("Error fetching latest settlement:", error);
+      settleCard.classList.remove("loading");
 
-      // Show error message if fetch fails
-      setTimeout(() => {
-        const settleInfo = settleCard.querySelector(".settle-info");
-        if (settleInfo) {
-          const amountEl = settleInfo.querySelector(".settle-info-amount");
-          const matterEl = settleInfo.querySelector(".settle-info-matter");
-
-          if (amountEl) amountEl.textContent = "Could not load data";
-          if (matterEl) matterEl.textContent = "Please try again later";
-        }
-
-        // Remove loading state even on error
-        settleCard.classList.remove("loading");
-      }, 500);
+      // Show error state
+      const settleInfo = settleCard.querySelector(".settle-info");
+      if (settleInfo) {
+        const amountEl = settleInfo.querySelector(".settle-info-amount");
+        if (amountEl) amountEl.textContent = "Error loading";
+      }
     });
 }
 
@@ -4457,36 +4562,16 @@ function addBillToHistory(id, data) {
     return;
   }
 
-  // Store bill ID and timestamp in localStorage
-  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
-  if (!billIds.includes(id)) {
-    billIds.unshift(id); // Add to beginning of array
-    localStorage.setItem("billHistory", JSON.stringify(billIds));
-  }
-
-  // Store bill data with timestamp
-  const billData = {
-    timestamp: data.timestamp,
-    settleMatter: data.settleMatter || "No title",
-    members: data.members.map((m) => m.name).join(", "),
-    total: data.breakdown.total,
-  };
-
-  localStorage.setItem(`bill:${id}`, JSON.stringify(billData));
+  // No need to store in localStorage anymore as data is already in Firebase
+  // The bill data is saved to Firebase in the /calculate endpoint
+  console.log(`Bill ${id} added to history in Firebase`);
 }
 
 // Update this function for handling bill history loading
 function loadBillHistory() {
-  const billIds = JSON.parse(localStorage.getItem("billHistory") || "[]");
-
-  // Filter out any invalid IDs that might have been stored previously
-  const validBillIds = billIds.filter((id) => isValidBillId(id));
-
-  // If we filtered out any IDs, update the localStorage
-  if (validBillIds.length !== billIds.length) {
-    localStorage.setItem("billHistory", JSON.stringify(validBillIds));
-    console.warn(`Removed ${billIds.length - validBillIds.length} invalid bill IDs from history`);
-  }
+  // No need to load from localStorage anymore
+  // Data will be fetched directly from Firebase when needed
+  console.log("Bill history will be loaded from Firebase when needed");
 }
 
 // Function to synchronize data from Firebase to localStorage on page load
@@ -4498,55 +4583,9 @@ async function syncDataFromFirebase() {
     // Fetch groups from Firebase
     await fetchGroupsFromFirebase();
 
-    // Fetch bill history from Firebase
-    await fetchHistoryFromFirebase();
-
     console.log("Firebase sync complete");
   } catch (error) {
     console.error("Error syncing data from Firebase:", error);
-    // Continue with local data if Firebase sync fails
-  }
-}
-
-// Function to fetch bill history from Firebase and update localStorage
-async function fetchHistoryFromFirebase() {
-  try {
-    const response = await fetchWithUserId("/api/history");
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch history from Firebase: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    if (data.bills && data.bills.length > 0) {
-      // Sort bills by timestamp, newest first
-      const sortedBills = data.bills.sort((a, b) => b.timestamp - a.timestamp);
-
-      // Create array of bill IDs for history tracking
-      const billIds = sortedBills.map((bill) => bill.id);
-
-      // Store in localStorage
-      localStorage.setItem("billHistory", JSON.stringify(billIds));
-
-      // Store individual bill data for quick access
-      sortedBills.forEach((bill) => {
-        localStorage.setItem(
-          `bill:${bill.id}`,
-          JSON.stringify({
-            timestamp: bill.timestamp,
-            settleMatter: bill.settleMatter || "No title",
-            members: bill.members,
-            total: bill.breakdown?.total || 0,
-          })
-        );
-      });
-
-      // console.log(`Synced ${billIds.length} bills from Firebase`);
-    }
-  } catch (error) {
-    console.error("Error fetching bill history from Firebase:", error);
-    throw error;
   }
 }
 
@@ -4658,3 +4697,342 @@ function deleteHistoryRecord(billId, itemElement) {
       console.error(err);
     });
 }
+
+// Function to update any receipt with settlement details
+function updateReceiptDetails(receiptContainer, data) {
+  // Find all detail elements by their class names instead of IDs
+  const settleMatterEl = receiptContainer.querySelector(".successSettleMatter");
+  const dateEl = receiptContainer.querySelector(".successDate");
+  const timeEl = receiptContainer.querySelector(".successTime");
+  const itemCountEl = receiptContainer.querySelector(".successItemCount");
+  const subtotalEl = receiptContainer.querySelector(".successSubtotal");
+  const serviceChargeEl = receiptContainer.querySelector(".successServiceCharge");
+  const serviceChargeRow = receiptContainer.querySelector(".serviceChargeRow");
+  const serviceChargeRate = receiptContainer.querySelector(".serviceChargeRate");
+  const afterServiceEl = receiptContainer.querySelector(".successAfterService");
+  const afterServiceRow = receiptContainer.querySelector(".afterServiceRow");
+  const discountEl = receiptContainer.querySelector(".successDiscount");
+  const discountRow = receiptContainer.querySelector(".discountRow");
+  const discountRate = receiptContainer.querySelector(".discount-rate");
+  const afterDiscountEl = receiptContainer.querySelector(".successAfterDiscount");
+  const afterDiscountRow = receiptContainer.querySelector(".afterDiscountRow");
+  const gstEl = receiptContainer.querySelector(".successGST");
+  const gstRow = receiptContainer.querySelector(".gstRow");
+  const gstRate = receiptContainer.querySelector(".gstRate");
+  const amountEl = receiptContainer.querySelector(".successAmount");
+  const originalAmountEl = receiptContainer.querySelector(".successOriginalAmount");
+  const originalAmountRow = receiptContainer.querySelector(".originalAmountRow");
+  const payerEl = receiptContainer.querySelector(".successPayer");
+
+  // Update the text content if elements exist
+  if (settleMatterEl) settleMatterEl.textContent = data.settleMatter || "No one ask!";
+  if (dateEl) dateEl.textContent = data.dateString;
+  if (timeEl) timeEl.textContent = data.timeString;
+  if (itemCountEl) itemCountEl.textContent = data.itemCount;
+  if (subtotalEl) subtotalEl.textContent = data.subtotal;
+
+  // Update payer information if available
+  if (payerEl && data.payer) {
+    payerEl.textContent = data.payer.name;
+  } else if (payerEl) {
+    payerEl.textContent = data.paynowName || "Not specified";
+  }
+
+  // Handle Service Charge
+  if (serviceChargeEl && serviceChargeRow) {
+    const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
+    if (serviceChargeValue > 0) {
+      serviceChargeEl.textContent = `$${serviceChargeValue.toFixed(2)}`;
+      serviceChargeRow.style.display = "";
+
+      // Set service charge rate
+      if (serviceChargeRate) {
+        serviceChargeRate.textContent = data.serviceChargeRate || "10%";
+      }
+    } else {
+      serviceChargeRow.style.display = "none";
+    }
+  }
+
+  // Handle After Service
+  if (afterServiceEl && afterServiceRow) {
+    const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
+    if (serviceChargeValue > 0) {
+      // Calculate after service amount from subtotal + service charge
+      const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
+      const afterServiceValue = subtotalValue + serviceChargeValue;
+      afterServiceEl.textContent = `$${afterServiceValue.toFixed(2)}`;
+      afterServiceRow.style.display = "";
+    } else {
+      afterServiceRow.style.display = "none";
+    }
+  }
+
+  // Handle Discount
+  if (discountEl && discountRow) {
+    // Extract discount from data if available, otherwise don't show
+    const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
+    if (discountValue > 0) {
+      discountEl.textContent = `$${discountValue.toFixed(2)}`;
+      // Update discount rate display with original input
+      if (discountRate && data.discountInput) {
+        discountRate.textContent = `(${data.discountInput})`;
+      }
+      discountRow.style.display = "";
+    } else {
+      discountRow.style.display = "none";
+    }
+  }
+
+  // Handle After Discount
+  if (afterDiscountEl && afterDiscountRow) {
+    const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
+    if (discountValue > 0) {
+      // Calculate amount after discount
+      const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
+      const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
+      const afterServiceValue = subtotalValue + serviceChargeValue;
+      const afterDiscountValue = afterServiceValue - discountValue;
+      afterDiscountEl.textContent = `$${afterDiscountValue.toFixed(2)}`;
+      afterDiscountRow.style.display = "";
+    } else {
+      afterDiscountRow.style.display = "none";
+    }
+  }
+
+  // Handle GST
+  if (gstEl && gstRow) {
+    const gstValue = parseFloat(data.gst.replace("$", ""));
+    if (gstValue > 0) {
+      gstEl.textContent = `$${gstValue.toFixed(2)}`;
+      gstRow.style.display = "";
+
+      // Set GST rate
+      if (gstRate) {
+        gstRate.textContent = data.gstRate || "9%";
+      }
+    } else {
+      gstRow.style.display = "none";
+    }
+  }
+
+  // Display both original and rounded amounts for final total
+  if (originalAmountEl && originalAmountRow && amountEl) {
+    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
+    const roundedTotal = roundToNearest5Cents(totalValue);
+
+    // Show original amount row only if rounding was applied
+    if (Math.abs(totalValue - roundedTotal) > 0.001) {
+      // Using a small epsilon for float comparison
+      originalAmountEl.textContent = `$${totalValue.toFixed(2)}`;
+      originalAmountRow.style.display = "";
+      // Show the rounded amount
+      amountEl.textContent = `$${roundedTotal}`;
+    } else {
+      // No rounding needed, hide original amount row
+      originalAmountRow.style.display = "none";
+      amountEl.textContent = `$${totalValue.toFixed(2)}`;
+    }
+  } else if (amountEl) {
+    // Fallback if original amount elements don't exist
+    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
+    const roundedTotal = roundToNearest5Cents(totalValue);
+    amountEl.textContent = `$${roundedTotal}`;
+  }
+}
+
+// ===== Birthday Person Functions =====
+
+// Function to update birthday person button visibility and state
+function updateBirthdayPersonButton() {
+  const birthdayBtn = document.getElementById("birthdayPersonBtn");
+  if (!birthdayBtn) return;
+
+  // Show button only if we have 2 or more members
+  if (members.length >= 2) {
+    birthdayBtn.style.display = "flex";
+
+    // Update button state based on whether birthday person is selected
+    if (birthdayPerson) {
+      birthdayBtn.classList.add("has-birthday-person");
+      birthdayBtn.querySelector(".birthday-text").textContent = `🎂 ${birthdayPerson} (Birthday)`;
+    } else {
+      birthdayBtn.classList.remove("has-birthday-person");
+      birthdayBtn.querySelector(".birthday-text").textContent = "Birthday Person";
+    }
+  } else {
+    birthdayBtn.style.display = "none";
+  }
+}
+
+// Function to show birthday person modal
+function showBirthdayPersonModal() {
+  const modal = document.getElementById("birthdayPersonModal");
+  const membersList = document.getElementById("birthdayMembersList");
+  const statusDisplay = document.querySelector(".birthday-status-display");
+  const statusMemberName = document.querySelector(".birthday-member-name");
+  const confirmBtn = document.getElementById("confirmBirthdayPersonBtn");
+  const clearBtn = document.getElementById("clearBirthdayPersonBtn");
+
+  // Clear previous content
+  membersList.innerHTML = "";
+
+  // Create member options using same structure as paynowMembersList
+  members.forEach((member) => {
+    const memberName = typeof member === "object" ? member.name : member;
+    const avatarNumber =
+      typeof member === "object"
+        ? member.avatar
+        : Math.abs(
+            memberName.split("").reduce((a, b) => {
+              a = (a << 5) - a + b.charCodeAt(0);
+              return a & a;
+            }, 0) % 20
+          ) + 1;
+
+    const memberDiv = document.createElement("div");
+    memberDiv.className = "member-avatar-wrapper";
+    memberDiv.setAttribute("data-name", memberName);
+
+    if (birthdayPerson === memberName) {
+      memberDiv.classList.add("selected");
+    }
+
+    memberDiv.innerHTML = `
+      <div class="member-avatar">
+        <img src="assets/cat-icon/cat-${avatarNumber}.svg" alt="Cat avatar" class="cat-avatar-img">
+      </div>
+      <div class="member-name">${memberName}</div>
+    `;
+
+    // Add click handler
+    memberDiv.addEventListener("click", function () {
+      // Remove selected class from all members
+      document.querySelectorAll("#birthdayMembersList .member-avatar-wrapper").forEach((m) => {
+        m.classList.remove("selected");
+      });
+
+      // Add selected class to this member
+      this.classList.add("selected");
+
+      // Update status display
+      statusDisplay.style.display = "block";
+      statusMemberName.textContent = memberName;
+
+      // Show clear button if this person was already selected
+      if (birthdayPerson === memberName) {
+        clearBtn.style.display = "inline-block";
+      } else {
+        clearBtn.style.display = "none";
+      }
+    });
+
+    membersList.appendChild(memberDiv);
+  });
+
+  // Show/hide status display based on current selection
+  if (birthdayPerson) {
+    statusDisplay.style.display = "block";
+    statusMemberName.textContent = birthdayPerson;
+    clearBtn.style.display = "inline-block";
+
+    // Pre-select the current birthday person
+    const currentOption = membersList.querySelector(`[data-name="${birthdayPerson}"]`);
+    if (currentOption) {
+      currentOption.classList.add("selected");
+    }
+  } else {
+    statusDisplay.style.display = "none";
+    clearBtn.style.display = "none";
+  }
+
+  // Show modal
+  showModal("birthdayPersonModal");
+}
+
+// Function to handle birthday person confirmation
+function confirmBirthdayPerson() {
+  const selectedOption = document.querySelector("#birthdayMembersList .member-avatar-wrapper.selected");
+
+  if (selectedOption) {
+    const selectedMember = selectedOption.getAttribute("data-name");
+    birthdayPerson = selectedMember;
+
+    // Update visual indicators
+    updateBirthdayPersonVisuals();
+    updateBirthdayPersonButton();
+
+    // Show success feedback
+    showToast("birthdayPersonToast");
+
+    // Update toast message
+    const toast = document.getElementById("birthdayPersonToast");
+    if (toast) {
+      const messageEl = toast.querySelector(".toast-message");
+      if (messageEl) {
+        messageEl.textContent = `🎂 ${birthdayPerson} is the birthday person!`;
+      }
+    }
+  }
+
+  // Hide modal
+  hideModal("birthdayPersonModal");
+}
+
+// Function to clear birthday person
+function clearBirthdayPerson() {
+  birthdayPerson = null;
+
+  // Update visual indicators
+  updateBirthdayPersonVisuals();
+  updateBirthdayPersonButton();
+
+  // Show feedback
+  showToast("birthdayPersonClearedToast");
+
+  // Hide modal
+  hideModal("birthdayPersonModal");
+}
+
+// Function to update visual indicators for birthday person
+function updateBirthdayPersonVisuals() {
+  // Update member avatars in the group members section
+  const groupMembers = document.querySelectorAll(".group-members .member-avatar-wrapper");
+
+  groupMembers.forEach((wrapper) => {
+    const memberName = wrapper.dataset.name;
+    const avatar = wrapper.querySelector(".member-avatar");
+    const nameDiv = wrapper.querySelector(".member-name");
+
+    if (memberName === birthdayPerson) {
+      // Add birthday person styling
+      avatar.classList.add("birthday-person");
+      nameDiv.classList.add("birthday-person");
+    } else {
+      // Remove birthday person styling
+      avatar.classList.remove("birthday-person");
+      nameDiv.classList.remove("birthday-person");
+    }
+  });
+}
+
+// Initialize birthday person functionality
+document.addEventListener("DOMContentLoaded", function () {
+  // Birthday person button click handler
+  const birthdayBtn = document.getElementById("birthdayPersonBtn");
+  if (birthdayBtn) {
+    birthdayBtn.addEventListener("click", showBirthdayPersonModal);
+  }
+
+  // Birthday modal confirm button
+  const confirmBtn = document.getElementById("confirmBirthdayPersonBtn");
+  if (confirmBtn) {
+    confirmBtn.addEventListener("click", confirmBirthdayPerson);
+  }
+
+  // Birthday modal clear button
+  const clearBtn = document.getElementById("clearBirthdayPersonBtn");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", clearBirthdayPerson);
+  }
+});
