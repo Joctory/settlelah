@@ -43,6 +43,7 @@ body {
 /* Base styles and theme variables */
 :root {
   --body-bg: #fefae0;
+  --bdae-bg: #fefae0;
   --main-bg: #ccd5ae;
   --history-bg: #e9edc9;
   --member-bg: #d1e7c0;
@@ -54,6 +55,7 @@ body {
   --text-color: #212529;
   --light-text: #4f4f4f;
   --details-bg: #dce6c9;
+  --drag-bg: #f2e8d5;
   --border-radius: 12px;
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   --transition-speed: 0.3s;
@@ -62,6 +64,7 @@ body {
 
 :root.dark-mode {
   --body-bg: #121212;
+  --bdae-bg: #6f6b50;
   --main-bg: #1e1e1e;
   --history-bg: #292929;
   --member-bg: #323232;
@@ -72,6 +75,7 @@ body {
   --card-bg: #25282e;
   --text-color: #e0e0e0;
   --light-text: #b0b0b0;
+  --drag-bg: #36393f;
   --details-bg: #5f614e;
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   --error-color: #f44336;
@@ -392,9 +396,11 @@ body {
   justify-content: space-between;
   align-items: center;
   border-radius: 25px 25px 0 0;
-  padding: 20px 20px 0 20px;
+  padding: 20px 0 0;
+  margin: 0 20px;
   text-align: center;
   position: relative;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .member-close-modal {
@@ -415,9 +421,12 @@ body {
 .member-bill-modal-body {
   padding: 10px 20px 20px 20px;
   min-height: 200px;
-  height: 90%;
+  height: 93%;
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
 }
 
 .member-option-list {
@@ -534,7 +543,6 @@ body.dark-mode .member-close-modal:hover {
 
 .payment-confirm-buttons .action-button {
   flex: 1;
-  max-width: 150px;
 }
 
 /* Dark mode styles for payment confirmation modal */
@@ -559,6 +567,7 @@ body.dark-mode .payment-confirm-modal-body p {
 }
 
 .modal-overlay {
+  width: 101vw;
   position: fixed;
   top: 0;
   left: 0;
@@ -570,6 +579,10 @@ body.dark-mode .payment-confirm-modal-body p {
   z-index: 15; /* Below the modal but above everything else */
   pointer-events: none;
   will-change: opacity; /* Optimize for animation */
+}
+
+#paymentConfirmOverlay.modal-overlay {
+  z-index: 20;
 }
 
 .modal-overlay.active {
@@ -653,6 +666,7 @@ body.dark-mode .payment-confirm-modal-body p {
 
 /* Member bill details styles */
 .member-bill-title {
+  width: 100%;
   text-align: center;
   font-size: 24px;
   margin-bottom: 10px;
@@ -667,7 +681,7 @@ body.dark-mode .payment-confirm-modal-body p {
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #839788, transparent);
+  background: linear-gradient(90deg, #26a243, #d8b78e, #26a243);
   animation: shimmer 2s infinite;
   background-size: 200% 100%;
 }
@@ -700,6 +714,14 @@ body.dark-mode .payment-confirm-modal-body p {
 
 .member-bill-item-container {
   margin-bottom: 20px;
+}
+
+.member-bill-item-container .member-bill-row-label {
+  width: 40%;
+}
+
+.member-bill-item-container .member-bill-row-value {
+  width: 60%;
 }
 
 .member-bill-row {
@@ -764,21 +786,22 @@ body.dark-mode .payment-confirm-modal-body p {
   display: flex;
   flex-direction: column;
   justify-content: space-evenly;
+  align-items: center;
   background-color: #e9edc9;
   padding: 20px;
   border-radius: 10px;
   text-align: center;
   margin-top: auto;
   margin-bottom: auto;
-  min-height: 50%;
+  min-height: 85%;
 }
 
 .paynow-qr-container {
   background-color: white;
-  padding: 15px;
+  padding: 5px;
   width: 240px;
   height: 240px;
-  margin: 0 auto 20px auto;
+  margin: 0 auto;
   border-radius: 10px;
   display: flex;
   justify-content: center;
@@ -810,6 +833,10 @@ body.dark-mode .paynow-container {
   background-color: var(--history-bg);
 }
 
+body.dark-mode .payer-tracking-container {
+  background-color: var(--drag-bg);
+}
+
 body.dark-mode .paynow-qr-container {
   background-color: var(--card-bg);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -825,19 +852,33 @@ body.dark-mode .paynow-qr-container {
   animation: fadeInUp 0.5s ease 0.1s forwards;
 }
 
+.paynow-instructions p:nth-child(1) {
+  margin-top: 5px;
+  margin-bottom: 10px;
+}
+
 /* Button styles */
+.bill-result-button-div {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
 #copyPhoneBtn {
   margin-top: 0;
 }
 
 .primary-button {
   background-color: #d8b78e;
-  color: white;
+  color: var(--body-text);
 }
 
 .secondary-button {
   background-color: #000;
-  color: white;
+  color: #fff;
 }
 
 .margin-top {
@@ -940,7 +981,7 @@ body.dark-mode .paynow-qr-container {
   left: 0;
   width: 100%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #839788, transparent);
+  background: linear-gradient(90deg, #26a243, #d8b78e, #26a243);
   animation: shimmer 2s infinite;
   background-size: 200% 100%;
 }
@@ -1051,7 +1092,7 @@ body.dark-mode .paynow-qr-container {
   /* border: 1px solid white; */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .member-avatar .cat-avatar-img,
@@ -1087,6 +1128,19 @@ body.dark-mode .paynow-qr-container {
   animation: paymentConfirm 0.5s ease-in-out;
 }
 
+.paid-label {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  font-size: 11px;
+  transform: translateX(-50%);
+  line-height: 100%;
+  padding: 3px 6px;
+  background: #28a745;
+  border-radius: 10px;
+  color: #fff;
+}
+
 @keyframes paymentConfirm {
   0% {
     transform: scale(0);
@@ -1102,6 +1156,7 @@ body.dark-mode .paynow-qr-container {
 }
 
 .payment-status-indicator {
+  width: 100%;
   padding: 10px 15px;
   border-radius: 8px;
   text-align: center;
@@ -1284,7 +1339,7 @@ body.dark-mode .paynow-qr-container {
 }
 
 .stat-card {
-  background: white;
+  background: var(--card-bg);
   padding: 15px;
   border-radius: 12px;
   text-align: center;
@@ -1329,14 +1384,14 @@ body.dark-mode .paynow-qr-container {
 
 .stat-label {
   font-size: 12px;
-  color: #6c757d;
+  color: var(--body-text);
   text-transform: uppercase;
   font-weight: 600;
   letter-spacing: 0.5px;
 }
 
 .progress-bar-container {
-  background: white;
+  background: var(--card-bg);
   padding: 15px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
@@ -1372,7 +1427,7 @@ body.dark-mode .paynow-qr-container {
   text-align: center;
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: var(--body-text);
 }
 
 .members-status-list {
@@ -1406,7 +1461,7 @@ body.dark-mode .paynow-qr-container {
 }
 
 .member-status-item:hover {
-  background-color: #f8f9fa;
+  background-color: var(--details-bg);
 }
 
 .member-status-info {
@@ -1435,15 +1490,15 @@ body.dark-mode .paynow-qr-container {
 }
 
 .member-status-amount {
-  font-size: 14px;
+  font-size: 15px;
   color: #6c757d;
   font-weight: 500;
 }
 
 .member-status-badge {
   padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  border-radius: 10px;
+  font-size: 14px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -1477,15 +1532,15 @@ body.dark-mode .paynow-qr-container {
   }
 
   .member-status-item {
-    padding: 12px 15px;
+    padding: 2px 5px;
   }
 
   .member-status-name {
-    font-size: 14px;
+    font-size: 16px;
   }
 
   .member-status-amount {
-    font-size: 13px;
+    font-size: 15px;
   }
 }
 
@@ -1571,10 +1626,6 @@ body.dark-mode .member-status-item {
   border-bottom-color: #333;
 }
 
-body.dark-mode .member-status-item:hover {
-  background-color: #1c1c1e;
-}
-
 body.dark-mode .member-status-name {
   color: #e0e0e0;
 }
@@ -1618,8 +1669,10 @@ body.dark-mode .progress-text {
 }
 
 .payer-tracking-container {
-  padding: 10px 0;
+  width: 100%;
+  padding: 20px;
   overflow: auto;
+  background: #e9edc9;
 }
 
 .members-status-list-mobile {
@@ -2005,6 +2058,7 @@ body.dark-mode .members-status-list-mobile h4 {
   }
 
   .desktop-layout {
+    width: 100%;
     display: flex;
     flex-direction: row;
     gap: 24px;
@@ -2038,7 +2092,7 @@ body.dark-mode .members-status-list-mobile h4 {
 
   .paynow-title {
     font-size: 1.5rem;
-    margin-bottom: 16px;
+    margin-bottom: 0;
     color: var(--body-text);
     font-weight: 600;
     text-align: center;
@@ -2047,9 +2101,13 @@ body.dark-mode .members-status-list-mobile h4 {
   .paynow-qr-container {
     width: 100%;
     height: auto;
-    min-height: 325px;
-    max-width: 310px;
-    margin: 0 auto 20px;
+    min-height: 280px;
+    max-width: 270px;
+    margin: 0 auto;
+  }
+
+  .download-qr-btn {
+    margin-top: 0;
   }
 
   .paynow-qr-container img {
@@ -2171,7 +2229,8 @@ body,
 .paynow-qr-container,
 .shared-member,
 .action-button {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease,
+    transform 0.3 ease-in-out;
 }
 
 /* Theme toggle button styles */
@@ -2364,6 +2423,7 @@ body.dark-mode .completion-celebration p {
 
 /* QR Download button styles */
 .download-qr-btn {
+  width: 160px;
   background: #007bff;
   color: white;
   border: none;
@@ -2373,8 +2433,10 @@ body.dark-mode .completion-celebration p {
   font-weight: 600;
   cursor: pointer;
   margin-top: 10px;
+  margin-bottom: 5px;
   transition: background 0.3s ease;
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: 6px;
 }
@@ -2397,6 +2459,14 @@ body.dark-mode .download-qr-btn:hover {
 }
 
 /* Birthday person items display styles */
+.birthday-share-header {
+  margin-bottom: 10px;
+}
+
+.birthday-share-title {
+  font-weight: 600;
+}
+
 .birthday-person-items {
   display: flex;
   flex-direction: column;
@@ -2463,8 +2533,8 @@ body.dark-mode .no-items {
 
 /* Birthday person breakdown for other members */
 .birthday-person-breakdown {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 179, 71, 0.1));
-  border: 2px solid #ffd700;
+  background: var(--bdae-bg);
+  border: 2px solid #d8b78e;
   border-radius: 12px;
   margin: 16px 0;
   position: relative;
@@ -2476,7 +2546,7 @@ body.dark-mode .no-items {
   gap: 8px;
   padding: 12px 16px 4px;
   border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-  background: rgba(255, 215, 0, 0.15);
+  background: #d8b78e;
   border-radius: 10px 10px 0 0;
 }
 
@@ -2505,7 +2575,7 @@ body.dark-mode .no-items {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 8px;
 }
 
 .birthday-reference-item {
@@ -2513,14 +2583,13 @@ body.dark-mode .no-items {
   justify-content: flex-start;
   align-items: center;
   padding: 8px 12px;
-  background: rgba(255, 215, 0, 0.1);
+  background: #d8b78e;
   border-radius: 6px;
-  border-left: 2px solid #ffd700;
 }
 
 .birthday-reference-name {
   font-weight: 500;
-  color: #8b4513;
+  color: var(--body-text);
   font-size: 14px;
 }
 
@@ -2542,12 +2611,10 @@ body.dark-mode .no-items {
 
 /* Dark mode adjustments for birthday breakdown */
 body.dark-mode .birthday-person-breakdown {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.2), rgba(205, 133, 63, 0.2));
   border-color: #b8860b;
 }
 
 body.dark-mode .birthday-breakdown-header {
-  background: rgba(184, 134, 11, 0.25);
   border-bottom-color: rgba(184, 134, 11, 0.4);
 }
 
@@ -2559,15 +2626,6 @@ body.dark-mode .birthday-reference-total {
 body.dark-mode .birthday-breakdown-subtitle {
   color: #ccc;
   background: rgba(184, 134, 11, 0.25);
-}
-
-body.dark-mode .birthday-reference-item {
-  background: rgba(184, 134, 11, 0.15);
-  border-left-color: #b8860b;
-}
-
-body.dark-mode .birthday-reference-name {
-  color: #fff;
 }
 
 body.dark-mode .no-items-reference {
@@ -2594,8 +2652,8 @@ body.dark-mode .no-items-reference {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: shimmer 2s infinite;
+  background: linear-gradient(90deg, #26a243, #d8b78e, #26a243);
+  animation: shimmer 10s infinite;
 }
 
 @keyframes birthdayGlow {
@@ -2609,10 +2667,13 @@ body.dark-mode .no-items-reference {
 
 @keyframes shimmer {
   0% {
-    left: -100%;
+    background-position: -100% 0;
+  }
+  50% {
+    background-position: 100% 0;
   }
   100% {
-    left: 100%;
+    background-position: -100% 0;
   }
 }
 

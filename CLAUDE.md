@@ -15,6 +15,23 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - `npm run deploy-rules` - Deploy Firestore security rules to Firebase
 - `npm run security-setup` - Run security setup script
 
+### Build & Optimization Commands
+- `npm run build` - Build minified CSS and JS files for production
+- `npm run build:js` - Minify JavaScript files only
+- `npm run build:css` - Minify CSS files only
+- `npm run build:prod` - Build for production with NODE_ENV=production
+- `npm run vercel-build` - Vercel-specific build command (auto-runs on deploy)
+
+### Vercel Development Commands
+- `npm run dev:vercel` - Start Vercel dev with clear URL display
+- `vercel dev --yes --listen 3000` - Direct Vercel dev command
+- `npm run dev` - Regular development server (port 3001)
+
+### Vercel Deployment Commands
+- `vercel --prod` - Deploy to production
+- `vercel` - Preview deployment
+- `vercel env add VARIABLE_NAME` - Add environment variable
+
 ### Firebase Commands
 - `firebase login` - Authenticate with Firebase CLI
 - `firebase deploy --only firestore:rules` - Deploy only Firestore rules

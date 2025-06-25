@@ -2637,7 +2637,7 @@ function editSavedGroup(groupName, event) {
   if (groupNameContainer && groupNameInput) {
     groupNameContainer.style.display = "block";
     groupNameInput.value = groupName;
-    
+
     // Clear any existing error message
     const errorElement = groupNameInput.parentElement.querySelector(".error-message");
     if (errorElement) {
@@ -2759,14 +2759,14 @@ function showGroupMembersView(groupName) {
 function saveGroupToStorage() {
   if (currentGroup) {
     let groupNameToSave = currentGroup;
-    
+
     // If we're editing a group, check if the name has changed
     if (isEditingGroup) {
       const groupNameInput = document.getElementById("editGroupName");
       if (groupNameInput) {
         const newGroupName = groupNameInput.value.trim();
         const errorElement = groupNameInput.parentElement.querySelector(".error-message");
-        
+
         // Validate that the group name is not empty
         if (!newGroupName) {
           if (errorElement) {
@@ -2775,7 +2775,7 @@ function saveGroupToStorage() {
           }
           return; // Don't save if name is empty
         }
-        
+
         // If the name has changed, we need to delete the old group and create a new one
         if (newGroupName !== currentGroup) {
           // Validate that the new name doesn't already exist
@@ -2787,30 +2787,30 @@ function saveGroupToStorage() {
             }
             return; // Don't save if name conflicts
           }
-          
+
           // Remove the old group from local storage
           delete groups[currentGroup];
-          
+
           // Also delete the old group from Firebase
           deleteGroupFromFirebase(currentGroup);
-          
+
           // Update the current group name
           groupNameToSave = newGroupName;
           currentGroup = newGroupName;
-          
-          console.log(`Renamed group to "${newGroupName}"`);
+
+          // console.log(`Renamed group to "${newGroupName}"`);
         }
-        
+
         // Clear any error messages if validation passed
         if (errorElement) {
           errorElement.style.display = "none";
         }
       }
     }
-    
+
     groups[groupNameToSave] = [...members];
     localStorage.setItem("groups", JSON.stringify(groups));
-    console.log(`Saved group "${groupNameToSave}" with ${members.length} members`);
+    // console.log(`Saved group "${groupNameToSave}" with ${members.length} members`);
 
     // Also save to Firebase
     saveGroupToFirebase(groupNameToSave, [...members]);
@@ -2862,12 +2862,12 @@ async function deleteGroupFromFirebase(groupName) {
     });
 
     if (!response.ok) {
-      console.error(`Failed to delete group from Firebase: ${response.statusText}`);
+      // console.error(`Failed to delete group from Firebase: ${response.statusText}`);
     } else {
-      console.log(`Group "${groupName}" deleted from Firebase successfully`);
+      // console.log(`Group "${groupName}" deleted from Firebase successfully`);
     }
   } catch (error) {
-    console.error(`Error deleting group "${groupName}" from Firebase:`, error);
+    // console.error(`Error deleting group "${groupName}" from Firebase:`, error);
   }
 }
 
@@ -3697,8 +3697,6 @@ async function fetchWeatherData() {
 
 // Document ready function
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("DOM fully loaded");
-
   // Initialize dishes array if it doesn't exist
   if (typeof dishes === "undefined") {
     window.dishes = [];
@@ -4241,8 +4239,9 @@ async function updateLastCreatedGroup() {
         avatarGroup.innerHTML = '<p class="empty-state-message">Create a group when you settle</p>';
       }
 
-      // Remove loading state
+      // Remove loading state and show the element
       groupCard.classList.remove("loading");
+      groupCard.style.display = 'block';
     }, 2000);
     return;
   }
@@ -4297,8 +4296,9 @@ async function updateLastCreatedGroup() {
       }
     }
 
-    // Remove loading state
+    // Remove loading state and show the element
     groupCard.classList.remove("loading");
+    groupCard.style.display = 'block';
   }, 2000);
 }
 
@@ -4326,8 +4326,9 @@ function updateLastSettle() {
     .then((data) => {
       // Add slight delay to show the loading animation
       setTimeout(() => {
-        // Remove loading state
+        // Remove loading state and show the element
         settleCard.classList.remove("loading");
+        settleCard.style.display = 'block';
 
         // If no bill found
         if (!data || !data.bill) {
@@ -4372,6 +4373,7 @@ function updateLastSettle() {
     .catch((error) => {
       console.error("Error fetching latest settlement:", error);
       settleCard.classList.remove("loading");
+      settleCard.style.display = 'block';
 
       // Show error state
       const settleInfo = settleCard.querySelector(".settle-info");
@@ -4564,26 +4566,26 @@ function addBillToHistory(id, data) {
 
   // No need to store in localStorage anymore as data is already in Firebase
   // The bill data is saved to Firebase in the /calculate endpoint
-  console.log(`Bill ${id} added to history in Firebase`);
+  // console.log(`Bill ${id} added to history in Firebase`);
 }
 
 // Update this function for handling bill history loading
 function loadBillHistory() {
   // No need to load from localStorage anymore
   // Data will be fetched directly from Firebase when needed
-  console.log("Bill history will be loaded from Firebase when needed");
+  // console.log("Bill history will be loaded from Firebase when needed");
 }
 
 // Function to synchronize data from Firebase to localStorage on page load
 async function syncDataFromFirebase() {
   try {
     // Show subtle loading indicator or handle in a non-blocking way
-    console.log("Syncing data from Firebase...");
+    // console.log("Syncing data from Firebase...");
 
     // Fetch groups from Firebase
     await fetchGroupsFromFirebase();
 
-    console.log("Firebase sync complete");
+    // console.log("Firebase sync complete");
   } catch (error) {
     console.error("Error syncing data from Firebase:", error);
   }

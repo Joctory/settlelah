@@ -243,7 +243,6 @@ function showShareModal(memberName) {
                     ? `
                   <div class="member-bill-item-container birthday-person-breakdown">
                     <div class="birthday-breakdown-header">
-                      <span class="birthday-breakdown-icon">🎂</span>
                       <span class="birthday-breakdown-title">What ${billData.birthdayPerson} Ordered</span>
                     </div>
                     <div class="birthday-person-items-reference">
@@ -337,29 +336,26 @@ function showShareModal(memberName) {
                       data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
                     }&company=" alt="PayNow QR Code" class="desktop-qr-code">
                 </div>
-                
+                <button id="downloadQRBtn" class="download-qr-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="#ffffff" width="800px" height="800px" viewBox="0 0 24 24" id="download-5" class="icon line"><polyline id="primary" points="15 14 12 17 9 14" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/><path id="primary-2" data-name="primary" d="M12,17V3M4,17v3a1,1,0,0,0,1,1H19a1,1,0,0,0,1-1V17" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/></svg>
+                  Download QR
+                </button>
                 <div class="paynow-instructions">
                   <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${
                       data.paymentInfo.name
                     } (${data.paymentInfo.phoneNumber})</b>.</p>
                   <p>Scan the QR code to complete transfer or copy the phone number to start transfer.</p>
                 </div>
-                
+                <div class="bill-result-button-div">
                 <button id="copyPhoneBtn" class="action-button secondary-button">
                   Copy Phone Number
-                </button>
-                <button id="downloadQRBtn" class="download-qr-btn">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-                  </svg>
-                  Download QR
                 </button>
                 `
                   : `
                 <div class="paynow-instructions">
                   <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${data.paymentInfo.name} (${data.paymentInfo.phoneNumber})</b> using DuitNow payment method.</p>
                 </div>
-                
+                <div class="bill-result-button-div">
                 <button id="copyPhoneBtn" class="action-button secondary-button">
                   Copy Phone Number
                 </button>
@@ -379,6 +375,7 @@ function showShareModal(memberName) {
                 </button>
               `
               }
+              </div>
             </div>
             `
                 : data.isBirthdayPerson
@@ -607,7 +604,6 @@ function showShareModal(memberName) {
                   ? `
                 <div class="member-bill-item-container birthday-person-breakdown">
                   <div class="birthday-breakdown-header">
-                    <span class="birthday-breakdown-icon">🎂</span>
                     <span class="birthday-breakdown-title">What ${billData.birthdayPerson} Ordered</span>
                   </div>
                   <div class="birthday-person-items-reference">
@@ -625,19 +621,6 @@ function showShareModal(memberName) {
                         ? '<span class="no-items-reference">No items ordered</span>'
                         : ""
                     }
-                  </div>
-                  <div class="member-bill-row">
-                    <span class="member-bill-row-label">Total Value (Being Treated)</span>
-                    <span class="member-bill-row-value birthday-reference-total">$${memberData[
-                      billData.birthdayPerson
-                    ].items
-                      .reduce((total, item) => {
-                        const price = parseFloat(item.price.replace("$", ""));
-                        return total + price;
-                      }, 0)
-                      .toFixed(2)} (${memberData[billData.birthdayPerson].items.length} item${
-                      memberData[billData.birthdayPerson].items.length !== 1 ? "s" : ""
-                    })</span>
                   </div>
                 </div>
                 `
@@ -707,12 +690,14 @@ function showShareModal(memberName) {
               </div>
             `
                 : `
+              <div class="bill-result-button-div">
               <button id="showPayNowBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
                 Show PayNow QR Code
               </button>
               <button id="havePaidBtn" class="action-button secondary-button modal-fade-in" style="animation-delay: 0.4s;">
                 I have paid!
               </button>
+              </div>
             `
             }
           `
@@ -823,22 +808,19 @@ function showPayNowQR(memberName) {
                 memberName + "%20-%20SettleLah!%20Bill"
               }&company=" alt="PayNow QR Code">
         </div>
-        
+        <button id="downloadQRBtn" class="download-qr-btn modal-fade-in" style="animation-delay: 0.4s;">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="#ffffff" width="800px" height="800px" viewBox="0 0 24 24" id="download-5" class="icon line"><polyline id="primary" points="15 14 12 17 9 14" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/><path id="primary-2" data-name="primary" d="M12,17V3M4,17v3a1,1,0,0,0,1,1H19a1,1,0,0,0,1-1V17" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/></svg>
+          Download QR
+        </button>
         <div class="paynow-instructions" style="animation-delay: 0.2s;">
           <p> Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name" >${
                 data.paymentInfo.name
               } (${data.paymentInfo.phoneNumber})</b>.</p>
           <p>Scan the QR code to complete transfer or copy the phone number to start transfer.</p>
         </div>
-        
+        <div class="bill-result-button-div">
         <button id="copyPhoneBtn" class="action-button secondary-button modal-fade-in" style="animation-delay: 0.3s;">
           Copy Phone Number
-        </button>
-        <button id="downloadQRBtn" class="download-qr-btn modal-fade-in" style="animation-delay: 0.4s;">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z" />
-          </svg>
-          Download QR
         </button>
         `
             : `
@@ -846,15 +828,16 @@ function showPayNowQR(memberName) {
           <p>PayNow is only available in Singapore.</p>
           <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name" >${data.paymentInfo.name} (${data.paymentInfo.phoneNumber})</b> using another payment method.</p>
         </div>
-        
+        <div class="bill-result-button-div">
         <button id="copyPhoneBtn" class="action-button secondary-button modal-fade-in" style="animation-delay: 0.3s;">
           Copy Phone Number
         </button>
         `
         }
+        </div>
       </div>
       
-      <button id="backToDetailBtn" class="action-button primary-button margin-top modal-fade-in" style="animation-delay: 0.4s;">
+      <button id="backToDetailBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.4s;">
         Back to Detail
       </button>
     `;
@@ -962,7 +945,7 @@ function showPayerTracking(memberName) {
       ${
         memberData[memberName]?.totalAmount !== "$0.00"
           ? `
-      <button id="backToDetailBtn" class="action-button primary-button margin-top modal-fade-in" style="animation-delay: 0.4s;">
+      <button id="backToDetailBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.4s;">
         Back to Your Bill
       </button>
       `
@@ -1763,7 +1746,7 @@ function updateGroupMembers(members) {
     memberAvatar.innerHTML = `
       <div class="member-avatar ${isPaid ? "paid" : ""} ${isBirthdayPerson ? "birthday-person" : ""}">
         <img src="/assets/cat-icon/cat-${avatarIndex}.svg" alt="Cat avatar" class="cat-avatar-img" />
-        ${isPaid ? '<div class="paid-indicator">✓</div>' : ""}
+        ${isPaid ? '<div class="paid-indicator">✓</div><span class="paid-label">Paid</span>' : ""}
       </div>
       <div class="member-name ${isBirthdayPerson ? "birthday-person" : ""}">${member.name === payerName ? "💸 " : ""}${
       isBirthdayPerson ? "🎂 " : ""

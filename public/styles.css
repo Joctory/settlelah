@@ -63,6 +63,7 @@ a {
   --black-btn: #000000;
   --danger-color: #ff6b6b;
   --danger-hover-color: #ff5252;
+  --birthday-color: #e4d822;
   --filter-dark: invert(0);
   --bubble-shadow: 0 1px 3px 3px rgba(0, 0, 0, 0.12), 0 1px 2px 2px rgba(0, 0, 0, 0.24);
 }
@@ -89,6 +90,7 @@ a {
   --accent-color-opacity: #5f614e;
   --group-card-bg: #5f614e;
   --toast-bg: #26303b;
+  --birthday-color: #e4d822;
   --filter-dark: invert(1);
   --bubble-shadow: 0 1px 3px 3px rgba(255, 255, 255, 0.12), 0 1px 2px 2px rgba(255, 255, 255, 0.24);
 }
@@ -938,7 +940,7 @@ input:checked + .slider:before {
 .settle-now-header {
   display: flex;
   align-items: center;
-  padding: 20px 15px 5px 15px;
+  padding: 20px 15px 15px 15px;
   position: relative;
 }
 
@@ -1186,6 +1188,13 @@ input:checked + .slider:before {
   letter-spacing: 0.5px;
 }
 
+.edit-group-name-container {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+}
+
 .member-list {
   display: flex;
   flex-wrap: wrap;
@@ -1215,7 +1224,7 @@ input:checked + .slider:before {
   /* border: 1px solid white; */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .member-avatar .cat-avatar-img,
@@ -1581,10 +1590,10 @@ e {
   box-shadow: var(--card-shadow);
   background-color: var(--item-card-bg);
   border-radius: 16px;
-  padding: 16px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 5px;
   opacity: 1;
   visibility: hidden;
   transition: transform 0.2s ease;
@@ -1637,7 +1646,7 @@ e {
 .item-details-section {
   background-color: var(--item-card-bg);
   border-radius: 16px;
-  padding: 16px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1686,7 +1695,7 @@ e {
 .split-section {
   background-color: var(--drag-bg);
   border-radius: 16px;
-  padding: 16px;
+  padding: 15px;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -1749,10 +1758,11 @@ e {
 }
 
 .assigned-members {
-  display: flex;
-  flex-wrap: wrap;
   min-height: 40px;
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 5px;
+  padding: 5px 0 0 0;
 }
 
 .remove-instructions {
@@ -1775,7 +1785,7 @@ e {
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 16px;
+  padding: 15px;
   font-size: 1rem;
   font-weight: 600;
   margin-top: 10px;
@@ -1873,7 +1883,7 @@ e {
   display: none;
   background-color: rgba(77, 170, 87, 0.15);
   border-radius: 8px;
-  padding: 10px;
+  padding: 5px 10px;
   text-align: center;
   align-items: center;
   justify-content: center;
@@ -1944,7 +1954,7 @@ e {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
   gap: 5px;
-  padding: 10px 0 0 0;
+  padding: 5px 0 0 0;
 }
 
 .saved-groups-container h2 {
@@ -1965,7 +1975,7 @@ e {
 .saved-group-card {
   background-color: var(--group-card-bg);
   border-radius: 16px;
-  padding: 16px;
+  padding: 15px;
   position: relative;
   transition: all 0.2s ease;
   border: 2px solid transparent;
@@ -2943,7 +2953,7 @@ e {
   color: #fff;
   border: none;
   border-radius: 5px;
-  padding: 16px;
+  padding: 15px;
   font-size: 17px;
   font-weight: 500;
   margin-top: 5px;
@@ -3654,7 +3664,7 @@ button.share-btn .share-btn-span {
   transform: translateX(-50%);
   background-color: var(--toast-bg);
   color: #fff;
-  padding: 16px;
+  padding: 15px;
   border-radius: 12px;
   width: 90%;
   max-width: 380px;
@@ -3693,6 +3703,12 @@ button.share-btn .share-btn-span {
   font-size: 20px;
   margin-right: 12px;
   flex-shrink: 0;
+}
+
+.toast-content {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
 }
 
 .toast-message {
@@ -4162,12 +4178,6 @@ button.share-btn .share-btn-span {
   }
 }
 
-@keyframes shimmer {
-  100% {
-    transform: translateX(100%);
-  }
-}
-
 @keyframes pulse-bg {
   0%,
   100% {
@@ -4525,6 +4535,662 @@ textarea:focus,
   justify-content: center;
 }
 
+/* PayNow name selection styles */
+.paynow-name-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.paynow-select {
+  appearance: none;
+  background-color: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: 16px;
+  height: 48px;
+  padding: 0 12px;
+  width: 100%;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23555555%22%20d%3D%22M10.293%203.293%2C6%207.586%2C1.707%203.293A1%2C1%2C0%2C0%2C0%2C.293%204.707l5%2C5a1%2C1%2C0%2C0%2C0%2C1.414%2C0l5-5a1%2C1%2C0%2C1%2C0-1.414-1.414Z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+.paynow-select:focus {
+  border-color: var(--primary-color);
+  outline: none;
+}
+
+.dark-mode .paynow-select {
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23cccccc%22%20d%3D%22M10.293%203.293%2C6%207.586%2C1.707%203.293A1%2C1%2C0%2C0%2C0%2C.293%204.707l5%2C5a1%2C1%2C0%2C0%2C0%2C1.414%2C0l5-5a1%2C1%2C0%2C1%2C0-1.414-1.414Z%22%2F%3E%3C%2Fsvg%3E");
+}
+
+/* Hide the input when dropdown is not set to custom */
+#paynowName {
+  display: none;
+}
+
+/* Birthday Person Button Styles */
+#birthdayMembersList.group-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 12px;
+  padding: 0 0 10px 0;
+}
+
+#birthdayMembersList .member-avatar-wrapper .member-avatar {
+  border: 2px solid transparent;
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  transition: all 0.3s ease-in-out;
+}
+
+#birthdayMembersList .member-avatar-wrapper.selected .member-avatar {
+  border: 2px solid var(--birthday-color);
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.birthday-person-btn {
+  background: linear-gradient(135deg, #ff5454, #ff6b9d, #ff8e89);
+  background-size: 200% 200%;
+  animation: birthdayGradientMove 6s linear infinite;
+  border: none;
+  border-radius: 12px;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  height: 42px;
+  margin: 5px 0;
+  padding: 0 16px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.3);
+  width: 100%;
+}
+
+.birthday-person-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
+}
+
+.birthday-person-btn:active {
+  transform: translateY(0);
+}
+
+.birthday-person-btn.has-birthday-person {
+  background: var(--birthday-color);
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.birthday-person-btn.has-birthday-person:hover {
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
+}
+
+.birthday-icon {
+  font-size: 18px;
+  animation: bounce 2s infinite;
+}
+
+@keyframes birthdayGradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes bounce {
+  0%,
+  20%,
+  50%,
+  80%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-4px);
+  }
+  60% {
+    transform: translateY(-2px);
+  }
+}
+
+.birthday-text {
+  font-size: 14px;
+}
+
+/* Birthday Modal Styles */
+.birthday-helper-text {
+  color: var(--text-secondary);
+  font-size: 14px;
+  text-align: center;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.birthday-members-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.birthday-member-option {
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.birthday-member-option:hover {
+  border-color: #ff6b9d;
+  background: var(--hover-bg);
+}
+
+.birthday-member-option.selected {
+  border-color: #ff6b9d;
+  background: rgba(255, 107, 157, 0.1);
+  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.2);
+}
+
+.birthday-member-option.selected::after {
+  content: "🎂";
+  position: absolute;
+  right: 16px;
+  font-size: 18px;
+  animation: celebration 0.6s ease;
+}
+
+@keyframes celebration {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+.birthday-member-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.birthday-member-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-color);
+  flex-grow: 1;
+  line-height: 120%;
+}
+
+.birthday-status-display {
+  background: var(--birthday-color);
+  border-radius: 12px;
+  padding: 7px 15px;
+  text-align: center;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+}
+
+.birthday-selected-member {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #8b4513;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.birthday-cake-icon {
+  font-size: 20px;
+  animation: rotate 1s ease-in-out infinite;
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(-20deg);
+  }
+  50% {
+    transform: rotate(20deg);
+  }
+  100% {
+    transform: rotate(-20deg);
+  }
+}
+
+.birthday-status-text {
+  color: #8b4513;
+  line-height: 140%;
+}
+
+.birthday-member-name {
+  color: #8b4513;
+  font-weight: 700;
+}
+
+#birthdayPersonModal .modal-actions {
+  flex-direction: column;
+}
+
+.birthday-button-two {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Birthday person indicator in member avatars */
+.member-avatar.birthday-person {
+  position: relative;
+  border: 2px solid var(--birthday-color);
+  box-shadow: 0 0 4px rgba(255, 215, 0, 0.5);
+}
+
+.member-avatar.birthday-person::after {
+  content: "🎂";
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.member-name.birthday-person::before {
+  content: "🎂 ";
+  margin-right: 4px;
+}
+
+/* Dark mode adjustments */
+.dark-mode .birthday-status-display {
+  background: linear-gradient(135deg, #b8860b, #cd853f);
+}
+
+.dark-mode .birthday-selected-member,
+.dark-mode .birthday-status-text,
+.dark-mode .birthday-member-name {
+  color: #fff;
+}
+
+/* Birthday celebration styles in bill breakdown */
+.birthday-celebration {
+  background: var(--birthday-color);
+  border-radius: 8px;
+  margin: 8px 0;
+  animation: celebrationGlow 2s ease-in-out infinite alternate;
+}
+
+.birthday-celebration .member-bill-row-label {
+  font-weight: 700;
+  color: #8b4513;
+}
+
+.birthday-free {
+  font-weight: 700;
+  color: #8b4513;
+  font-size: 18px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes celebrationGlow {
+  0% {
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
+  }
+  100% {
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.6);
+  }
+}
+
+.birthday-share {
+  background: rgba(255, 215, 0, 0.1);
+  border-left: 4px solid var(--birthday-color);
+  padding-left: 12px;
+  margin: 4px 0;
+}
+
+.birthday-share .member-bill-row-label {
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.birthday-share .member-bill-row-value {
+  font-weight: 600;
+  color: #ff6b35;
+}
+
+/* Dark mode adjustments for birthday celebration */
+.dark-mode .birthday-celebration {
+  background: linear-gradient(135deg, #b8860b, #cd853f);
+}
+
+.dark-mode .birthday-celebration .member-bill-row-label,
+.dark-mode .birthday-free {
+  color: #fff;
+}
+
+.dark-mode .birthday-share {
+  background: rgba(184, 134, 11, 0.2);
+  border-left-color: #b8860b;
+}
+
+/* Birthday item containers */
+.birthday-celebration-item {
+  background: var(--birthday-color);
+  border: 2px solid #ff6b9d;
+  border-radius: 12px;
+  margin: 16px 0;
+  position: relative;
+  overflow: hidden;
+  animation: celebrationPulse 3s ease-in-out infinite;
+}
+
+.birthday-celebration-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes celebrationPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.birthday-treat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid rgba(139, 69, 19, 0.2);
+  margin-bottom: 8px;
+}
+
+.birthday-treat-icon {
+  font-size: 24px;
+  animation: bounce 2s infinite;
+}
+
+.birthday-treat-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #8b4513;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.birthday-free-text {
+  font-weight: 600;
+  color: #8b4513;
+  font-style: italic;
+}
+
+.birthday-share-item {
+  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 179, 71, 0.15));
+  border: 2px solid var(--birthday-color);
+  border-radius: 12px;
+  margin: 16px 0;
+  position: relative;
+}
+
+.birthday-share-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  margin-bottom: 8px;
+  background: rgba(255, 215, 0, 0.1);
+  border-radius: 10px 10px 0 0;
+}
+
+.birthday-share-icon {
+  font-size: 20px;
+  animation: rotate 3s linear infinite;
+}
+
+.birthday-share-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.birthday-contribution {
+  font-weight: 700;
+  color: #ff6b35;
+  font-size: 16px;
+}
+
+/* Dark mode adjustments for birthday items */
+.dark-mode .birthday-celebration-item {
+  background: linear-gradient(135deg, #b8860b, #cd853f);
+  border-color: #ff8e89;
+}
+
+.dark-mode .birthday-treat-title,
+.dark-mode .birthday-free-text {
+  color: #fff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.dark-mode .birthday-share-item {
+  background: linear-gradient(135deg, rgba(184, 134, 11, 0.25), rgba(205, 133, 63, 0.25));
+  border-color: #b8860b;
+}
+
+.dark-mode .birthday-share-header {
+  background: rgba(184, 134, 11, 0.2);
+  border-bottom-color: rgba(184, 134, 11, 0.4);
+}
+
+.dark-mode .birthday-share-title {
+  color: #fff;
+}
+
+@media (min-width: 768px) {
+  .paynow-name-selection {
+    flex-direction: row;
+  }
+
+  .paynow-select {
+    flex: 1;
+  }
+
+  #paynowName {
+    flex: 2;
+  }
+}
+
+.payer-row {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border-color);
+  font-weight: 500;
+}
+
+.payer-row .detail-label {
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.payer-row .detail-value {
+  font-weight: 600;
+}
+
+/* PayNow Member Selection Modal styles */
+#paynowMemberModal .modal-content {
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+#paynowMemberModal .group-members {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  gap: 12px;
+  padding: 15px 0 0 0;
+}
+
+#paynowMemberModal .member-avatar-wrapper {
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+  opacity: 0.7;
+}
+
+#paynowMemberModal .member-avatar-wrapper:hover {
+  transform: translateY(-3px);
+  opacity: 1;
+}
+
+#paynowMemberModal .member-avatar-wrapper.selected {
+  opacity: 1;
+  position: relative;
+}
+
+#paynowMemberModal .member-avatar-wrapper.selected .member-avatar {
+  border: 3px solid #10b981;
+  border-radius: 50%;
+}
+
+#paynowMembersList.group-members .member-avatar {
+  width: 70px;
+  height: 70px;
+  border: 0px solid #10b981;
+  transition: all 0.1s ease-in;
+}
+
+.custom-paynow-section {
+  margin-top: 20px;
+}
+
+.custom-paynow-divider {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+  gap: 10px;
+}
+
+.custom-paynow-divider .divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--border-color);
+  line-height: 120%;
+}
+
+.custom-paynow-divider .divider-text {
+  color: var(--body-desc);
+  font-size: 14px;
+  padding: 0 10px;
+  line-height: 120%;
+}
+
+.select-paynow-member-btn {
+  appearance: none;
+  background-color: var(--card-bg);
+  border: 1px solid var(--body-text);
+  border-radius: 8px;
+  color: var(--text-color);
+  font-size: 16px;
+  height: 48px;
+  padding: 0 12px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.select-paynow-member-btn:hover {
+  border-color: var(--primary-color);
+}
+
+.select-paynow-member-btn .btn-icon {
+  opacity: 0.5;
+  transition: transform 0.2s ease;
+}
+
+.select-paynow-member-btn:hover .btn-icon {
+  transform: translateX(3px);
+}
+
+/* Hide the input when a member is selected */
+.paynow-name-selection.member-selected #paynowName {
+  display: none;
+}
+
 @media (prefers-color-scheme: dark) {
   .pwa-install-banner {
     background-color: #343a40;
@@ -4547,6 +5213,19 @@ textarea:focus,
 
   .welcome-section h1 {
     font-size: 28px;
+  }
+
+  .paynow-name-selection {
+    flex-direction: row;
+    gap: 10px;
+  }
+
+  .select-paynow-member-btn {
+    flex: 1;
+  }
+
+  #paynowName {
+    flex: 2;
   }
 }
 
@@ -4771,12 +5450,11 @@ textarea:focus,
 
   .add-settle-item-container {
     position: relative;
-    width: calc(60% - 15px);
+    width: calc(60% - 30px);
     height: calc(100% - 30px);
     overflow: inherit;
     margin-top: 0;
     padding-bottom: 0;
-    padding-left: 0;
   }
 
   .finalise-bill-container {
@@ -4789,7 +5467,7 @@ textarea:focus,
   }
 
   .bill-summary-modal {
-    width: 37%;
+    width: calc(40% - 15px);
     height: calc(100% - 108px);
     position: absolute;
     left: calc(60% - 20px);
@@ -4917,7 +5595,7 @@ textarea:focus,
   }
 
   .share-buttons {
-    display: grid;
+    display: grid !important;
     grid-template-columns: repeat(5, 1fr);
     grid-gap: 15px;
     overflow-y: auto;
@@ -5035,648 +5713,5 @@ textarea:focus,
 
   .welcome-section h1 {
     font-size: 20px;
-  }
-}
-
-/* PayNow name selection styles */
-.paynow-name-selection {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
-}
-
-.paynow-select {
-  appearance: none;
-  background-color: var(--input-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  color: var(--text-color);
-  font-size: 16px;
-  height: 48px;
-  padding: 0 12px;
-  width: 100%;
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23555555%22%20d%3D%22M10.293%203.293%2C6%207.586%2C1.707%203.293A1%2C1%2C0%2C0%2C0%2C.293%204.707l5%2C5a1%2C1%2C0%2C0%2C0%2C1.414%2C0l5-5a1%2C1%2C0%2C1%2C0-1.414-1.414Z%22%2F%3E%3C%2Fsvg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px;
-}
-
-.paynow-select:focus {
-  border-color: var(--primary-color);
-  outline: none;
-}
-
-.dark-mode .paynow-select {
-  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23cccccc%22%20d%3D%22M10.293%203.293%2C6%207.586%2C1.707%203.293A1%2C1%2C0%2C0%2C0%2C.293%204.707l5%2C5a1%2C1%2C0%2C0%2C0%2C1.414%2C0l5-5a1%2C1%2C0%2C1%2C0-1.414-1.414Z%22%2F%3E%3C%2Fsvg%3E");
-}
-
-/* Hide the input when dropdown is not set to custom */
-#paynowName {
-  display: none;
-}
-
-/* Birthday Person Button Styles */
-#birthdayMembersList.group-members {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 12px;
-  padding: 0 0 10px 0;
-}
-
-.birthday-person-btn {
-  background: linear-gradient(135deg, #ff6b9d, #ff8e89);
-  border: none;
-  border-radius: 12px;
-  color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  height: 44px;
-  margin: 5px 0;
-  padding: 0 16px;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.3);
-  width: 100%;
-}
-
-.birthday-person-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(255, 107, 157, 0.4);
-}
-
-.birthday-person-btn:active {
-  transform: translateY(0);
-}
-
-.birthday-person-btn.has-birthday-person {
-  background: linear-gradient(135deg, #ffd700, #ffb347);
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-}
-
-.birthday-person-btn.has-birthday-person:hover {
-  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.4);
-}
-
-.birthday-icon {
-  font-size: 18px;
-  animation: bounce 2s infinite;
-}
-
-@keyframes bounce {
-  0%,
-  20%,
-  50%,
-  80%,
-  100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-4px);
-  }
-  60% {
-    transform: translateY(-2px);
-  }
-}
-
-.birthday-text {
-  font-size: 14px;
-}
-
-/* Birthday Modal Styles */
-.birthday-helper-text {
-  color: var(--text-secondary);
-  font-size: 14px;
-  text-align: center;
-  margin-bottom: 20px;
-  line-height: 1.4;
-}
-
-.birthday-members-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.birthday-member-option {
-  background: var(--card-bg);
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-.birthday-member-option:hover {
-  border-color: #ff6b9d;
-  background: var(--hover-bg);
-}
-
-.birthday-member-option.selected {
-  border-color: #ff6b9d;
-  background: rgba(255, 107, 157, 0.1);
-  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.2);
-}
-
-.birthday-member-option.selected::after {
-  content: "🎂";
-  position: absolute;
-  right: 16px;
-  font-size: 18px;
-  animation: celebration 0.6s ease;
-}
-
-@keyframes celebration {
-  0% {
-    transform: scale(0) rotate(0deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2) rotate(180deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(360deg);
-    opacity: 1;
-  }
-}
-
-.birthday-member-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--primary-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 600;
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.birthday-member-name {
-  font-size: 16px;
-  font-weight: 500;
-  color: var(--text-color);
-  flex-grow: 1;
-}
-
-.birthday-status-display {
-  background: linear-gradient(135deg, #ffd700, #ffb347);
-  border-radius: 12px;
-  padding: 16px;
-  text-align: center;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-}
-
-.birthday-selected-member {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #8b4513;
-  font-weight: 600;
-  font-size: 16px;
-}
-
-.birthday-cake-icon {
-  font-size: 20px;
-  animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-  0% {
-    transform: rotate(-20deg);
-  }
-  50% {
-    transform: rotate(20deg);
-  }
-  100% {
-    transform: rotate(-20deg);
-  }
-}
-
-.birthday-status-text {
-  color: #8b4513;
-}
-
-.birthday-member-name {
-  color: #8b4513;
-  font-weight: 700;
-}
-
-#birthdayPersonModal .modal-actions {
-  flex-direction: column;
-}
-
-.birthday-button-two {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-}
-
-/* Birthday person indicator in member avatars */
-.member-avatar.birthday-person {
-  position: relative;
-  border: 3px solid #ffd700;
-  box-shadow: 0 0 12px rgba(255, 215, 0, 0.5);
-}
-
-.member-avatar.birthday-person::after {
-  content: "🎂";
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  background: white;
-  border-radius: 50%;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 12px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-
-.member-name.birthday-person::before {
-  content: "🎂 ";
-  margin-right: 4px;
-}
-
-/* Dark mode adjustments */
-.dark-mode .birthday-status-display {
-  background: linear-gradient(135deg, #b8860b, #cd853f);
-}
-
-.dark-mode .birthday-selected-member,
-.dark-mode .birthday-status-text,
-.dark-mode .birthday-member-name {
-  color: #fff;
-}
-
-/* Birthday celebration styles in bill breakdown */
-.birthday-celebration {
-  background: linear-gradient(135deg, #ffd700, #ffb347);
-  border-radius: 8px;
-  margin: 8px 0;
-  animation: celebrationGlow 2s ease-in-out infinite alternate;
-}
-
-.birthday-celebration .member-bill-row-label {
-  font-weight: 700;
-  color: #8b4513;
-}
-
-.birthday-free {
-  font-weight: 700;
-  color: #8b4513;
-  font-size: 18px;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-@keyframes celebrationGlow {
-  0% {
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
-  }
-  100% {
-    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.6);
-  }
-}
-
-.birthday-share {
-  background: rgba(255, 215, 0, 0.1);
-  border-left: 4px solid #ffd700;
-  padding-left: 12px;
-  margin: 4px 0;
-}
-
-.birthday-share .member-bill-row-label {
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.birthday-share .member-bill-row-value {
-  font-weight: 600;
-  color: #ff6b35;
-}
-
-/* Dark mode adjustments for birthday celebration */
-.dark-mode .birthday-celebration {
-  background: linear-gradient(135deg, #b8860b, #cd853f);
-}
-
-.dark-mode .birthday-celebration .member-bill-row-label,
-.dark-mode .birthday-free {
-  color: #fff;
-}
-
-.dark-mode .birthday-share {
-  background: rgba(184, 134, 11, 0.2);
-  border-left-color: #b8860b;
-}
-
-/* Birthday item containers */
-.birthday-celebration-item {
-  background: linear-gradient(135deg, #ffd700, #ffb347);
-  border: 2px solid #ff6b9d;
-  border-radius: 12px;
-  margin: 16px 0;
-  position: relative;
-  overflow: hidden;
-  animation: celebrationPulse 3s ease-in-out infinite;
-}
-
-.birthday-celebration-item::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes celebrationPulse {
-  0%,
-  100% {
-    transform: scale(1);
-    box-shadow: 0 4px 16px rgba(255, 215, 0, 0.4);
-  }
-  50% {
-    transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    left: -100%;
-  }
-  100% {
-    left: 100%;
-  }
-}
-
-.birthday-treat-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(139, 69, 19, 0.2);
-  margin-bottom: 8px;
-}
-
-.birthday-treat-icon {
-  font-size: 24px;
-  animation: bounce 2s infinite;
-}
-
-.birthday-treat-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #8b4513;
-  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
-}
-
-.birthday-free-text {
-  font-weight: 600;
-  color: #8b4513;
-  font-style: italic;
-}
-
-.birthday-share-item {
-  background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(255, 179, 71, 0.15));
-  border: 2px solid #ffd700;
-  border-radius: 12px;
-  margin: 16px 0;
-  position: relative;
-}
-
-.birthday-share-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px 8px;
-  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
-  margin-bottom: 8px;
-  background: rgba(255, 215, 0, 0.1);
-  border-radius: 10px 10px 0 0;
-}
-
-.birthday-share-icon {
-  font-size: 20px;
-  animation: rotate 3s linear infinite;
-}
-
-.birthday-share-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--primary-color);
-}
-
-.birthday-contribution {
-  font-weight: 700;
-  color: #ff6b35;
-  font-size: 16px;
-}
-
-/* Dark mode adjustments for birthday items */
-.dark-mode .birthday-celebration-item {
-  background: linear-gradient(135deg, #b8860b, #cd853f);
-  border-color: #ff8e89;
-}
-
-.dark-mode .birthday-treat-title,
-.dark-mode .birthday-free-text {
-  color: #fff;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.dark-mode .birthday-share-item {
-  background: linear-gradient(135deg, rgba(184, 134, 11, 0.25), rgba(205, 133, 63, 0.25));
-  border-color: #b8860b;
-}
-
-.dark-mode .birthday-share-header {
-  background: rgba(184, 134, 11, 0.2);
-  border-bottom-color: rgba(184, 134, 11, 0.4);
-}
-
-.dark-mode .birthday-share-title {
-  color: #fff;
-}
-
-@media (min-width: 768px) {
-  .paynow-name-selection {
-    flex-direction: row;
-  }
-
-  .paynow-select {
-    flex: 1;
-  }
-
-  #paynowName {
-    flex: 2;
-  }
-}
-
-.payer-row {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border-color);
-  font-weight: 500;
-}
-
-.payer-row .detail-label {
-  color: var(--primary-color);
-  font-weight: 600;
-}
-
-.payer-row .detail-value {
-  font-weight: 600;
-}
-
-/* PayNow Member Selection Modal styles */
-#paynowMemberModal .modal-content {
-  max-width: 500px;
-  width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-}
-
-#paynowMemberModal .group-members {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
-  gap: 12px;
-  padding: 15px 0 0 0;
-}
-
-#paynowMemberModal .member-avatar-wrapper {
-  cursor: pointer;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-  opacity: 0.7;
-}
-
-#paynowMemberModal .member-avatar-wrapper:hover {
-  transform: translateY(-3px);
-  opacity: 1;
-}
-
-#paynowMemberModal .member-avatar-wrapper.selected {
-  opacity: 1;
-  position: relative;
-}
-
-#paynowMemberModal .member-avatar-wrapper.selected .member-avatar {
-  border: 3px solid #10b981;
-  border-radius: 50%;
-}
-
-#paynowMembersList.group-members .member-avatar {
-  width: 70px;
-  height: 70px;
-  border: 0px solid #10b981;
-  transition: all 0.1s ease-in;
-}
-
-.custom-paynow-section {
-  margin-top: 20px;
-}
-
-.custom-paynow-divider {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-  gap: 10px;
-}
-
-.custom-paynow-divider .divider-line {
-  flex: 1;
-  height: 1px;
-  background: var(--border-color);
-  line-height: 120%;
-}
-
-.custom-paynow-divider .divider-text {
-  color: var(--body-desc);
-  font-size: 14px;
-  padding: 0 10px;
-  line-height: 120%;
-}
-
-.select-paynow-member-btn {
-  appearance: none;
-  background-color: var(--card-bg);
-  border: 1px solid var(--body-text);
-  border-radius: 8px;
-  color: var(--text-color);
-  font-size: 16px;
-  height: 48px;
-  padding: 0 12px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  transition: border-color 0.2s ease;
-}
-
-.select-paynow-member-btn:hover {
-  border-color: var(--primary-color);
-}
-
-.select-paynow-member-btn .btn-icon {
-  opacity: 0.5;
-  transition: transform 0.2s ease;
-}
-
-.select-paynow-member-btn:hover .btn-icon {
-  transform: translateX(3px);
-}
-
-/* Hide the input when a member is selected */
-.paynow-name-selection.member-selected #paynowName {
-  display: none;
-}
-
-@media (min-width: 768px) {
-  .paynow-name-selection {
-    flex-direction: row;
-    gap: 10px;
-  }
-
-  .select-paynow-member-btn {
-    flex: 1;
-  }
-
-  #paynowName {
-    flex: 2;
   }
 }

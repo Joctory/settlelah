@@ -3,8 +3,13 @@ const firebase = require("firebase/app");
 const firestore = require("firebase/firestore");
 const path = require("path");
 const crypto = require("crypto");
+const validator = require("validator");
 const app = express();
+
 app.use(express.json());
+
+// File references are handled by build-html.js during build process
+
 app.use(express.static(path.join(__dirname, "public")));
 
 // Rate limiting middleware
@@ -44,6 +49,12 @@ app.use((req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+
+  // Performance monitoring header for Vercel
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader("X-Powered-By", "SettleLah-Optimized");
+  }
+
   next();
 });
 
@@ -477,7 +488,33 @@ app.delete("/api/history/:id", async (req, res) => {
   }
 });
 
-app.post("/calculate", billCreateLimiter, async (req, res) => {
+// Input sanitization middleware
+function sanitizeInput(req, res, next) {
+  if (req.body.settleMatter) {
+    req.body.settleMatter = validator.escape(req.body.settleMatter.trim());
+  }
+  if (req.body.paynowName) {
+    req.body.paynowName = validator.escape(req.body.paynowName.trim());
+  }
+  if (req.body.paynowID) {
+    req.body.paynowID = validator.escape(req.body.paynowID.trim());
+  }
+  if (req.body.members && Array.isArray(req.body.members)) {
+    req.body.members = req.body.members.map((member) => ({
+      ...member,
+      name: validator.escape(member.name.trim()),
+    }));
+  }
+  if (req.body.dishes && Array.isArray(req.body.dishes)) {
+    req.body.dishes = req.body.dishes.map((dish) => ({
+      ...dish,
+      name: validator.escape(dish.name.trim()),
+    }));
+  }
+  next();
+}
+
+app.post("/calculate", billCreateLimiter, sanitizeInput, async (req, res) => {
   const {
     members,
     settleMatter,
@@ -497,7 +534,9 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
   // Get the host from request headers if available, otherwise fall back to environment variables
   const baseUrl =
     req.headers && req.headers.host
-      ? req.headers.host.includes("localhost")
+      ? req.headers.host.includes("localhost") ||
+        req.headers.host.includes("[::1]") ||
+        req.headers.host.includes("127.0.0.1")
         ? `http://${req.headers.host}`
         : `https://${req.headers.host}`
       : process.env.CUSTOM_DOMAIN
@@ -506,44 +545,38 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
       ? `https://${process.env.VERCEL_URL}`
       : "http://localhost:3000";
 
-  const subtotal = dishes.reduce((sum, dish) => sum + parseFloat(dish.cost), 0);
-  const serviceRate = serviceChargeValue ? parseFloat(serviceChargeValue) / 100 : 0.1; // Default to 10% if not provided
-  const gstRate = taxProfile === "singapore" ? 0.09 : 0.06;
+  // Optimized bill calculation
+  const calculateBillBreakdown = (dishes, members, options) => {
+    const { serviceChargeValue, applyServiceCharge, discount, applyGst, taxProfile } = options;
 
-  // 1. Calculate service charge on subtotal
-  const serviceCharge = applyServiceCharge ? subtotal * serviceRate : 0;
+    const subtotal = dishes.reduce((sum, dish) => sum + parseFloat(dish.cost), 0);
+    const serviceRate = serviceChargeValue ? parseFloat(serviceChargeValue) / 100 : 0.1;
+    const gstRate = taxProfile === "singapore" ? 0.09 : 0.06;
 
-  // 2. Calculate amount after service charge
-  const afterService = subtotal + serviceCharge;
+    // Main calculations
+    const serviceCharge = applyServiceCharge ? subtotal * serviceRate : 0;
+    const afterService = subtotal + serviceCharge;
 
-  // 3. Apply discount on amount after service
-  let discountAmount = 0;
-  if (discount) {
-    if (discount.includes("%")) {
-      // Percentage discount
-      const percentage = parseFloat(discount) || 0;
-      discountAmount = afterService * (percentage / 100);
-    } else {
-      // Fixed amount discount
-      discountAmount = parseFloat(discount) || 0;
+    let discountAmount = 0;
+    if (discount) {
+      if (discount.includes("%")) {
+        discountAmount = afterService * (parseFloat(discount) / 100);
+      } else {
+        discountAmount = parseFloat(discount) || 0;
+      }
     }
-  }
 
-  // 4. Calculate amount after discount
-  const afterDiscount = afterService - discountAmount;
+    const afterDiscount = afterService - discountAmount;
+    const gst = applyGst ? afterDiscount * gstRate : 0;
+    const total = afterDiscount + gst;
 
-  // 5. Calculate GST on final amount (after service and discount)
-  const gst = applyGst ? afterDiscount * gstRate : 0;
+    // Per-person calculations using Map for better performance
+    const perPersonBreakdown = new Map();
+    const totals = {};
 
-  // 6. Calculate final total
-  const total = afterDiscount + gst;
-
-  const perPersonBreakdown = {};
-  const totals = {};
-  dishes.forEach((dish) => {
-    const share = dish.cost / dish.members.length;
-    dish.members.forEach((member) => {
-      perPersonBreakdown[member] = perPersonBreakdown[member] || {
+    // Initialize breakdown for all members
+    members.forEach((member) => {
+      perPersonBreakdown.set(member.name, {
         subtotal: 0,
         serviceCharge: 0,
         afterService: 0,
@@ -551,43 +584,67 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
         afterDiscount: 0,
         gst: 0,
         total: 0,
-      };
-      perPersonBreakdown[member].subtotal += share;
+      });
     });
+
+    // Calculate per-person costs
+    dishes.forEach((dish) => {
+      const share = dish.cost / dish.members.length;
+      dish.members.forEach((memberName) => {
+        const memberData = perPersonBreakdown.get(memberName);
+        if (memberData) {
+          memberData.subtotal += share;
+        }
+      });
+    });
+
+    const discountPerPerson = discountAmount / members.length;
+
+    // Finalize per-person calculations
+    perPersonBreakdown.forEach((memberData, memberName) => {
+      memberData.serviceCharge = applyServiceCharge ? memberData.subtotal * serviceRate : 0;
+      memberData.afterService = memberData.subtotal + memberData.serviceCharge;
+      memberData.discountAmount = discountPerPerson;
+      memberData.afterDiscount = memberData.afterService - discountPerPerson;
+      memberData.gst = applyGst ? memberData.afterDiscount * gstRate : 0;
+      memberData.total = memberData.afterDiscount + memberData.gst;
+      totals[memberName] = memberData.total;
+    });
+
+    return {
+      breakdown: { subtotal, serviceCharge, afterService, discountAmount, afterDiscount, gst, total },
+      perPersonBreakdown: Object.fromEntries(perPersonBreakdown),
+      totals,
+    };
+  };
+
+  const billCalculation = calculateBillBreakdown(dishes, members, {
+    serviceChargeValue,
+    applyServiceCharge,
+    discount,
+    applyGst,
+    taxProfile,
   });
 
-  // Update per-person calculations to match the new sequence
-  const discountPerPerson = discountAmount / members.length;
-  for (const member in perPersonBreakdown) {
-    perPersonBreakdown[member].serviceCharge = applyServiceCharge
-      ? perPersonBreakdown[member].subtotal * serviceRate
-      : 0;
-    perPersonBreakdown[member].afterService =
-      perPersonBreakdown[member].subtotal + perPersonBreakdown[member].serviceCharge;
-    perPersonBreakdown[member].discountAmount = discountPerPerson;
-    perPersonBreakdown[member].afterDiscount = perPersonBreakdown[member].afterService - discountPerPerson;
-    perPersonBreakdown[member].gst = applyGst ? perPersonBreakdown[member].afterDiscount * gstRate : 0;
-    perPersonBreakdown[member].total = perPersonBreakdown[member].afterDiscount + perPersonBreakdown[member].gst;
-    totals[member] = perPersonBreakdown[member].total;
-  }
+  const { breakdown, perPersonBreakdown, totals } = billCalculation;
 
   // Handle birthday person logic - redistribute their cost to other members
   if (birthdayPerson && totals[birthdayPerson] !== undefined) {
     const birthdayPersonTotal = totals[birthdayPerson];
-    const otherMembers = Object.keys(totals).filter(member => member !== birthdayPerson);
-    
+    const otherMembers = Object.keys(totals).filter((member) => member !== birthdayPerson);
+
     if (otherMembers.length > 0) {
       // Calculate how much each other member needs to pay extra
       const redistributeAmount = birthdayPersonTotal / otherMembers.length;
-      
+
       // Add the redistributed amount to each other member
-      otherMembers.forEach(member => {
+      otherMembers.forEach((member) => {
         totals[member] += redistributeAmount;
         // Also update their breakdown for accurate display
         perPersonBreakdown[member].total += redistributeAmount;
         perPersonBreakdown[member].birthdayShare = redistributeAmount;
       });
-      
+
       // Set birthday person's total to zero
       totals[birthdayPerson] = 0;
       perPersonBreakdown[birthdayPerson].total = 0;
@@ -595,7 +652,6 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
     }
   }
 
-  const breakdown = { subtotal, serviceCharge, afterService, discountAmount, afterDiscount, gst, total };
   const billData = {
     members,
     settleMatter,
@@ -609,7 +665,7 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
     paynowID,
     discount, // Save the original discount input value (e.g., "10%" or "5")
     serviceChargeRate: `${parseFloat(serviceChargeValue || 10)}%`, // Include service charge rate
-    gstRate: `${(gstRate * 100).toFixed(0)}%`, // Include GST rate as a percentage
+    gstRate: taxProfile === "singapore" ? "9%" : "6%", // Include GST rate as a percentage
     birthdayPerson: birthdayPerson || null, // Include birthday person information
     // Add ownership information for security
     createdBy: req.headers["x-user-id"] || null,
@@ -623,7 +679,7 @@ app.post("/calculate", billCreateLimiter, async (req, res) => {
   // Verify that sum of individual totals matches the bill total
   const sumOfIndividualTotals = Object.values(totals).reduce((sum, personTotal) => sum + personTotal, 0);
   // Use toFixed(2) to avoid floating point precision issues
-  const roundedBillTotal = parseFloat(total.toFixed(2));
+  const roundedBillTotal = parseFloat(breakdown.total.toFixed(2));
   const roundedSum = parseFloat(sumOfIndividualTotals.toFixed(2));
 
   if (Math.abs(roundedBillTotal - roundedSum) > 0.01) {
@@ -682,9 +738,9 @@ app.get("/result/:id", resultViewLimiter, async (req, res) => {
   const maxAgeInDays = 30; // Configure this as needed
   const maxAgeInMs = maxAgeInDays * 24 * 60 * 60 * 1000;
 
-  if (billAge > maxAgeInMs) {
-    return res.status(410).json({ error: "Bill has expired" });
-  }
+  // if (billAge > maxAgeInMs) {
+  //   return res.status(410).json({ error: "Bill has expired" });
+  // }
 
   // Return JSON for API requests
   res.json({
@@ -723,9 +779,9 @@ app.get("/bill/:id", resultViewLimiter, async (req, res) => {
   const maxAgeInDays = 30; // Configure this as needed
   const maxAgeInMs = maxAgeInDays * 24 * 60 * 60 * 1000;
 
-  if (billAge > maxAgeInMs) {
-    return res.status(410).json({ error: "Bill has expired" });
-  }
+  // if (billAge > maxAgeInMs) {
+  //   return res.status(410).json({ error: "Bill has expired" });
+  // }
 
   // Serve the bill.html page
   res.sendFile(path.join(__dirname, "public", "bill.html"));
@@ -933,10 +989,10 @@ app.patch("/api/bills/:billId/payment-status", async (req, res) => {
     const { memberName, hasPaid } = req.body;
 
     // Basic validation
-    if (!memberName || typeof hasPaid !== 'boolean') {
+    if (!memberName || typeof hasPaid !== "boolean") {
       return res.status(400).json({
         success: false,
-        message: "Member name and payment status are required"
+        message: "Member name and payment status are required",
       });
     }
 
@@ -945,7 +1001,7 @@ app.patch("/api/bills/:billId/payment-status", async (req, res) => {
     if (!validIdPattern.test(billId)) {
       return res.status(400).json({
         success: false,
-        message: "Invalid bill ID format"
+        message: "Invalid bill ID format",
       });
     }
 
@@ -956,18 +1012,18 @@ app.patch("/api/bills/:billId/payment-status", async (req, res) => {
     if (!billDoc.exists()) {
       return res.status(404).json({
         success: false,
-        message: "Bill not found"
+        message: "Bill not found",
       });
     }
 
     const billData = billDoc.data();
 
     // Check if member exists in the bill
-    const memberExists = billData.members.some(member => member.name === memberName);
+    const memberExists = billData.members.some((member) => member.name === memberName);
     if (!memberExists) {
       return res.status(400).json({
         success: false,
-        message: "Member not found in this bill"
+        message: "Member not found in this bill",
       });
     }
 
@@ -975,26 +1031,25 @@ app.patch("/api/bills/:billId/payment-status", async (req, res) => {
     const paymentStatus = billData.paymentStatus || {};
     paymentStatus[memberName] = {
       hasPaid: hasPaid,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     // Update the bill document
     await firestore.updateDoc(billRef, {
       paymentStatus: paymentStatus,
-      lastUpdated: Date.now()
+      lastUpdated: Date.now(),
     });
 
     res.json({
       success: true,
       message: `Payment status updated for ${memberName}`,
-      paymentStatus: paymentStatus[memberName]
+      paymentStatus: paymentStatus[memberName],
     });
-
   } catch (error) {
     console.error("Error updating payment status:", error);
     res.status(500).json({
       success: false,
-      message: "Failed to update payment status"
+      message: "Failed to update payment status",
     });
   }
 });
@@ -1005,5 +1060,16 @@ app.patch("/api/bills/:billId/payment-status", async (req, res) => {
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
+
+// Only start server if this file is run directly (not imported)
+if (require.main === module) {
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => {
+    console.log("\n🎉 SettleLah is running!");
+    console.log(`📱 Local URL: http://localhost:${port}`);
+    console.log(`⚡ Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log("🔧 Press Ctrl+C to stop\n");
+  });
+}
 
 module.exports = app;

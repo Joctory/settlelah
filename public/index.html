@@ -167,7 +167,7 @@
         </div>
 
         <!-- Last Created Group -->
-        <div id="lastCreatedGroup" class="group-card card-widget">
+        <div id="lastCreatedGroup" class="group-card card-widget" style="display: none">
           <div class="card-header">
             <h3>Last Created Group</h3>
             <p>Friends</p>
@@ -176,7 +176,7 @@
         </div>
 
         <!-- Last Settle -->
-        <a id="lastSettle" href="" class="group-card card-widget">
+        <a id="lastSettle" href="" class="group-card card-widget" style="display: none">
           <div class="card-header">
             <h3>Last settle</h3>
             <span class="arrow-icon">→</span>
@@ -345,7 +345,7 @@
               <div class="new-group-error-message">
                 <p>Please add at least two members.</p>
               </div>
-              <div class="edit-group-name-container" style="display: none;">
+              <div class="edit-group-name-container" style="display: none">
                 <div class="input-field">
                   <label for="editGroupName">Group name</label>
                   <input type="text" id="editGroupName" placeholder="Group name" />
@@ -359,7 +359,6 @@
                 <div class="add-member-label">New Member</div>
               </div>
               <div class="member-list"></div>
-
               <div class="btn-container">
                 <button class="next-btn new-group-next-btn">Next</button>
               </div>
@@ -1350,7 +1349,7 @@
               if (preloader && preloader.parentNode) {
                 preloader.parentNode.removeChild(preloader);
               }
-            }, 5000);
+            }, 4000);
           }
         }
 
