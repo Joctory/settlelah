@@ -79,7 +79,7 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 ### Bills Collection (`bills`)
 - Secure ID format: `timestamp-randomBytes-matterHash`
 - Contains: members, dishes, totals, breakdown, ownership info
-- Auto-expires after 30 days
+- Note: Bill expiration check is currently disabled (function commented out in index.js)
 
 ### Groups Collection (`groups`)
 - User-owned group configurations
@@ -104,3 +104,7 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - Firebase emulators can be used for local testing without affecting production data
 - The firestore-adapter provides fallback mechanisms for development
 - Bill IDs are validated before database operations to prevent injection attacks
+
+## Code Conventions
+
+- **Commented Functions**: When a function is commented out in the codebase, it indicates that the function is not currently active or used in the webapp. These functions should be considered inactive/disabled features.
