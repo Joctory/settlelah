@@ -371,7 +371,7 @@ function showShareModal(memberName) {
               `
                   : `
                 <button id="havePaidBtn" class="action-button primary-button" style="margin-top: 15px;">
-                  I have paid!
+                  I Have Paid!
                 </button>
               `
               }
@@ -695,7 +695,7 @@ function showShareModal(memberName) {
                 Show PayNow QR Code
               </button>
               <button id="havePaidBtn" class="action-button secondary-button modal-fade-in" style="animation-delay: 0.4s;">
-                I have paid!
+                I Have Paid!
               </button>
               </div>
             `

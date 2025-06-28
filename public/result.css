@@ -56,6 +56,7 @@ body {
   --light-text: #4f4f4f;
   --details-bg: #dce6c9;
   --drag-bg: #f2e8d5;
+  --link-ahref: #839788;
   --border-radius: 12px;
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   --transition-speed: 0.3s;
@@ -76,6 +77,7 @@ body {
   --text-color: #e0e0e0;
   --light-text: #b0b0b0;
   --drag-bg: #36393f;
+  --link-ahref: #ffe7aa;
   --details-bg: #5f614e;
   --card-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   --error-color: #f44336;
@@ -997,6 +999,9 @@ body.dark-mode .paynow-qr-container {
 /* Button hover effects */
 .action-button {
   width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
   padding: 13px;
   border: none;
   border-radius: 10px;
@@ -1004,6 +1009,7 @@ body.dark-mode .paynow-qr-container {
   cursor: pointer;
   transition: all 0.3s ease;
   position: relative;
+  overflow: hidden;
 }
 
 .action-button::after {
@@ -1044,7 +1050,7 @@ body.dark-mode .paynow-qr-container {
   }
   100% {
     opacity: 0;
-    transform: scale(40, 40);
+    transform: scale(100, 100);
   }
 }
 
@@ -1353,15 +1359,15 @@ body.dark-mode .paynow-qr-container {
 }
 
 .paid-stat {
-  border-left: 4px solid #28a745;
+  border: 4px solid #28a745;
 }
 
 .pending-stat {
-  border-left: 4px solid #ffc107;
+  border: 4px solid #ffc107;
 }
 
 .amount-stat {
-  border-left: 4px solid #dc3545;
+  border: 4px solid #dc3545;
 }
 
 .stat-number {
@@ -1408,7 +1414,7 @@ body.dark-mode .paynow-qr-container {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  background: linear-gradient(90deg, #168429 0%, #168429 100%);
   border-radius: 6px;
   transition: width 0.8s ease-in-out;
   animation: progressGlow 2s ease-in-out infinite alternate;
@@ -1452,6 +1458,7 @@ body.dark-mode .paynow-qr-container {
   justify-content: space-between;
   align-items: center;
   padding: 15px 20px;
+  border-radius: 10px;
   border-bottom: 1px solid #f1f3f4;
   transition: background-color 0.2s ease;
 }
@@ -1750,6 +1757,10 @@ body.dark-mode .members-status-list-mobile h4 {
   align-items: center;
   justify-content: center;
   opacity: 0;
+}
+
+.settings-footer a {
+  color: var(--link-ahref);
 }
 
 .settings-footer p {

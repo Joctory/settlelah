@@ -38,9 +38,9 @@ files.forEach(filename => {
   let changed = false;
   
   replacements.forEach(({ from, to }) => {
-    const fromPattern = new RegExp(`(['"])${from}\\1`, 'g');
+    const fromPattern = new RegExp(`(['"])/?${from}\\1`, 'g');
     if (fromPattern.test(content)) {
-      content = content.replace(fromPattern, `$1${to}$1`);
+      content = content.replace(fromPattern, `$1/${to}$1`);
       changed = true;
     }
   });
