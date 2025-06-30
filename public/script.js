@@ -456,6 +456,8 @@ function scanReceipt() {
                   const tryAgainBtn = errorToast.querySelector(".try-again-btn");
                   if (tryAgainBtn) {
                     tryAgainBtn.onclick = function () {
+                      // Reset scanning overlay state before showing modal
+                      resetScanningOverlay();
                       showModal("scanReceiptModal");
                       // Hide the toast immediately when button is clicked
                       errorToast.classList.remove("show");
@@ -1809,6 +1811,11 @@ function saveEditedMember() {
     }
   });
 
+  // Update the dish assignment UI if we're in that view
+  if (currentSettleView === "addSettleItemView") {
+    updateSettleItemMembersUI();
+  }
+
   // Close the modal
   hideModal("editMemberModal");
 }
@@ -2358,7 +2365,6 @@ function handleSettleBackButton() {
       billSummaryModal.style.display = "none";
     }
   } else if (currentSettleView === "addSettleItemView") {
-    // Show the back confirmation modal
     showModal("backConfirmModal");
   } else if (currentSettleView === "savedGroupsView") {
     // Reset birthday person selection when going back
@@ -2970,6 +2976,13 @@ function removeMember() {
     }
   });
 
+  // Update the dish assignment UI if we're in that view
+  if (currentSettleView === "addSettleItemView") {
+    setTimeout(() => {
+      updateSettleItemMembersUI();
+    }, 350); // Wait for fade-out animation to complete
+  }
+
   // Close the modal
   hideModal("editMemberModal");
 }
@@ -3029,6 +3042,11 @@ function addNewMember() {
 
   // Create and add the member to the UI
   addMemberToUI(memberName, avatarNumber);
+
+  // Update the dish assignment UI if we're in that view
+  if (currentSettleView === "addSettleItemView") {
+    updateSettleItemMembersUI();
+  }
 
   // Clear the input field
   memberNameInput.value = "";
@@ -3237,8 +3255,8 @@ function initPageNavigation() {
         errorMessage.style.display = "none";
       }
 
-      // Set the previous view to settleChoiceView for proper back navigation
-      previousView = "settleChoiceView";
+      // Set the previous view to newGroupMembersView so user can edit members
+      previousView = "newGroupMembersView";
 
       // Ensure the New favourite group button is visible since we're coming from new group
       const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
@@ -3481,6 +3499,26 @@ if (newFavouriteGroupBtn) {
   });
 }
 
+// Save group button handler (in member editing view)
+const saveGroupBtn = document.querySelector(".save-group-btn");
+if (saveGroupBtn) {
+  saveGroupBtn.addEventListener("click", function () {
+    // Show the create group modal
+    showModal("createGroupModal");
+
+    // Reset the form
+    const groupNameInput = document.getElementById("groupName");
+    if (groupNameInput) {
+      groupNameInput.value = "";
+      const inputField = groupNameInput.closest(".input-field");
+      inputField.classList.remove("error");
+      const errorMessage = inputField.querySelector(".error-message");
+      errorMessage.classList.remove("visible");
+      errorMessage.textContent = "Please enter group's name";
+    }
+  });
+}
+
 // Cancel button in create group modal
 const cancelGroupBtn = document.querySelector(".create-group-modal .cancel-btn");
 if (cancelGroupBtn) {
@@ -3528,14 +3566,22 @@ if (confirmGroupBtn) {
     const successMessage = document.querySelector(".group-success-message");
     const groupNameDisplay = document.querySelector(".group-name-display");
     const newGroupBtn = document.querySelector(".new-favourite-group-btn");
+    const saveGroupSection = document.querySelector(".save-group-section");
 
-    if (successMessage && groupNameDisplay && newGroupBtn) {
+    if (successMessage && groupNameDisplay) {
       // Update group name in success message and show it
       groupNameDisplay.textContent = `Group "${groupName}" created`;
       successMessage.classList.add("visible");
 
       // Hide the "New favourite group?" button temporarily
-      newGroupBtn.style.display = "none";
+      if (newGroupBtn) {
+        newGroupBtn.style.display = "none";
+      }
+
+      // Hide the save group button if visible
+      if (saveGroupSection) {
+        saveGroupSection.style.display = "none";
+      }
 
       // Hide success message and restore button after 3 seconds
       // setTimeout(() => {
@@ -3628,6 +3674,8 @@ if (backConfirmBtn) {
     document.getElementById("dishSummaryContainer").innerHTML = "";
     document.getElementById("itemName").value = "";
     document.getElementById("itemPrice").value = "";
+    document.getElementById("settleEqually").checked = false;
+
     // Clear dishes array and update the dish list
     dishes = [];
 
@@ -3643,6 +3691,17 @@ if (backConfirmBtn) {
 
     // Update the header text
     updateSettleNowHeader();
+
+    // Clear receipt file input
+    const receiptFileInput = document.getElementById("receiptImage");
+    if (receiptFileInput) {
+      receiptFileInput.value = "";
+      // Reset upload text
+      const uploadTextElement = document.querySelector(".upload-text");
+      if (uploadTextElement) {
+        uploadTextElement.textContent = "Choose File";
+      }
+    }
 
     // If going back to newGroupMembersView, ensure the title is correct
     if (previousView === "newGroupMembersView") {
@@ -4162,10 +4221,36 @@ function copyToClipboard(url) {
     .catch((err) => alert("Failed to copy link."));
 }
 
+// Function to reset scanning overlay state
+function resetScanningOverlay() {
+  const scanOverlay = document.querySelector(".scan-receipt-overlay");
+  const scanningText = document.querySelector(".scanning-text");
+  const scanButton = document.getElementById("scanReceiptBtn");
+
+  if (scanOverlay) {
+    scanOverlay.classList.remove("active");
+    scanOverlay.style.transition = "";
+    scanOverlay.style.opacity = "";
+  }
+
+  if (scanningText) {
+    scanningText.textContent = "Scanning your receipt...";
+    scanningText.style.animation = "";
+    scanningText.style.color = "";
+  }
+
+  if (scanButton) {
+    scanButton.disabled = false;
+    scanButton.textContent = "Scan Receipt";
+  }
+}
+
 // Scan item button handler
 const scanItemBtn = document.querySelector(".scan-item-btn");
 if (scanItemBtn) {
   scanItemBtn.addEventListener("click", function () {
+    // Reset scanning overlay state before showing modal
+    resetScanningOverlay();
     // Show the scan receipt modal
     showModal("scanReceiptModal");
   });
@@ -4241,7 +4326,7 @@ async function updateLastCreatedGroup() {
 
       // Remove loading state and show the element
       groupCard.classList.remove("loading");
-      groupCard.style.display = 'block';
+      groupCard.style.display = "block";
     }, 2000);
     return;
   }
@@ -4298,7 +4383,7 @@ async function updateLastCreatedGroup() {
 
     // Remove loading state and show the element
     groupCard.classList.remove("loading");
-    groupCard.style.display = 'block';
+    groupCard.style.display = "block";
   }, 2000);
 }
 
@@ -4328,7 +4413,7 @@ function updateLastSettle() {
       setTimeout(() => {
         // Remove loading state and show the element
         settleCard.classList.remove("loading");
-        settleCard.style.display = 'block';
+        settleCard.style.display = "block";
 
         // If no bill found
         if (!data || !data.bill) {
@@ -4373,7 +4458,7 @@ function updateLastSettle() {
     .catch((error) => {
       console.error("Error fetching latest settlement:", error);
       settleCard.classList.remove("loading");
-      settleCard.style.display = 'block';
+      settleCard.style.display = "block";
 
       // Show error state
       const settleInfo = settleCard.querySelector(".settle-info");

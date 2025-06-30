@@ -1188,6 +1188,58 @@ input:checked + .slider:before {
   letter-spacing: 0.5px;
 }
 
+/* Save Group Button Styling */
+.save-group-section {
+  width: 100%;
+  margin-bottom: 15px;
+}
+
+.save-group-btn {
+  width: 100%;
+  background-color: var(--secondary-color);
+  border-radius: 12px;
+  padding: 10px 15px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+.save-group-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.save-group-btn:active {
+  transform: translateY(0);
+}
+
+.save-group-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 15px;
+}
+
+.save-group-icon-img {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+}
+
+.save-group-label {
+  width: 100%;
+  text-align: center;
+  color: var(--text-color);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: 0.3px;
+}
+
 .edit-group-name-container {
   width: 100%;
   display: flex;
@@ -3652,7 +3704,7 @@ button.share-btn .share-btn-span {
   font-size: 18px;
   font-weight: 500;
   text-align: center;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: scanpulse 1.5s ease-in-out infinite;
 }
 
 /* Success Toast Notification */
@@ -4248,7 +4300,7 @@ button.share-btn .share-btn-span {
   }
 }
 
-@keyframes pulse {
+@keyframes scanpulse {
   0% {
     opacity: 0.7;
   }
@@ -5238,6 +5290,11 @@ textarea:focus,
     width: 10%;
     max-width: 120px;
     z-index: 1;
+  }
+
+  .member-avatar-wrapper.sortable-item .member-avatar {
+    width: 70px;
+    height: 70px;
   }
 
   #menuWrapper {

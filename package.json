@@ -16,6 +16,7 @@
     "build:js": "terser public/script.js -o public/script.min.js --compress --mangle && terser public/result.js -o public/result.min.js --compress --mangle && terser public/login.js -o public/login.min.js --compress --mangle",
     "build:css": "cleancss public/styles.css -o public/styles.min.css && cleancss public/result.css -o public/result.min.css && cleancss public/login.css -o public/login.min.css",
     "build:prod": "NODE_ENV=production npm run build",
+    "build:dev": "npm run build:html",
     "vercel-build": "npm run build"
   },
   "dependencies": {
