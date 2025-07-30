@@ -4828,7 +4828,7 @@ textarea:focus,
 
 .birthday-cake-icon {
   font-size: 20px;
-  animation: rotate 1s ease-in-out infinite;
+  /* animation: rotate 1s ease-in-out infinite; */
 }
 
 @keyframes rotate {

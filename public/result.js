@@ -1106,15 +1106,19 @@ function refreshAllPaymentStatuses() {
 // Payer dashboard helper functions
 function getPaidMembersCount() {
   if (!billData.members) return 0;
-  // Don't count the payer in the paid count
-  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  // Don't count the payer or birthday person in the paid count
+  const nonPayerMembers = billData.members.filter(
+    (member) => member.name !== payerName && member.name !== billData.birthdayPerson
+  );
   return nonPayerMembers.filter((member) => paymentStatus[member.name]?.hasPaid).length;
 }
 
 function getPendingMembersCount() {
   if (!billData.members) return 0;
-  // Don't count the payer in the pending count
-  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  // Don't count the payer or birthday person in the pending count
+  const nonPayerMembers = billData.members.filter(
+    (member) => member.name !== payerName && member.name !== billData.birthdayPerson
+  );
   return nonPayerMembers.filter((member) => !paymentStatus[member.name]?.hasPaid).length;
 }
 
@@ -1122,7 +1126,9 @@ function getOutstandingAmount() {
   if (!billData.members || !billData.totals) return "$0.00";
 
   let totalOutstanding = 0;
-  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  const nonPayerMembers = billData.members.filter(
+    (member) => member.name !== payerName && member.name !== billData.birthdayPerson
+  );
 
   nonPayerMembers.forEach((member) => {
     if (!paymentStatus[member.name]?.hasPaid) {
@@ -1136,7 +1142,9 @@ function getOutstandingAmount() {
 
 function getPaymentProgress() {
   if (!billData.members) return 0;
-  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  const nonPayerMembers = billData.members.filter(
+    (member) => member.name !== payerName && member.name !== billData.birthdayPerson
+  );
   if (nonPayerMembers.length === 0) return 100;
 
   const paidCount = nonPayerMembers.filter((member) => paymentStatus[member.name]?.hasPaid).length;
@@ -1146,7 +1154,9 @@ function getPaymentProgress() {
 function getMembersStatusList() {
   if (!billData.members || !billData.totals) return "";
 
-  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  const nonPayerMembers = billData.members.filter(
+    (member) => member.name !== payerName && member.name !== billData.birthdayPerson
+  );
 
   return nonPayerMembers
     .map((member) => {
@@ -1221,12 +1231,16 @@ function createConfetti() {
 
 function showCompletionCelebration() {
   const celebration = document.createElement("div");
-  celebration.className = "completion-celebration";
+  celebration.className = "completion-celebration-container";
   celebration.innerHTML = `
-    <span class="celebration-emoji">🎉</span>
+  <div class="completion-celebration">
+    <span class="celebration-emoji">
+    <img src="/assets/finish-celebration.svg" />
+    </span>
     <h2>Congratulations!</h2>
     <p>Everyone has finished paying the bill!<br>All payments have been completed successfully.</p>
     <button onclick="closeCompletionCelebration(this)">Awesome!</button>
+  </div>
   `;
 
   document.body.appendChild(celebration);
@@ -1235,12 +1249,17 @@ function showCompletionCelebration() {
 
 function closeCompletionCelebration(button) {
   const celebration = button.parentElement;
+  const container = celebration.parentElement;
+
   celebration.style.transform = "translate(-50%, -50%) scale(0.8)";
   celebration.style.opacity = "0";
   celebration.style.transition = "all 0.3s ease";
 
+  container.style.opacity = "0";
+  container.style.transition = "opacity 0.3s ease";
+
   setTimeout(() => {
-    document.body.removeChild(celebration);
+    document.body.removeChild(container);
   }, 300);
 }
 
@@ -1248,7 +1267,9 @@ function closeCompletionCelebration(button) {
 function checkPaymentCompletion() {
   if (!billData.members) return false;
 
-  const nonPayerMembers = billData.members.filter((member) => member.name !== payerName);
+  const nonPayerMembers = billData.members.filter(
+    (member) => member.name !== payerName && member.name !== billData.birthdayPerson
+  );
   if (nonPayerMembers.length === 0) return false;
 
   const allPaid = nonPayerMembers.every((member) => paymentStatus[member.name]?.hasPaid);
