@@ -2426,7 +2426,8 @@ body.dark-mode .share-bill-button:hover {
 }
 
 .completion-celebration button {
-  background: #28a745;
+  width: 100%;
+  background: #d8b78e;
   color: white;
   border: none;
   padding: 12px 30px;
@@ -2438,7 +2439,7 @@ body.dark-mode .share-bill-button:hover {
 }
 
 .completion-celebration button:hover {
-  background: #218838;
+  background: #000000;
 }
 
 /* Dark mode for celebration */
