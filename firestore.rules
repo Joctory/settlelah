@@ -6,6 +6,10 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
     function isValidBillData() {
       let requiredFields = ['members', 'dishes', 'breakdown', 'timestamp', 'perPersonBreakdown', 'totals'];
       let hasRequiredFields = requiredFields.hasAll(request.resource.data.keys());
@@ -40,32 +44,29 @@ service cloud.firestore {
     
     // Rules for bills collection
     match /bills/{billId} {
-      // Allow reading bills if the ID format is valid (since bills need to be shareable)
+      // Allow reading bills if the ID format is valid and not expired
       allow get: if isValidBillId(billId) && !isBillExpired();
       
-      // More permissive rule for bill listing during development
-      allow list: if true;
+      // Deny listing bills
+      allow list: if false;
       
-      // Allow bill creation with valid data without requiring authentication for now
-      // In production, change this to require authentication
+      // Allow bill creation with valid data
       allow create: if isValidBillId(billId) && 
                      request.resource.data.timestamp is number;
       
-      // Allow deleting bills without strict authentication during development
-      // In production, change this to require authentication
-      allow delete: if true;
+      // Deny deleting bills
+      allow delete: if false;
       
-      // No updates allowed - bills are created once and never modified
+      // No updates allowed
       allow update: if false;
       
-      // For future: if you add sub-collections under bills, add rules here
+      // Deny access to sub-collections
       match /{document=**} {
-        allow read: if true;
-        allow write: if true;
+        allow read, write: if false;
       }
     }
     
-    // Rules for users collection with balanced security
+    // Rules for users collection
     match /users/{userId} {
       // Allow creating new user accounts with proper validation
       allow create: if request.resource.data.keys().hasAll(['name', 'email', 'passcode', 'created_at']);
@@ -76,21 +77,16 @@ service cloud.firestore {
                    request.query.filters[1].fieldPath == 'passcode';
       
       // Allow specific user to read/update their own data
-      allow get, update: if true; // For development - in production, restrict this
+      allow get, update: if isOwner(userId);
       
-      // Add a fallback for development
-      allow read: if true;  // For easier debugging - remove in production
+      // Deny all other reads
+      allow read: if false;
     }
     
     // Rules for groups collection
     match /groups/{groupName} {
-      function isOwner() {
-        return request.auth != null && 
-               resource.data.userId == request.auth.uid;
-      }
-      
       function isValidGroupData() {
-        let requiredFields = ['name', 'members', 'timestamp'];
+        let requiredFields = ['name', 'members', 'timestamp', 'userId'];
         let hasRequiredFields = requiredFields.hasAll(request.resource.data.keys());
         
         // Validate members array structure
@@ -105,16 +101,16 @@ service cloud.firestore {
       }
       
       // Allow creating groups with valid data for any authenticated user
-      allow create: if request.resource.data.timestamp is number;
+      allow create: if isValidGroupData() && isOwner(request.resource.data.userId);
       
       // Allow read access to your own groups
-      allow get: if true; // For development - in production, restrict to owners
+      allow get: if isOwner(resource.data.userId);
       
       // Allow listing groups owned by the user
-      allow list: if true; // For development - in production, restrict to queries filtering by userId
+      allow list: if isAuthenticated() && request.query.filters.size() == 1 && request.query.filters[0].fieldPath == 'userId';
       
       // Allow updates and deletion by group owner
-      allow update, delete: if true; // For development - in production, restrict to owners
+      allow update, delete: if isOwner(resource.data.userId);
     }
     
     // Default deny for all other collections
@@ -122,4 +118,4 @@ service cloud.firestore {
       allow read, write: if false;
     }
   }
-} 
+}

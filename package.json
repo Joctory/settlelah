@@ -9,6 +9,7 @@
     "dev:vercel": "node start-vercel.js",
     "dev:silent": "vercel dev --yes --listen 3000",
     "test": "mocha test-security-rules.js",
+    "test:security": "firebase emulators:exec \"mocha test-security-rules.js\"",
     "deploy-rules": "firebase deploy --only firestore:rules",
     "security-setup": "./setup-security.sh",
     "build": "npm run build:js && npm run build:css && npm run build:html",
