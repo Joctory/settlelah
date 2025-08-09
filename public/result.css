@@ -1075,6 +1075,10 @@ body.dark-mode .paynow-qr-container {
   min-width: 60px;
 }
 
+.saved-groups-list-container .member-avatar-wrapper {
+  touch-action: auto;
+}
+
 /* Remove the first/last child margins that were causing imbalance */
 .member-avatar-wrapper:first-child {
   margin-left: 0;

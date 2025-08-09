@@ -12,18 +12,22 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
 - `npm test` - Run security rules tests using Mocha
+- `npm run test:security` - Run security tests with Firebase emulators
 - `npm run deploy-rules` - Deploy Firestore security rules to Firebase
 - `npm run security-setup` - Run security setup script
 
 ### Build & Optimization Commands
-- `npm run build` - Build minified CSS and JS files for production
-- `npm run build:js` - Minify JavaScript files only
-- `npm run build:css` - Minify CSS files only
+- `npm run build` - Build minified CSS, JS, and HTML files for production
+- `npm run build:js` - Minify JavaScript files only (includes login.js)
+- `npm run build:css` - Minify CSS files only (includes login.css)
+- `npm run build:html` - Build HTML files using build-html.js
 - `npm run build:prod` - Build for production with NODE_ENV=production
+- `npm run build:dev` - Build HTML files only for development
 - `npm run vercel-build` - Vercel-specific build command (auto-runs on deploy)
 
 ### Vercel Development Commands
 - `npm run dev:vercel` - Start Vercel dev with clear URL display
+- `npm run dev:silent` - Start Vercel dev silently on port 3000
 - `vercel dev --yes --listen 3000` - Direct Vercel dev command
 - `npm run dev` - Regular development server (port 3001)
 

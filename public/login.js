@@ -97,6 +97,85 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    // Disable the continue button and show loading
+    continueBtn.disabled = true;
+    const originalText = continueBtn.textContent;
+    continueBtn.textContent = "Verifying...";
+
+    // Verify email exists in database first
+    fetch("/api/verify-email", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email }),
+    })
+      .then((response) => {
+        if (response.status === 423) {
+          // User or IP is locked
+          return response.json().then(data => {
+            throw new Error(JSON.stringify({ 
+              locked: true, 
+              code: data.code,
+              message: data.error,
+              remainingMinutes: data.remainingMinutes 
+            }));
+          });
+        }
+        return response.json();
+      })
+      .then((data) => {
+        // Re-enable button
+        continueBtn.disabled = false;
+        continueBtn.textContent = originalText;
+
+        if (data.valid) {
+          // Email exists and user is not locked - proceed to passcode
+          proceedToPasscodeStep(email);
+        } else {
+          // Email doesn't exist or other error
+          showEmailError(data.message || "Invalid email or passcode. Please try again.");
+        }
+      })
+      .catch((error) => {
+        
+        // Re-enable button
+        continueBtn.disabled = false;
+        continueBtn.textContent = originalText;
+
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.locked) {
+            let lockMessage = errorData.message;
+            if (errorData.remainingMinutes) {
+              lockMessage += ` Try again in ${errorData.remainingMinutes} minutes.`;
+            }
+            
+            // Show lockout message and disable the email input
+            showEmailError(lockMessage);
+            emailInput.disabled = true;
+            continueBtn.disabled = true;
+            
+            // Auto-enable after lockout period (for user experience)
+            if (errorData.remainingMinutes) {
+              setTimeout(() => {
+                emailInput.disabled = false;
+                continueBtn.disabled = false;
+                hideError();
+              }, errorData.remainingMinutes * 60 * 1000);
+            }
+            return;
+          }
+        } catch (e) {
+          // Not a structured error
+        }
+        
+        showEmailError("Connection error. Please try again.");
+      });
+  }
+
+  // Separated function to handle the actual transition to passcode step
+  function proceedToPasscodeStep(email) {
     // Update displayed email
     displayedEmail.textContent = email;
 
@@ -150,6 +229,11 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
       authStepPasscode.style.display = "none";
       authStepEmail.classList.add("active");
+
+      // Re-enable email input and continue button in case they were disabled
+      emailInput.disabled = false;
+      continueBtn.disabled = false;
+      continueBtn.textContent = "Continue";
 
       // Focus the email input
       emailInput.focus();
@@ -346,7 +430,15 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       body: JSON.stringify({ email, passcode }),
     })
-      .then((response) => response.json())
+      .then((response) => {
+        // Handle rate limiting and other HTTP errors
+        if (response.status === 429) {
+          return response.json().then(errorData => {
+            throw new Error(errorData.error || "Too many attempts. Please try again later.");
+          });
+        }
+        return response.json();
+      })
       .then((data) => {
         // Remove pulsing animation
         dots.forEach((dot) => dot.classList.remove("pulse"));
@@ -359,13 +451,51 @@ document.addEventListener("DOMContentLoaded", () => {
           if (data.name) {
             localStorage.setItem("settlelah_user_name", data.name);
           }
-          if (data.token) {
+          if (data.email) {
+            localStorage.setItem("settlelah_user_email", data.email);
+          }
+          
+          // Store JWT tokens (prefer accessToken over legacy token)
+          if (data.accessToken) {
+            localStorage.setItem("settlelah_access_token", data.accessToken);
+          }
+          if (data.refreshToken) {
+            localStorage.setItem("settlelah_refresh_token", data.refreshToken);
+          }
+          
+          // Legacy token support for backward compatibility
+          if (data.token && !data.accessToken) {
             localStorage.setItem("settlelah_user_token", data.token);
           }
 
           handleSuccessfulLogin();
         } else {
-          handleFailedLogin(data.message || "Invalid email or passcode. Please try again.");
+          // Enhanced error handling with lockout information
+          let errorMessage = data.message || "Invalid email or passcode. Please try again.";
+          
+          // Add remaining attempts info if available
+          if (data.remainingAttempts !== undefined) {
+            if (data.remainingAttempts === 0) {
+              errorMessage = "Account locked due to too many failed attempts. Please try again in 15 minutes.";
+            } else {
+              errorMessage += ` (${data.remainingAttempts} attempts remaining)`;
+            }
+          }
+          
+          // Handle specific lockout codes
+          if (data.code === 'ACCOUNT_LOCKED') {
+            errorMessage = data.error;
+            if (data.remainingMinutes) {
+              errorMessage += ` Try again in ${data.remainingMinutes} minutes.`;
+            }
+          } else if (data.code === 'IP_LOCKED') {
+            errorMessage = data.error;
+            if (data.remainingMinutes) {
+              errorMessage += ` Try again in ${data.remainingMinutes} minutes.`;
+            }
+          }
+          
+          handleFailedLogin(errorMessage);
         }
       })
       .catch((error) => {

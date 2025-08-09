@@ -4,13 +4,32 @@ const firestore = require("firebase/firestore");
 const path = require("path");
 const crypto = require("crypto");
 const validator = require("validator");
+const bcrypt = require("bcrypt");
+const jwtAuth = require("./jwt-auth");
+const security = require("./enhanced-security");
+const session = require("express-session");
 const app = express();
 
 app.use(express.json());
 
+// Session configuration for CSRF protection
+app.use(session({
+  secret: process.env.SESSION_SECRET || crypto.randomBytes(64).toString('hex'),
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
 // File references are handled by build-html.js during build process
 
 app.use(express.static(path.join(__dirname, "public")));
+
+// Enhanced rate limiting
+app.use(security.createEnhancedRateLimit());
 
 // Rate limiting middleware
 const rateLimit = require("express-rate-limit");
@@ -60,7 +79,7 @@ app.use((req, res, next) => {
 
 // Authentication middleware
 const authRequiredPaths = ["/"];
-const excludedPaths = ["/login", "/api/validate-passcode", "/result", "/assets"];
+const excludedPaths = ["/login", "/api/validate-passcode", "/api/verify-email", "/api/refresh-token", "/api/register", "/result", "/assets"];
 
 app.use((req, res, next) => {
   // Skip authentication for excluded paths
@@ -70,28 +89,42 @@ app.use((req, res, next) => {
 
   // Check if authentication is required for this path
   if (authRequiredPaths.some((path) => req.path === path)) {
-    // For API requests, check for authorization header
+    // DEVELOPMENT MODE: If SETTLELAH_DEV_MODE is set, skip authentication
+    if (process.env.SETTLELAH_DEV_MODE === "true") {
+      console.warn("Development mode: Proceeding without authentication");
+      return next();
+    }
+
+    // For API requests, check for JWT authorization header
     if (req.headers.authorization) {
-      const token = req.headers.authorization.split(" ")[1];
-      // Simple server-side validation (you might want more secure validation in production)
+      const token = jwtAuth.extractTokenFromHeader(req.headers.authorization);
+      
+      if (!token) {
+        return res.status(401).json({ error: "Invalid authorization header format" });
+      }
+
+      // Try JWT verification first
+      const decoded = jwtAuth.verifyToken(token);
+      if (decoded && decoded.type === 'access') {
+        // JWT token is valid, add user info to request
+        req.user = {
+          userId: decoded.userId,
+          email: decoded.email,
+          name: decoded.name
+        };
+        return next();
+      }
+
+      // Fallback to legacy token validation for backward compatibility
       if (token === process.env.SETTLELAH_AUTH_TOKEN) {
         return next();
       }
 
-      // DEVELOPMENT MODE: If SETTLELAH_DEV_MODE is set, skip token validation
-      if (process.env.SETTLELAH_DEV_MODE === "true") {
-        console.warn("Development mode: Bypassing authentication check");
-        return next();
-      }
-
-      return res.status(401).json({ error: "Unauthorized" });
+      return res.status(401).json({ 
+        error: "Invalid or expired token",
+        code: "TOKEN_INVALID"
+      });
     } else {
-      // DEVELOPMENT MODE: If SETTLELAH_DEV_MODE is set, skip authentication
-      if (process.env.SETTLELAH_DEV_MODE === "true") {
-        console.warn("Development mode: Proceeding without authentication");
-        return next();
-      }
-
       // For browser requests, redirect to login page
       return res.redirect("/login");
     }
@@ -163,7 +196,6 @@ async function deleteBills(ids) {
 async function saveGroup(groupName, groupData) {
   try {
     await firestore.setDoc(firestore.doc(db, "groups", groupName), groupData);
-    console.log(`Group ${groupName} saved successfully`);
     return true;
   } catch (error) {
     console.error(`Error saving group ${groupName}:`, error);
@@ -181,6 +213,85 @@ app.get("/register", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "register.html"));
 });
 
+// Email verification endpoint - check if email exists before showing keypad
+app.post("/api/verify-email", 
+  ...security.createLoginRateLimit(),
+  security.createAccountLockoutMiddleware(),
+  async (req, res) => {
+    try {
+      const { email } = req.body;
+      const ip = req.ip || req.connection.remoteAddress;
+
+      // Check if IP or email is locked before processing
+      if (security.isIpLocked(ip)) {
+        const lockInfo = security.getIpLockInfo(ip);
+        return res.status(423).json({
+          valid: false,
+          locked: true,
+          code: 'IP_LOCKED',
+          error: 'Too many failed attempts from this IP address.',
+          remainingMinutes: Math.ceil((lockInfo.lockedUntil - Date.now()) / (60 * 1000))
+        });
+      }
+
+      // Validate email format
+      if (!email || !validator.isEmail(email)) {
+        const ip = req.ip || req.connection.remoteAddress;
+        security.handleLoginFailure(ip, email);
+        return res.status(400).json({ 
+          valid: false, 
+          message: "Please enter a valid email address" 
+        });
+      }
+
+      // Check if user is locked
+      if (security.isUserLocked(email)) {
+        const lockInfo = security.getUserLockInfo(email);
+        return res.status(423).json({
+          valid: false,
+          locked: true,
+          code: 'ACCOUNT_LOCKED',
+          error: 'Account temporarily locked due to too many failed attempts.',
+          remainingMinutes: Math.ceil((lockInfo.lockedUntil - Date.now()) / (60 * 1000))
+        });
+      }
+
+      // Check if email exists in database
+      const usersRef = firestore.collection(db, "users");
+      const emailQuery = firestore.query(usersRef, firestore.where("email", "==", email.toLowerCase().trim()));
+      const emailSnapshot = await firestore.getDocs(emailQuery);
+
+      if (emailSnapshot.empty) {
+        // Email doesn't exist - record failed attempt but don't reveal this information
+        const ip = req.ip || req.connection.remoteAddress;
+        security.handleLoginFailure(ip, email);
+        
+        // Return generic error to prevent email enumeration
+        return res.status(400).json({
+          valid: false,
+          message: "Invalid email or passcode. Please try again."
+        });
+      }
+
+      // Email exists and user is not locked
+      res.json({
+        valid: true,
+        message: "Email verified. Please enter your passcode."
+      });
+
+    } catch (error) {
+      console.error("Email verification error:", error);
+      const ip = req.ip || req.connection.remoteAddress;
+      security.handleLoginFailure(ip, req.body.email);
+      
+      res.status(500).json({
+        valid: false,
+        message: "Server error. Please try again."
+      });
+    }
+  }
+);
+
 // User registration endpoint
 app.post("/api/register", async (req, res) => {
   try {
@@ -195,6 +306,11 @@ app.post("/api/register", async (req, res) => {
       return res.status(400).json({ success: false, message: "Passcode must be exactly 6 digits" });
     }
 
+    // Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({ success: false, message: "Invalid email format" });
+    }
+
     // Check if email already exists
     const usersRef = firestore.collection(db, "users");
     const emailQuery = firestore.query(usersRef, firestore.where("email", "==", email));
@@ -204,12 +320,15 @@ app.post("/api/register", async (req, res) => {
       return res.status(400).json({ success: false, message: "Email already registered" });
     }
 
+    // Hash the passcode with bcrypt (salt rounds: 12 for security)
+    const hashedPasscode = await bcrypt.hash(passcode, 12);
+
     // Create a new user
     const userId = crypto.randomBytes(16).toString("hex");
     const user = {
-      name,
-      email,
-      passcode, // In a production app, you should hash this
+      name: validator.escape(name.trim()),
+      email: email.toLowerCase().trim(),
+      passcode: hashedPasscode, // Now properly hashed
       created_at: Date.now(),
       last_login: null,
     };
@@ -228,50 +347,101 @@ app.post("/api/register", async (req, res) => {
   }
 });
 
-// Passcode validation endpoint
-app.post("/api/validate-passcode", async (req, res) => {
+// Passcode validation endpoint with enhanced security
+app.post("/api/validate-passcode", 
+  ...security.createLoginRateLimit(), 
+  security.createAccountLockoutMiddleware(),
+  async (req, res) => {
   const { passcode, email } = req.body;
+
+  // Add delay function to prevent brute force attacks
+  const delayedResponse = (responseData, delay = 1000) => {
+    setTimeout(() => {
+      res.json(responseData);
+    }, delay);
+  };
 
   // If email is provided, validate against user database
   if (email) {
     try {
+      // Validate email format
+      if (!validator.isEmail(email)) {
+        return delayedResponse({
+          valid: false,
+          message: "Invalid email format.",
+        });
+      }
+
       const usersRef = firestore.collection(db, "users");
       const query = firestore.query(
         usersRef,
-        firestore.where("email", "==", email),
-        firestore.where("passcode", "==", passcode)
+        firestore.where("email", "==", email.toLowerCase().trim())
       );
 
       const snapshot = await firestore.getDocs(query);
 
       if (snapshot.empty) {
-        // Add a slight delay to prevent brute force attacks
-        setTimeout(() => {
-          res.json({
-            valid: false,
-            message: "Invalid email or passcode. Please try again.",
-          });
-        }, 1000);
-        return;
+        // Record failed attempt for IP and user
+        const ip = req.ip || req.connection.remoteAddress;
+        const failureInfo = security.handleLoginFailure(ip, email);
+        
+        return delayedResponse({
+          valid: false,
+          message: "Invalid email or passcode. Please try again.",
+          remainingAttempts: failureInfo.user?.remainingAttempts,
+        });
       }
 
       // Get the first matching user
       const userDoc = snapshot.docs[0];
       const userData = userDoc.data();
 
+      // Compare provided passcode with hashed passcode using bcrypt
+      const isValidPasscode = await bcrypt.compare(passcode, userData.passcode);
+
+      if (!isValidPasscode) {
+        // Record failed attempt for IP and user
+        const ip = req.ip || req.connection.remoteAddress;
+        const failureInfo = security.handleLoginFailure(ip, email);
+        
+        return delayedResponse({
+          valid: false,
+          message: "Invalid email or passcode. Please try again.",
+          remainingAttempts: failureInfo.user?.remainingAttempts,
+        });
+      }
+
+      // Clear failed attempts on successful login
+      const ip = req.ip || req.connection.remoteAddress;
+      security.handleLoginSuccess(ip, email);
+
       // Update last login timestamp
       await firestore.updateDoc(firestore.doc(usersRef, userDoc.id), {
         last_login: Date.now(),
+        last_login_ip: ip,
       });
 
-      // Generate token for API calls (in a real app, use JWT or similar)
-      const token = userDoc.id; // Using userId as token for simplicity
+      // Generate JWT access and refresh tokens
+      const tokenPayload = {
+        userId: userDoc.id,
+        email: userData.email,
+        name: userData.name
+      };
 
+      const accessToken = jwtAuth.generateAccessToken(tokenPayload);
+      const refreshToken = jwtAuth.generateRefreshToken({ userId: userDoc.id });
+
+      // Generate CSRF token for authenticated requests
+      const csrfTokenGenerator = security.createCSRFMiddleware();
+      req.session.csrfSecret = req.session.csrfSecret || require('crypto').randomBytes(32).toString('hex');
+      
       res.json({
         valid: true,
-        token,
+        accessToken,
+        refreshToken,
         userId: userDoc.id,
         name: userData.name,
+        email: userData.email,
         message: "Authentication successful",
       });
     } catch (error) {
@@ -284,29 +454,82 @@ app.post("/api/validate-passcode", async (req, res) => {
     return;
   }
 
-  // Get the correct passcode from environment variable (fallback for legacy authentication)
+  // Legacy fallback for environment-based authentication (for backward compatibility)
   const correctPasscode = process.env.APP_PASSCODE || "123456"; // Default for development
 
   // Validate the passcode (use strict equality to avoid timing attacks)
   const isValid = passcode === correctPasscode;
 
   if (isValid) {
-    // Generate token for API calls (simple implementation)
+    // Generate legacy token for API calls
     const token = process.env.SETTLELAH_AUTH_TOKEN || "default-auth-token";
 
     res.json({
       valid: true,
-      token,
+      token, // Legacy token for backward compatibility
       message: "Authentication successful",
     });
   } else {
-    // Add a slight delay to prevent brute force attacks
-    setTimeout(() => {
-      res.json({
-        valid: false,
-        message: "Invalid passcode. Please try again.",
+    delayedResponse({
+      valid: false,
+      message: "Invalid passcode. Please try again.",
+    });
+  }
+});
+
+// JWT token refresh endpoint
+app.post("/api/refresh-token", async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        error: "Refresh token required",
+        code: "REFRESH_TOKEN_MISSING"
       });
-    }, 1000);
+    }
+
+    // Verify refresh token
+    const decoded = jwtAuth.verifyToken(refreshToken);
+    if (!decoded || decoded.type !== 'refresh') {
+      return res.status(401).json({
+        error: "Invalid or expired refresh token",
+        code: "REFRESH_TOKEN_INVALID"
+      });
+    }
+
+    // Get user data from database
+    const usersRef = firestore.collection(db, "users");
+    const userDoc = await firestore.getDoc(firestore.doc(usersRef, decoded.userId));
+
+    if (!userDoc.exists()) {
+      return res.status(401).json({
+        error: "User not found",
+        code: "USER_NOT_FOUND"
+      });
+    }
+
+    const userData = userDoc.data();
+
+    // Generate new access token
+    const tokenPayload = {
+      userId: decoded.userId,
+      email: userData.email,
+      name: userData.name
+    };
+
+    const newAccessToken = jwtAuth.generateAccessToken(tokenPayload);
+
+    res.json({
+      accessToken: newAccessToken,
+      message: "Token refreshed successfully"
+    });
+  } catch (error) {
+    console.error("Token refresh error:", error);
+    res.status(500).json({
+      error: "Token refresh failed",
+      code: "REFRESH_FAILED"
+    });
   }
 });
 
@@ -514,7 +737,10 @@ function sanitizeInput(req, res, next) {
   next();
 }
 
-app.post("/calculate", billCreateLimiter, sanitizeInput, async (req, res) => {
+// CSRF protection middleware
+const csrfMiddleware = security.createCSRFMiddleware();
+
+app.post("/calculate", billCreateLimiter, csrfMiddleware.generateToken, sanitizeInput, async (req, res) => {
   const {
     members,
     settleMatter,
@@ -1054,6 +1280,30 @@ app.patch("/api/bills/:billId/payment-status", async (req, res) => {
   }
 });
 
+// Security monitoring endpoints - MUST be before catch-all route
+// Security monitoring endpoint (admin only)
+app.get("/api/security/stats", jwtAuth.authenticateJWT, (req, res) => {
+  // Only allow admin users to view security stats
+  if (req.user.email !== process.env.ADMIN_EMAIL) {
+    return res.status(403).json({ error: "Admin access required" });
+  }
+  
+  const stats = security.getSecurityStats();
+  res.json(stats);
+});
+
+// Development-only security stats endpoint (no auth required)
+if (process.env.NODE_ENV !== 'production') {
+  app.get("/api/security/stats-dev", (req, res) => {
+    const stats = security.getSecurityStats();
+    res.json({
+      ...stats,
+      warning: "Development endpoint - disable in production",
+      timestamp: new Date().toISOString()
+    });
+  });
+}
+
 // Add this at the end of your routes, just before the listen call
 // This is a fallback route to serve index.html for any path that doesn't match a specific route
 // This is especially useful for SPAs (Single Page Applications)
@@ -1064,10 +1314,19 @@ app.get("*", (req, res) => {
 // Only start server if this file is run directly (not imported)
 if (require.main === module) {
   const port = process.env.PORT || 3000;
+  
+  // Security warning for JWT secret
+  if (jwtAuth.isUsingDefaultSecret()) {
+    console.warn("\n⚠️  SECURITY WARNING: Using default JWT secret!");
+    console.warn("🔑 Set JWT_SECRET environment variable for production");
+    console.warn("💡 Generate a secure secret: node -p \"require('crypto').randomBytes(64).toString('hex')\"");
+  }
+  
   app.listen(port, () => {
     console.log("\n🎉 SettleLah is running!");
     console.log(`📱 Local URL: http://localhost:${port}`);
     console.log(`⚡ Environment: ${process.env.NODE_ENV || "development"}`);
+    console.log(`🔐 JWT Auth: ${jwtAuth.isUsingDefaultSecret() ? 'INSECURE (default secret)' : 'SECURE'}`);
     console.log("🔧 Press Ctrl+C to stop\n");
   });
 }

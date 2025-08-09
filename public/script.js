@@ -1,20 +1,107 @@
-// Authentication check
-function checkAuthentication() {
-  const isAuthenticated = localStorage.getItem("settlelah_authenticated") === "true";
-  const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
+// JWT Token management
+function getAccessToken() {
+  return localStorage.getItem("settlelah_access_token");
+}
 
-  // If not authenticated or token expired, redirect to login
-  if (!isAuthenticated || authExpiry <= Date.now()) {
-    // Clear any existing auth data
-    localStorage.removeItem("settlelah_authenticated");
-    localStorage.removeItem("settlelah_auth_expiry");
+function getRefreshToken() {
+  return localStorage.getItem("settlelah_refresh_token");
+}
 
-    // Redirect to login page
-    window.location.href = "/login";
-    return false;
+function getLegacyToken() {
+  return localStorage.getItem("settlelah_user_token");
+}
+
+function clearAuthTokens() {
+  localStorage.removeItem("settlelah_access_token");
+  localStorage.removeItem("settlelah_refresh_token");
+  localStorage.removeItem("settlelah_user_token");
+  localStorage.removeItem("settlelah_authenticated");
+  localStorage.removeItem("settlelah_auth_expiry");
+  localStorage.removeItem("settlelah_user_id");
+  localStorage.removeItem("settlelah_user_name");
+  localStorage.removeItem("settlelah_user_email");
+}
+
+// Check if access token is expired (basic client-side check)
+function isTokenExpired(token) {
+  if (!token) return true;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error("Error parsing token:", error);
+    return true;
+  }
+}
+
+// Refresh access token using refresh token
+async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken || isTokenExpired(refreshToken)) {
+    console.log("No valid refresh token available");
+    return null;
   }
 
-  return true;
+  try {
+    const response = await fetch("/api/refresh-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem("settlelah_access_token", data.accessToken);
+      return data.accessToken;
+    } else {
+      console.error("Token refresh failed:", await response.text());
+      return null;
+    }
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return null;
+  }
+}
+
+// Authentication check
+function checkAuthentication() {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  const legacyAuth = localStorage.getItem("settlelah_authenticated") === "true";
+  const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
+
+  // Check JWT authentication first
+  if (accessToken && !isTokenExpired(accessToken)) {
+    return true;
+  }
+
+  // Try to refresh token if we have a valid refresh token
+  if (refreshToken && !isTokenExpired(refreshToken)) {
+    // Note: This is async, but we return true optimistically
+    // The actual refresh will happen in the background
+    refreshAccessToken().then((newToken) => {
+      if (!newToken) {
+        clearAuthTokens();
+        window.location.href = "/login";
+      }
+    });
+    return true;
+  }
+
+  // Fallback to legacy authentication
+  if (legacyAuth && authExpiry > Date.now()) {
+    return true;
+  }
+
+  // No valid authentication found
+  clearAuthTokens();
+  window.location.href = "/login";
+  return false;
 }
 
 // Helper function to get user ID from local storage
@@ -22,8 +109,8 @@ function getUserId() {
   return localStorage.getItem("settlelah_user_id");
 }
 
-// Helper function to add user ID to fetch requests
-function fetchWithUserId(url, options = {}) {
+// Enhanced fetch function with JWT support and automatic token refresh
+async function fetchWithUserId(url, options = {}) {
   const userId = getUserId();
 
   // Initialize headers if they don't exist
@@ -31,12 +118,46 @@ function fetchWithUserId(url, options = {}) {
     options.headers = {};
   }
 
-  // Add user ID header if it exists
+  // Add user ID header if available (for backward compatibility)
   if (userId) {
     options.headers["x-user-id"] = userId;
   }
 
-  return fetch(url, options);
+  // Add JWT authorization header
+  let accessToken = getAccessToken();
+
+  // Check if access token is expired and try to refresh
+  if (!accessToken || isTokenExpired(accessToken)) {
+    accessToken = await refreshAccessToken();
+  }
+
+  if (accessToken) {
+    options.headers["Authorization"] = `Bearer ${accessToken}`;
+  } else {
+    // Fallback to legacy token
+    const legacyToken = getLegacyToken();
+    if (legacyToken) {
+      options.headers["Authorization"] = `Bearer ${legacyToken}`;
+    }
+  }
+
+  // Make the request
+  const response = await fetch(url, options);
+
+  // If we get a 401, try to refresh the token once more
+  if (response.status === 401 && accessToken) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      options.headers["Authorization"] = `Bearer ${newToken}`;
+      return fetch(url, options);
+    } else {
+      // Refresh failed, redirect to login
+      clearAuthTokens();
+      window.location.href = "/login";
+    }
+  }
+
+  return response;
 }
 
 // Initialize pull-to-refresh functionality
@@ -218,12 +339,8 @@ function logout() {
   const confirmLogout = confirm("Are you sure you want to log out?");
 
   if (confirmLogout) {
-    // Clear auth data from localStorage
-    localStorage.removeItem("settlelah_authenticated");
-    localStorage.removeItem("settlelah_auth_expiry");
-    localStorage.removeItem("settlelah_user_id");
-    localStorage.removeItem("settlelah_user_name");
-    localStorage.removeItem("settlelah_user_token");
+    // Clear all authentication tokens and data
+    clearAuthTokens();
 
     // Clear groups from localStorage
     localStorage.removeItem("groups");
@@ -4942,10 +5059,12 @@ function updateBirthdayPersonButton() {
     // Update button state based on whether birthday person is selected
     if (birthdayPerson) {
       birthdayBtn.classList.add("has-birthday-person");
-      birthdayBtn.querySelector(".birthday-text").textContent = `🎂 ${birthdayPerson} (Birthday)`;
+      birthdayBtn.querySelector(
+        ".birthday-text"
+      ).innerHTML = `<span class="birthday-icon">🎂</span> ${birthdayPerson} (Birthday)`;
     } else {
       birthdayBtn.classList.remove("has-birthday-person");
-      birthdayBtn.querySelector(".birthday-text").textContent = "Birthday Person";
+      birthdayBtn.querySelector(".birthday-text").innerHTML = "<span class='birthday-icon'>🎂</span> Someone Birthday?";
     }
   } else {
     birthdayBtn.style.display = "none";
