@@ -24,7 +24,10 @@
     "format": "prettier --write \"**/*.{js,json,md,css,html}\"",
     "format:check": "prettier --check \"**/*.{js,json,md,css,html}\"",
     "quality": "npm run lint && npm run format:check",
-    "quality:fix": "npm run lint:fix && npm run format"
+    "quality:fix": "npm run lint:fix && npm run format",
+    "deploy": "npm run quality:fix && npm run build && git add . && git commit && git push",
+    "quick-deploy": "npm run quality:fix && npm run build && git add . && git commit -m 'Quick update' && git push",
+    "dev-deploy": "npm run quality:fix && npm run build && echo 'Ready to commit manually'"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
