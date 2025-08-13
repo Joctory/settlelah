@@ -1311,6 +1311,11 @@ if (process.env.NODE_ENV !== 'production') {
   });
 }
 
+// Admin security dashboard route
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
 // Add this at the end of your routes, just before the listen call
 // This is a fallback route to serve index.html for any path that doesn't match a specific route
 // This is especially useful for SPAs (Single Page Applications)
