@@ -1,0 +1,113 @@
+name: Performance & Quality Analysis
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lighthouse:
+    name: Lighthouse Performance Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Start application server
+      run: |
+        npm start &
+        sleep 10
+        
+    - name: Run Lighthouse CI
+      uses: treosh/lighthouse-ci-action@v12
+      with:
+        configPath: './lighthouserc.json'
+        uploadArtifacts: true
+        temporaryPublicStorage: true
+
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Build and analyze bundle
+      run: |
+        npm run build
+        echo "=== JavaScript Bundle Sizes ===" > bundle-report.txt
+        ls -lh public/*.min.js >> bundle-report.txt
+        echo "" >> bundle-report.txt
+        echo "=== CSS Bundle Sizes ===" >> bundle-report.txt
+        ls -lh public/*.min.css >> bundle-report.txt
+        echo "" >> bundle-report.txt
+        echo "=== Total Bundle Size ===" >> bundle-report.txt
+        du -sh public/*.min.* >> bundle-report.txt
+        
+    - name: Upload bundle analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: bundle-analysis
+        path: bundle-report.txt
+
+  accessibility:
+    name: Accessibility Testing
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install axe-core CLI
+      run: npm install -g @axe-core/cli
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Start application server
+      run: |
+        npm start &
+        sleep 10
+        
+    - name: Run accessibility tests
+      run: |
+        axe http://localhost:3000 --exit > accessibility-report.txt || true
+        
+    - name: Upload accessibility report
+      uses: actions/upload-artifact@v4
+      with:
+        name: accessibility-report
+        path: accessibility-report.txt
