@@ -12,7 +12,7 @@
   <p><em>Seamless bill splitting with automatic GST and service charge calculations</em></p>
 </div>
 
-[🚀 Live Demo](https://settlelah.app) | [📹 Video Demo](#video-demo) | [📖 Documentation](#documentation) | [🛠 Installation](#installation)
+[🚀 Live Demo](https://settlelah.app) | [📹 Video Demo](#-video-demo) | [🌟 Key Features](#-key-features) | [🚀 Quick Start](#-quick-start)
 
 ## 📹 Video Demo
 
@@ -20,7 +20,7 @@
   <a href="https://settlelah.app/Demo">
     <img src="https://raw.githubusercontent.com/Joctory/settlelah/main/public/assets/demo-holder.jpg" alt="SettleLah Demo Video" width="600"/>
     <br/>
-    <img src="https://img.shields.io/badge/▶️%20Watch%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo"/>
+    <img src="https://img.shields.io/badge/▶Watch%20Demo-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Watch Demo"/>
   </a>
   <p><em>See SettleLah in action! 2-minute walkthrough of key features</em></p>
 </div>
@@ -261,7 +261,7 @@ Built by **Joel Lee** - Full-Stack Developer passionate about creating secure, u
 
 - **LinkedIn**: [Connect with me](https://www.linkedin.com/in/joellmk/)
 - **Portfolio**: [View my other portfolio](https://joasisweb.com/)
-- **Email**: [joellee1998@gmail.com](mailto:joellee1998@gmail.com)
+- **Email**: [contact@joasisweb.com](mailto:contact@joasisweb.com)
 
 ---
 
