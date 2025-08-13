@@ -65,7 +65,7 @@ deploy-rules.sh
 dev-mode.sh
 
 # Enhanced security implementation (internal)
-enhanced-security.js
+# enhanced-security.js - Required for app to run, keeping in repo
 
 # Development API endpoints
 api/security/stats-dev.js
