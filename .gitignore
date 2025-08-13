@@ -37,6 +37,7 @@ Thumbs.db
 *.swp
 *.swo
 .vercel
+.claude
 
 # Firebase debug logs
 firebase-debug.log
@@ -46,3 +47,28 @@ firestore-debug.log
 # Logs
 logs
 *.log
+
+# Development and testing files (not for public)
+start-vercel.js
+vercel-dev.sh
+test-*.js
+*-test.js
+test/
+tests/
+migrate-passwords.js
+
+# Internal documentation and setup files
+CLAUDE.md
+firebase-security-setup.md
+VERCEL_DEPLOYMENT.md
+deploy-rules.sh
+dev-mode.sh
+
+# Enhanced security implementation (internal)
+enhanced-security.js
+
+# Development API endpoints
+api/security/stats-dev.js
+
+# Database configuration
+firestore.indexes.json
