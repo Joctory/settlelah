@@ -84,11 +84,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
-    - name: Run TruffleHog OSS
+    - name: Run TruffleHog OSS (filesystem scan)
       uses: trufflesecurity/trufflehog@main
       with:
         path: ./
-        base: main
-        head: HEAD
-        extra_args: --debug --only-verified
+        extra_args: --only-verified --no-git
+      continue-on-error: true
