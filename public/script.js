@@ -3869,7 +3869,17 @@ if (backConfirmBtn) {
 }
 
 // Weather API configuration
-const WEATHER_API_KEY = process.env.WEATHER_API_KEY; // Replace with your OpenWeatherMap API key
+let WEATHER_API_KEY;
+
+// Fetch weather API key from server
+fetch('/api/config')
+  .then(res => res.json())
+  .then(config => {
+    WEATHER_API_KEY = config.WEATHER_API_KEY;
+  })
+  .catch(err => {
+    console.error('Failed to fetch weather API key:', err);
+  });
 const SINGAPORE_LAT = 1.3521;
 const SINGAPORE_LON = 103.8198;
 

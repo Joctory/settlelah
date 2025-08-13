@@ -1280,6 +1280,13 @@ app.patch('/api/bills/:billId/payment-status', async (req, res) => {
   }
 });
 
+// API endpoint to get client configuration
+app.get('/api/config', (req, res) => {
+  res.json({
+    WEATHER_API_KEY: process.env.WEATHER_API_KEY
+  });
+});
+
 // Security monitoring endpoints - MUST be before catch-all route
 // Security monitoring endpoint (admin only)
 app.get('/api/security/stats', jwtAuth.authenticateJWT, (req, res) => {

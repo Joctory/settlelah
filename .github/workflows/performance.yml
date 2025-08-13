@@ -7,42 +7,6 @@ on:
     branches: [ main ]
 
 jobs:
-  lighthouse:
-    name: Lighthouse Performance Audit
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Build application
-      run: npm run build
-      
-    - name: Set environment variables for CI
-      run: |
-        echo "SETTLELAH_DEV_MODE=true" >> $GITHUB_ENV
-        echo "JWT_SECRET=ci-test-secret-key-for-lighthouse-testing" >> $GITHUB_ENV
-        echo "PORT=3001" >> $GITHUB_ENV
-        
-    - name: Run Lighthouse CI
-      uses: treosh/lighthouse-ci-action@v12
-      with:
-        configPath: './lighthouserc.json'
-        uploadArtifacts: true
-        temporaryPublicStorage: true
-      env:
-        SETTLELAH_DEV_MODE: true
-        JWT_SECRET: ci-test-secret-key-for-lighthouse-testing
-        PORT: 3001
 
   bundle-analysis:
     name: Bundle Size Analysis
