@@ -1,37 +1,37 @@
 // JWT Token management
 function getAccessToken() {
-  return localStorage.getItem("settlelah_access_token");
+  return localStorage.getItem('settlelah_access_token');
 }
 
 function getRefreshToken() {
-  return localStorage.getItem("settlelah_refresh_token");
+  return localStorage.getItem('settlelah_refresh_token');
 }
 
 function getLegacyToken() {
-  return localStorage.getItem("settlelah_user_token");
+  return localStorage.getItem('settlelah_user_token');
 }
 
 function clearAuthTokens() {
-  localStorage.removeItem("settlelah_access_token");
-  localStorage.removeItem("settlelah_refresh_token");
-  localStorage.removeItem("settlelah_user_token");
-  localStorage.removeItem("settlelah_authenticated");
-  localStorage.removeItem("settlelah_auth_expiry");
-  localStorage.removeItem("settlelah_user_id");
-  localStorage.removeItem("settlelah_user_name");
-  localStorage.removeItem("settlelah_user_email");
+  localStorage.removeItem('settlelah_access_token');
+  localStorage.removeItem('settlelah_refresh_token');
+  localStorage.removeItem('settlelah_user_token');
+  localStorage.removeItem('settlelah_authenticated');
+  localStorage.removeItem('settlelah_auth_expiry');
+  localStorage.removeItem('settlelah_user_id');
+  localStorage.removeItem('settlelah_user_name');
+  localStorage.removeItem('settlelah_user_email');
 }
 
 // Check if access token is expired (basic client-side check)
 function isTokenExpired(token) {
-  if (!token) return true;
+  if (!token) {return true;}
 
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]));
+    const payload = JSON.parse(atob(token.split('.')[1]));
     const currentTime = Date.now() / 1000;
     return payload.exp < currentTime;
   } catch (error) {
-    console.error("Error parsing token:", error);
+    console.error('Error parsing token:', error);
     return true;
   }
 }
@@ -41,29 +41,29 @@ async function refreshAccessToken() {
   const refreshToken = getRefreshToken();
 
   if (!refreshToken || isTokenExpired(refreshToken)) {
-    console.log("No valid refresh token available");
+    console.log('No valid refresh token available');
     return null;
   }
 
   try {
-    const response = await fetch("/api/refresh-token", {
-      method: "POST",
+    const response = await fetch('/api/refresh-token', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ refreshToken }),
+      body: JSON.stringify({ refreshToken })
     });
 
     if (response.ok) {
       const data = await response.json();
-      localStorage.setItem("settlelah_access_token", data.accessToken);
+      localStorage.setItem('settlelah_access_token', data.accessToken);
       return data.accessToken;
     } else {
-      console.error("Token refresh failed:", await response.text());
+      console.error('Token refresh failed:', await response.text());
       return null;
     }
   } catch (error) {
-    console.error("Error refreshing token:", error);
+    console.error('Error refreshing token:', error);
     return null;
   }
 }
@@ -72,8 +72,8 @@ async function refreshAccessToken() {
 function checkAuthentication() {
   const accessToken = getAccessToken();
   const refreshToken = getRefreshToken();
-  const legacyAuth = localStorage.getItem("settlelah_authenticated") === "true";
-  const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
+  const legacyAuth = localStorage.getItem('settlelah_authenticated') === 'true';
+  const authExpiry = parseInt(localStorage.getItem('settlelah_auth_expiry') || '0');
 
   // Check JWT authentication first
   if (accessToken && !isTokenExpired(accessToken)) {
@@ -84,10 +84,10 @@ function checkAuthentication() {
   if (refreshToken && !isTokenExpired(refreshToken)) {
     // Note: This is async, but we return true optimistically
     // The actual refresh will happen in the background
-    refreshAccessToken().then((newToken) => {
+    refreshAccessToken().then(newToken => {
       if (!newToken) {
         clearAuthTokens();
-        window.location.href = "/login";
+        window.location.href = '/login';
       }
     });
     return true;
@@ -100,13 +100,13 @@ function checkAuthentication() {
 
   // No valid authentication found
   clearAuthTokens();
-  window.location.href = "/login";
+  window.location.href = '/login';
   return false;
 }
 
 // Helper function to get user ID from local storage
 function getUserId() {
-  return localStorage.getItem("settlelah_user_id");
+  return localStorage.getItem('settlelah_user_id');
 }
 
 // Enhanced fetch function with JWT support and automatic token refresh
@@ -120,7 +120,7 @@ async function fetchWithUserId(url, options = {}) {
 
   // Add user ID header if available (for backward compatibility)
   if (userId) {
-    options.headers["x-user-id"] = userId;
+    options.headers['x-user-id'] = userId;
   }
 
   // Add JWT authorization header
@@ -132,12 +132,12 @@ async function fetchWithUserId(url, options = {}) {
   }
 
   if (accessToken) {
-    options.headers["Authorization"] = `Bearer ${accessToken}`;
+    options.headers['Authorization'] = `Bearer ${accessToken}`;
   } else {
     // Fallback to legacy token
     const legacyToken = getLegacyToken();
     if (legacyToken) {
-      options.headers["Authorization"] = `Bearer ${legacyToken}`;
+      options.headers['Authorization'] = `Bearer ${legacyToken}`;
     }
   }
 
@@ -148,12 +148,12 @@ async function fetchWithUserId(url, options = {}) {
   if (response.status === 401 && accessToken) {
     const newToken = await refreshAccessToken();
     if (newToken) {
-      options.headers["Authorization"] = `Bearer ${newToken}`;
+      options.headers['Authorization'] = `Bearer ${newToken}`;
       return fetch(url, options);
     } else {
       // Refresh failed, redirect to login
       clearAuthTokens();
-      window.location.href = "/login";
+      window.location.href = '/login';
     }
   }
 
@@ -165,23 +165,23 @@ function initializePullToRefresh() {
   let pullStartY = 0;
   let pullMoveY = 0;
   const pullThreshold = 80; // Minimum pull distance to trigger refresh
-  const pullElement = document.querySelector(".pull-to-refresh");
-  const pullText = document.querySelector(".pull-to-refresh-text");
+  const pullElement = document.querySelector('.pull-to-refresh');
+  const pullText = document.querySelector('.pull-to-refresh-text');
   const containers = [
-    document.getElementById("homeContainer"),
-    document.getElementById("historyContainer"),
-    document.getElementById("settingsContainer"),
+    document.getElementById('homeContainer'),
+    document.getElementById('historyContainer'),
+    document.getElementById('settingsContainer')
   ];
 
-  if (!pullElement) return; // Guard clause if element doesn't exist
+  if (!pullElement) {return;} // Guard clause if element doesn't exist
 
   // Function to attach pull-to-refresh to each container
-  const attachPullToRefresh = (container) => {
-    if (!container) return;
+  const attachPullToRefresh = container => {
+    if (!container) {return;}
 
     container.addEventListener(
-      "touchstart",
-      (e) => {
+      'touchstart',
+      e => {
         // Only enable pull-to-refresh at the top of the container
         if (container.scrollTop === 0) {
           pullStartY = e.touches[0].screenY;
@@ -191,9 +191,9 @@ function initializePullToRefresh() {
     );
 
     container.addEventListener(
-      "touchmove",
-      (e) => {
-        if (pullStartY === 0) return;
+      'touchmove',
+      e => {
+        if (pullStartY === 0) {return;}
 
         pullMoveY = e.touches[0].screenY;
         const pullDistance = pullMoveY - pullStartY;
@@ -203,14 +203,14 @@ function initializePullToRefresh() {
           const pullProgress = Math.min(pullDistance / pullThreshold, 1);
           const pullHeight = pullProgress * 40; // Max height of pull indicator
 
-          pullElement.classList.add("visible");
+          pullElement.classList.add('visible');
           pullElement.style.transform = `translateY(${pullHeight}px)`;
 
           // Update text based on whether pull is enough to trigger refresh
           if (pullDistance >= pullThreshold) {
-            pullText.textContent = "Release to refresh";
+            pullText.textContent = 'Release to refresh';
           } else {
-            pullText.textContent = "Pull down to refresh";
+            pullText.textContent = 'Pull down to refresh';
           }
 
           // Prevent default scrolling if pull distance is significant
@@ -223,18 +223,18 @@ function initializePullToRefresh() {
     );
 
     container.addEventListener(
-      "touchend",
-      (e) => {
+      'touchend',
+      e => {
         const pullDistance = pullMoveY - pullStartY;
 
         if (pullDistance >= pullThreshold) {
           // Animate the pull element
-          pullElement.style.transform = "translateY(40px)";
-          pullText.textContent = "Refreshing...";
+          pullElement.style.transform = 'translateY(40px)';
+          pullText.textContent = 'Refreshing...';
 
           // Add a small spinner animation to the pull element
-          const spinner = document.querySelector(".pull-to-refresh-spinner");
-          spinner.style.animation = "spin 1s infinite linear";
+          const spinner = document.querySelector('.pull-to-refresh-spinner');
+          spinner.style.animation = 'spin 1s infinite linear';
 
           // Trigger haptic feedback if available
           if (navigator.vibrate) {
@@ -245,25 +245,25 @@ function initializePullToRefresh() {
           refreshCurrentPage();
 
           setTimeout(() => {
-            pullElement.style.transform = "translateY(0)";
-            pullElement.style.opacity = "0.5";
+            pullElement.style.transform = 'translateY(0)';
+            pullElement.style.opacity = '0.5';
 
             setTimeout(() => {
-              pullElement.classList.remove("visible");
-              pullElement.style.transform = "translateY(-100%)";
-              pullElement.style.opacity = "1";
-              spinner.style.animation = "";
+              pullElement.classList.remove('visible');
+              pullElement.style.transform = 'translateY(-100%)';
+              pullElement.style.opacity = '1';
+              spinner.style.animation = '';
             }, 500);
           }, 1500);
         } else {
           // Reset without refreshing - with smooth animation
-          pullElement.style.transform = "translateY(0)";
-          pullElement.style.opacity = "0.5";
+          pullElement.style.transform = 'translateY(0)';
+          pullElement.style.opacity = '0.5';
 
           setTimeout(() => {
-            pullElement.classList.remove("visible");
-            pullElement.style.transform = "translateY(-100%)";
-            pullElement.style.opacity = "1";
+            pullElement.classList.remove('visible');
+            pullElement.style.transform = 'translateY(-100%)';
+            pullElement.style.opacity = '1';
           }, 500);
         }
 
@@ -276,20 +276,20 @@ function initializePullToRefresh() {
   };
 
   // Attach pull-to-refresh to each container
-  containers.forEach((container) => attachPullToRefresh(container));
+  containers.forEach(container => attachPullToRefresh(container));
 }
 
 // Function to refresh content based on current active page
 async function refreshCurrentPage() {
-  if (activePage === "home") {
+  if (activePage === 'home') {
     // Refresh home page
     await updateHomePageCards();
     updateLastSettle();
     fetchWeatherData();
-  } else if (activePage === "history") {
+  } else if (activePage === 'history') {
     // Refresh history
     fetchHistory();
-  } else if (activePage === "settings") {
+  } else if (activePage === 'settings') {
     // Nothing to refresh in settings currently
   }
 }
@@ -297,7 +297,7 @@ async function refreshCurrentPage() {
 // Prevent zooming on iOS Safari
 (function () {
   document.addEventListener(
-    "touchstart",
+    'touchstart',
     function (event) {
       if (event.touches.length > 1) {
         event.preventDefault();
@@ -308,7 +308,7 @@ async function refreshCurrentPage() {
   );
 
   document.addEventListener(
-    "gesturestart",
+    'gesturestart',
     function (event) {
       event.preventDefault();
     },
@@ -317,42 +317,42 @@ async function refreshCurrentPage() {
 })();
 
 // Run auth check when script loads (unless we're on a result page)
-if (!window.location.pathname.startsWith("/result")) {
+if (!window.location.pathname.startsWith('/result')) {
   checkAuthentication();
 }
 
 // Extend auth session when user interacts with the page
-document.addEventListener("click", extendAuthSession);
-document.addEventListener("keydown", extendAuthSession);
+document.addEventListener('click', extendAuthSession);
+document.addEventListener('keydown', extendAuthSession);
 
 function extendAuthSession() {
-  if (localStorage.getItem("settlelah_authenticated") === "true") {
+  if (localStorage.getItem('settlelah_authenticated') === 'true') {
     // Extend session by another 15 days from now
     const expiryTime = Date.now() + 15 * 24 * 60 * 60 * 1000;
-    localStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
+    localStorage.setItem('settlelah_auth_expiry', expiryTime.toString());
   }
 }
 
 // Logout function
 function logout() {
   // Get confirmation from user
-  const confirmLogout = confirm("Are you sure you want to log out?");
+  const confirmLogout = confirm('Are you sure you want to log out?');
 
   if (confirmLogout) {
     // Clear all authentication tokens and data
     clearAuthTokens();
 
     // Clear groups from localStorage
-    localStorage.removeItem("groups");
+    localStorage.removeItem('groups');
     // Reset groups variable
     groups = {};
 
     // Show short feedback message
-    showToast("logoutToast");
+    showToast('logoutToast');
 
     // Wait a moment before redirecting
     setTimeout(() => {
-      window.location.href = "/login";
+      window.location.href = '/login';
     }, 500);
   }
 }
@@ -361,29 +361,29 @@ function logout() {
 let dishes = [];
 let members = []; // Initialize as empty array
 let currentStep = 1;
-let groups = JSON.parse(localStorage.getItem("groups")) || {};
-let currentGroup = "";
-let editMode = false;
+let groups = JSON.parse(localStorage.getItem('groups')) || {};
+let currentGroup = '';
+const editMode = false;
 let editingIndex = -1;
-const settleChoiceError = document.querySelector(".settle-choice-error");
-const savedGroupError = document.querySelector(".saved-group-error");
+const settleChoiceError = document.querySelector('.settle-choice-error');
+const savedGroupError = document.querySelector('.saved-group-error');
 
 // Variable to track current active bubble
 let currentActiveBubble = 2;
 
 // Variables to track current active page
-let activePage = "home";
-let pageContainers = {
-  1: "historyContainer",
-  2: "homeContainer",
-  3: "settingsContainer",
+let activePage = 'home';
+const pageContainers = {
+  1: 'historyContainer',
+  2: 'homeContainer',
+  3: 'settingsContainer'
 };
 
 // Variables to track current screens
-let currentSettleView = "settleChoiceView";
+let currentSettleView = 'settleChoiceView';
 
 // Variable to track the previous view
-let previousView = "";
+let previousView = '';
 
 // Add a variable to track if we're editing a group
 let isEditingGroup = false;
@@ -392,33 +392,33 @@ let isEditingGroup = false;
 let birthdayPerson = null;
 
 function showError(message) {
-  document.getElementById("error").textContent = message;
+  document.getElementById('error').textContent = message;
 }
 
 function clearError() {
-  const errorElement = document.getElementById("error");
+  const errorElement = document.getElementById('error');
   if (errorElement) {
-    errorElement.textContent = "";
+    errorElement.textContent = '';
   }
 }
 
 // Function to switch between pages
 function switchPage(pageId) {
   // Hide all pages
-  Object.values(pageContainers).forEach((containerId) => {
+  Object.values(pageContainers).forEach(containerId => {
     const container = document.getElementById(containerId);
     if (container) {
-      container.classList.remove("active");
-      container.classList.add("inactive");
+      container.classList.remove('active');
+      container.classList.add('inactive');
     }
   });
 
   // Show the selected page
   const selectedContainer = document.getElementById(pageContainers[pageId]);
   if (selectedContainer) {
-    selectedContainer.classList.remove("inactive");
-    selectedContainer.classList.add("active");
-    activePage = pageContainers[pageId].replace("Container", "");
+    selectedContainer.classList.remove('inactive');
+    selectedContainer.classList.add('active');
+    activePage = pageContainers[pageId].replace('Container', '');
 
     // If switching to history page, fetch history data
     if (pageId === 1) {
@@ -428,94 +428,94 @@ function switchPage(pageId) {
 }
 
 function showStep(step) {
-  document.querySelectorAll(".step").forEach((s) => (s.style.display = "none"));
-  document.getElementById(`step${step}`).style.display = "block";
+  document.querySelectorAll('.step').forEach(s => (s.style.display = 'none'));
+  document.getElementById(`step${step}`).style.display = 'block';
   currentStep = step;
   clearError();
 }
 
 function scanReceipt() {
-  const fileInput = document.getElementById("receiptImage");
-  const scanButton = document.getElementById("scanReceiptBtn");
-  const errorMessage = document.querySelector(".scan-receipt-error-message");
-  const scanOverlay = document.querySelector(".scan-receipt-overlay");
+  const fileInput = document.getElementById('receiptImage');
+  const scanButton = document.getElementById('scanReceiptBtn');
+  const errorMessage = document.querySelector('.scan-receipt-error-message');
+  const scanOverlay = document.querySelector('.scan-receipt-overlay');
 
   const file = fileInput.files[0];
   if (!file) {
-    errorMessage.textContent = "Please select a receipt image to scan.";
-    errorMessage.style.display = "block";
+    errorMessage.textContent = 'Please select a receipt image to scan.';
+    errorMessage.style.display = 'block';
     return;
   } else {
-    errorMessage.textContent = "";
-    errorMessage.style.display = "none";
+    errorMessage.textContent = '';
+    errorMessage.style.display = 'none';
   }
 
   // Check file size (max 10MB)
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB in bytes
   if (file.size > MAX_FILE_SIZE) {
-    errorMessage.textContent = "File size exceeds 10MB limit. Please upload a smaller file.";
-    errorMessage.style.display = "block";
+    errorMessage.textContent = 'File size exceeds 10MB limit. Please upload a smaller file.';
+    errorMessage.style.display = 'block';
     return;
   } else {
-    errorMessage.textContent = "";
-    errorMessage.style.display = "none";
+    errorMessage.textContent = '';
+    errorMessage.style.display = 'none';
   }
 
   // Show the scanning overlay
   if (scanOverlay) {
-    scanOverlay.classList.add("active");
+    scanOverlay.classList.add('active');
   }
 
   // Disable the scan button during processing
   scanButton.disabled = true;
-  scanButton.textContent = "Processing...";
+  scanButton.textContent = 'Processing...';
 
   // Create form data for the API request
   const formData = new FormData();
-  formData.append("document", file);
+  formData.append('document', file);
 
   // Make the API request to our backend instead of directly to Mindee
-  fetchWithUserId("/api/scan-receipt", {
-    method: "POST",
-    body: formData,
+  fetchWithUserId('/api/scan-receipt', {
+    method: 'POST',
+    body: formData
   })
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
-        return response.text().then((text) => {
+        return response.text().then(text => {
           throw new Error(`HTTP error ${response.status}: ${text}`);
         });
       }
       return response.json();
     })
-    .then((data) => {
+    .then(data => {
       // Check if we have valid data
       if (!data.success || !data.dishes) {
-        throw new Error("Invalid response data");
+        throw new Error('Invalid response data');
       }
 
       const newDishes = data.dishes;
 
       // Add the dishes to the list
-      if (!dishes) dishes = [];
+      if (!dishes) {dishes = [];}
       dishes = dishes.concat(newDishes);
 
       // Hide the scan-item-btn after successful receipt scan
-      const scanItemBtn = document.querySelector(".scan-item-btn");
+      const scanItemBtn = document.querySelector('.scan-item-btn');
       if (scanItemBtn) {
-        scanItemBtn.style.display = "none";
+        scanItemBtn.style.display = 'none';
       }
 
       // Update the UI but don't show summary yet
       updateDishSummary();
 
       // Update success toast with item count
-      const toastCount = document.querySelector(".toast-count");
+      const toastCount = document.querySelector('.toast-count');
       if (toastCount) {
-        toastCount.textContent = `${newDishes.length} item${newDishes.length !== 1 ? "s" : ""} added`;
+        toastCount.textContent = `${newDishes.length} item${newDishes.length !== 1 ? 's' : ''} added`;
       }
     })
-    .catch((error) => {
-      console.error("Error scanning receipt:", error);
+    .catch(error => {
+      console.error('Error scanning receipt:', error);
       // Prepare to show error toast after scanning animation completes
       // We'll store the error message to display in the toast
       window.scanErrorMessage = error.message;
@@ -524,16 +524,16 @@ function scanReceipt() {
       // Keep the overlay visible for 3 seconds before hiding it
       setTimeout(() => {
         // Update the scanning text based on success or failure
-        const scanningText = document.querySelector(".scanning-text");
+        const scanningText = document.querySelector('.scanning-text');
         if (scanningText) {
           if (window.scanErrorMessage) {
-            scanningText.textContent = "Scan failed!";
-            scanningText.style.animation = "none";
-            scanningText.style.color = "#ff4c4c"; // Red color for error
+            scanningText.textContent = 'Scan failed!';
+            scanningText.style.animation = 'none';
+            scanningText.style.color = '#ff4c4c'; // Red color for error
           } else {
-            scanningText.textContent = "Scanning complete!";
-            scanningText.style.animation = "none";
-            scanningText.style.color = "#4cff4c"; // Green color for success
+            scanningText.textContent = 'Scanning complete!';
+            scanningText.style.animation = 'none';
+            scanningText.style.color = '#4cff4c'; // Green color for success
           }
         }
 
@@ -541,43 +541,44 @@ function scanReceipt() {
           // Hide the scanning overlay with a fade out effect
           if (scanOverlay) {
             // Close the modal and show a success message
-            hideModal("scanReceiptModal");
+            hideModal('scanReceiptModal');
 
             // Remove the active class and reset styles after fade out completes
             setTimeout(() => {
-              scanOverlay.classList.remove("active");
-              scanOverlay.style.transition = "";
-              scanOverlay.style.opacity = "";
+              scanOverlay.classList.remove('active');
+              scanOverlay.style.transition = '';
+              scanOverlay.style.opacity = '';
 
               // Reset the scanning text for next time
               if (scanningText) {
-                scanningText.textContent = "Scanning your receipt...";
-                scanningText.style.animation = "";
-                scanningText.style.color = "";
+                scanningText.textContent = 'Scanning your receipt...';
+                scanningText.style.animation = '';
+                scanningText.style.color = '';
               }
 
               // Show either success or error toast based on result
               if (window.scanErrorMessage) {
                 // Show error toast using showToast function
-                showToast("scanErrorToast");
+                showToast('scanErrorToast');
 
                 // Update error message
-                const errorToast = document.getElementById("scanErrorToast");
+                const errorToast = document.getElementById('scanErrorToast');
                 if (errorToast) {
-                  const errorMessageEl = errorToast.querySelector(".toast-error-message");
+                  const errorMessageEl = errorToast.querySelector('.toast-error-message');
                   if (errorMessageEl) {
-                    errorMessageEl.textContent = window.scanErrorMessage || "Unable to process receipt";
+                    errorMessageEl.textContent =
+                                 window.scanErrorMessage || 'Unable to process receipt';
                   }
 
                   // Set up try again button
-                  const tryAgainBtn = errorToast.querySelector(".try-again-btn");
+                  const tryAgainBtn = errorToast.querySelector('.try-again-btn');
                   if (tryAgainBtn) {
                     tryAgainBtn.onclick = function () {
                       // Reset scanning overlay state before showing modal
                       resetScanningOverlay();
-                      showModal("scanReceiptModal");
+                      showModal('scanReceiptModal');
                       // Hide the toast immediately when button is clicked
-                      errorToast.classList.remove("show");
+                      errorToast.classList.remove('show');
                     };
                   }
 
@@ -586,50 +587,50 @@ function scanReceipt() {
                 }
               } else {
                 // Show success toast using showToast function
-                showSummary("fully-open");
-                showToast("scanSuccessToast");
+                showSummary('fully-open');
+                showToast('scanSuccessToast');
 
                 // Set up view items button
-                const successToast = document.getElementById("scanSuccessToast");
+                const successToast = document.getElementById('scanSuccessToast');
                 if (successToast) {
                   // Set up view items button
-                  const viewItemsBtn = successToast.querySelector(".view-items-btn");
+                  const viewItemsBtn = successToast.querySelector('.view-items-btn');
                   if (viewItemsBtn) {
                     viewItemsBtn.onclick = function () {
-                      showSummary("fully-open");
+                      showSummary('fully-open');
                       // Hide the toast immediately when button is clicked
-                      successToast.classList.remove("show");
+                      successToast.classList.remove('show');
                     };
                   }
                 }
               }
 
               // Add a CSS transition for smoother fade out
-              scanOverlay.style.transition = "opacity 0.5s ease";
-              scanOverlay.style.opacity = "0";
+              scanOverlay.style.transition = 'opacity 0.5s ease';
+              scanOverlay.style.opacity = '0';
             }, 500); // Match this to the CSS transition time
           }
         }, 1000);
 
         // Re-enable the scan button
         scanButton.disabled = false;
-        scanButton.textContent = "Scan Receipt";
+        scanButton.textContent = 'Scan Receipt';
       }, 2000); // 3-second delay
     });
 }
 
 function editDish(index) {
   const dish = dishes[index];
-  document.getElementById("itemName").value = dish.name;
-  document.getElementById("itemPrice").value = dish.cost;
-  const assigned = document.getElementById("assignedMembers");
-  assigned.innerHTML = "";
+  document.getElementById('itemName').value = dish.name;
+  document.getElementById('itemPrice').value = dish.cost;
+  const assigned = document.getElementById('assignedMembers');
+  assigned.innerHTML = '';
 
-  dish.members.forEach((member) => {
+  dish.members.forEach(member => {
     // Handle both object format and legacy string format
     let memberName, avatarNumber;
 
-    if (typeof member === "object" && member.name) {
+    if (typeof member === 'object' && member.name) {
       memberName = member.name;
       avatarNumber = member.avatar;
     } else {
@@ -637,13 +638,17 @@ function editDish(index) {
 
       // Try to get avatar from localStorage groups first
       let foundInGroups = false;
-      const storedGroups = JSON.parse(localStorage.getItem("groups")) || {};
+      const storedGroups = JSON.parse(localStorage.getItem('groups')) || {};
 
       // Search through all groups for this member
-      Object.values(storedGroups).forEach((groupMembers) => {
-        groupMembers.forEach((groupMember) => {
+      Object.values(storedGroups).forEach(groupMembers => {
+        groupMembers.forEach(groupMember => {
           // If we find a matching name and it has an avatar
-          if (typeof groupMember === "object" && groupMember.name === memberName && groupMember.avatar) {
+          if (
+            typeof groupMember === 'object' &&
+                  groupMember.name === memberName &&
+                  groupMember.avatar
+          ) {
             avatarNumber = groupMember.avatar;
             foundInGroups = true;
           }
@@ -652,7 +657,7 @@ function editDish(index) {
 
       // If not found in groups, generate a consistent avatar based on name
       if (!foundInGroups) {
-        const nameHash = memberName.split("").reduce((a, b) => {
+        const nameHash = memberName.split('').reduce((a, b) => {
           a = (a << 5) - a + b.charCodeAt(0);
           return a & a;
         }, 0);
@@ -660,22 +665,22 @@ function editDish(index) {
       }
     }
 
-    const memberWrapper = document.createElement("div");
-    memberWrapper.className = "member-avatar-wrapper sortable-item";
+    const memberWrapper = document.createElement('div');
+    memberWrapper.className = 'member-avatar-wrapper sortable-item';
     memberWrapper.dataset.name = memberName;
 
-    const memberAvatar = document.createElement("div");
-    memberAvatar.className = "member-avatar";
+    const memberAvatar = document.createElement('div');
+    memberAvatar.className = 'member-avatar';
 
     // Create img element for cat avatar
-    const img = document.createElement("img");
+    const img = document.createElement('img');
     img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
     img.alt = `Cat avatar ${memberName}`;
-    img.className = "cat-avatar-img";
+    img.className = 'cat-avatar-img';
     memberAvatar.appendChild(img);
 
-    const memberNameDiv = document.createElement("div");
-    memberNameDiv.className = "member-name";
+    const memberNameDiv = document.createElement('div');
+    memberNameDiv.className = 'member-name';
     memberNameDiv.textContent = memberName;
 
     memberWrapper.appendChild(memberAvatar);
@@ -695,9 +700,9 @@ function editDish(index) {
 
   // Ensure modal is peeking after any possible reflows
   setTimeout(() => {
-    const modal = document.getElementById("billSummaryModal");
-    modal.classList.remove("fully-open", "half-open");
-    modal.classList.add("peeking");
+    const modal = document.getElementById('billSummaryModal');
+    modal.classList.remove('fully-open', 'half-open');
+    modal.classList.add('peeking');
   }, 50);
 }
 
@@ -705,7 +710,7 @@ function deleteDish(index, fromSummary = false) {
   dishes.splice(index, 1);
 
   // Update dish list in other views if they exist
-  const dishList = document.getElementById("dishList");
+  const dishList = document.getElementById('dishList');
   if (dishList) {
     updateDishList();
   }
@@ -717,7 +722,7 @@ function deleteDish(index, fromSummary = false) {
   // Keep the bill summary open but minimize it if all dishes are removed
   if (dishes.length === 0) {
     // Disable next button if it exists
-    const nextButton = document.getElementById("next3");
+    const nextButton = document.getElementById('next3');
     if (nextButton) {
       nextButton.disabled = true;
     }
@@ -731,113 +736,113 @@ function deleteDish(index, fromSummary = false) {
 }
 
 function updateDishList() {
-  const dishList = document.getElementById("dishList");
-  if (!dishList) return; // Add early return if dishList is null
+  const dishList = document.getElementById('dishList');
+  if (!dishList) {return;} // Add early return if dishList is null
 
-  dishList.innerHTML = "";
+  dishList.innerHTML = '';
   dishes.forEach((dish, index) => {
-    const li = document.createElement("li");
-    li.innerHTML = `${dish.name}: $${dish.cost.toFixed(2)} (split: ${dish.members.join(", ")}) 
+    const li = document.createElement('li');
+    li.innerHTML = `${dish.name}: $${dish.cost.toFixed(2)} (split: ${dish.members.join(', ')}) 
       <button onclick="editDish(${index})">Edit</button>
       <button onclick="deleteDish(${index})">Delete</button>`;
     dishList.appendChild(li);
   });
 
   const total = dishes.reduce((sum, dish) => sum + dish.cost, 0);
-  const summaryTotal = document.getElementById("summaryTotal");
+  const summaryTotal = document.getElementById('summaryTotal');
   if (summaryTotal) {
     summaryTotal.textContent = `Total Dishes Cost: $${total.toFixed(2)}`;
   }
 }
 
-function showSummary(openState = "fully-open") {
+function showSummary(openState = 'fully-open') {
   // Update the dish summary content
   updateDishSummary();
 
   // Show the modal overlay
-  const overlay = document.getElementById("billSummaryOverlay");
-  overlay.classList.add("active");
+  const overlay = document.getElementById('billSummaryOverlay');
+  overlay.classList.add('active');
 
   // Show the bill summary modal with specified state
-  const modal = document.getElementById("billSummaryModal");
-  modal.style.display = "block";
+  const modal = document.getElementById('billSummaryModal');
+  modal.style.display = 'block';
 
   // Set the appropriate class for the opening state
   setTimeout(() => {
-    modal.classList.remove("peeking", "half-open", "fully-open");
+    modal.classList.remove('peeking', 'half-open', 'fully-open');
     modal.classList.add(openState);
   }, 10);
 }
 
 function closeSummary() {
   // Just minimize the bill summary modal to peeking state, don't hide it completely
-  const modal = document.getElementById("billSummaryModal");
-  modal.classList.remove("fully-open", "half-open");
-  modal.classList.add("peeking");
+  const modal = document.getElementById('billSummaryModal');
+  modal.classList.remove('fully-open', 'half-open');
+  modal.classList.add('peeking');
 
   // Hide the modal overlay
-  const overlay = document.getElementById("billSummaryOverlay");
-  overlay.classList.remove("active");
+  const overlay = document.getElementById('billSummaryOverlay');
+  overlay.classList.remove('active');
 
   // We no longer hide the modal completely, just minimize it
 }
 
 // Show or hide the bill summary based on the current view
 function toggleBillSummaryVisibility(show) {
-  const modal = document.getElementById("billSummaryModal");
-  const overlay = document.getElementById("billSummaryOverlay");
+  const modal = document.getElementById('billSummaryModal');
+  const overlay = document.getElementById('billSummaryOverlay');
 
   if (show) {
     // Make the bill summary peek from the bottom
-    modal.style.display = "block";
+    modal.style.display = 'block';
 
     // If on finalise screen, make it peek, otherwise follow normal behavior
-    if (currentSettleView === "finaliseSettleBillScreen") {
+    if (currentSettleView === 'finaliseSettleBillScreen') {
       // Hide the confirm button if no dishes or if on finalise screen
-      modal.classList.add("is-finalise-bill");
+      modal.classList.add('is-finalise-bill');
       // Ensure it's at least in peeking mode
-      if (!modal.classList.contains("fully-open") && !modal.classList.contains("half-open")) {
-        modal.classList.add("peeking");
+      if (!modal.classList.contains('fully-open') && !modal.classList.contains('half-open')) {
+        modal.classList.add('peeking');
       }
-      document.querySelector(".bill-summary-footer").style.display = "none";
+      document.querySelector('.bill-summary-footer').style.display = 'none';
     } else {
-      modal.classList.add("peeking");
-      modal.classList.remove("fully-open", "half-open");
-      document.querySelector(".bill-summary-footer").style.display = "flex";
-      modal.classList.remove("is-finalise-bill");
+      modal.classList.add('peeking');
+      modal.classList.remove('fully-open', 'half-open');
+      document.querySelector('.bill-summary-footer').style.display = 'flex';
+      modal.classList.remove('is-finalise-bill');
     }
 
-    overlay.classList.remove("active");
+    overlay.classList.remove('active');
   } else {
-    modal.classList.remove("peeking", "half-open", "fully-open");
-    overlay.classList.remove("active");
+    modal.classList.remove('peeking', 'half-open', 'fully-open');
+    overlay.classList.remove('active');
   }
 }
 
 function updateDishSummary() {
-  const container = document.getElementById("dishSummaryContainer");
-  if (!container) return;
+  const container = document.getElementById('dishSummaryContainer');
+  if (!container) {return;}
 
-  container.innerHTML = "";
+  container.innerHTML = '';
 
   if (!dishes || dishes.length === 0) {
     // Show toast notification using showToast function
-    showToast("noItemsAddedToast");
+    showToast('noItemsAddedToast');
 
     // Clear the subtotal
-    const subtotalElement = document.getElementById("billSubtotal");
+    const subtotalElement = document.getElementById('billSubtotal');
     if (subtotalElement) {
-      subtotalElement.textContent = "$0.00";
+      subtotalElement.textContent = '$0.00';
     }
 
     // Clear the item count
-    const itemCountElement = document.getElementById("billItemCount");
+    const itemCountElement = document.getElementById('billItemCount');
     if (itemCountElement) {
-      itemCountElement.textContent = "0";
+      itemCountElement.textContent = '0';
     }
 
     // Disable confirm button if no dishes
-    const confirmButton = document.querySelector(".confirm-bill-btn");
+    const confirmButton = document.querySelector('.confirm-bill-btn');
     if (confirmButton) {
       confirmButton.disabled = true;
     }
@@ -845,58 +850,59 @@ function updateDishSummary() {
   }
   // Loop through the dishes and create a dish summary item for each one
   dishes.forEach((dish, index) => {
-    const dishItem = document.createElement("div");
-    dishItem.className = "dish-summary-item";
+    const dishItem = document.createElement('div');
+    dishItem.className = 'dish-summary-item';
 
     // Dish name and price in one div
-    const dishHeader = document.createElement("div");
-    dishHeader.className = "dish-header";
+    const dishHeader = document.createElement('div');
+    dishHeader.className = 'dish-header';
 
-    const dishName = document.createElement("p");
-    dishName.className = "dish-name";
+    const dishName = document.createElement('p');
+    dishName.className = 'dish-name';
     dishName.textContent = dish.name;
 
-    const dishPrice = document.createElement("p");
-    dishPrice.className = "dish-price";
+    const dishPrice = document.createElement('p');
+    dishPrice.className = 'dish-price';
     dishPrice.textContent = `$${parseFloat(dish.cost).toFixed(2)}`;
 
     dishHeader.appendChild(dishName);
     dishHeader.appendChild(dishPrice);
 
     // Split among divider
-    const divider = document.createElement("div");
-    divider.className = "dish-members-divider";
-    const dividerText = document.createElement("span");
+    const divider = document.createElement('div');
+    divider.className = 'dish-members-divider';
+    const dividerText = document.createElement('span');
     dividerText.textContent = `Split Among (${dish.members.length})`;
     divider.appendChild(dividerText);
 
     // Dish members
-    const dishMembers = document.createElement("div");
-    dishMembers.className = "dish-members";
+    const dishMembers = document.createElement('div');
+    dishMembers.className = 'dish-members';
 
-    dish.members.forEach((member) => {
-      const memberPill = document.createElement("div");
-      memberPill.className = "dish-member-pill";
+    dish.members.forEach(member => {
+      const memberPill = document.createElement('div');
+      memberPill.className = 'dish-member-pill';
 
       // Check if member is an object (new format) or string (old format)
-      const memberName = typeof member === "object" ? member.name : member;
+      const memberName = typeof member === 'object' ? member.name : member;
       memberPill.textContent = memberName;
 
       dishMembers.appendChild(memberPill);
     });
 
     // Action buttons
-    const actions = document.createElement("div");
-    actions.className = "dish-actions";
+    const actions = document.createElement('div');
+    actions.className = 'dish-actions';
 
-    const editBtn = document.createElement("button");
-    editBtn.className = "dish-action-btn";
+    const editBtn = document.createElement('button');
+    editBtn.className = 'dish-action-btn';
     editBtn.innerHTML = '<img class="group-action-btn-img" src="assets/edit.svg" alt="Edit" />';
     editBtn.onclick = () => editDish(index);
 
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "dish-action-btn";
-    deleteBtn.innerHTML = '<img class="group-action-btn-img" src="assets/bin.svg" alt="Delete" />';
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'dish-action-btn';
+    deleteBtn.innerHTML =
+         '<img class="group-action-btn-img" src="assets/bin.svg" alt="Delete" />';
     deleteBtn.onclick = () => deleteDish(index, true); // Pass true to indicate deletion from summary
 
     actions.appendChild(editBtn);
@@ -913,42 +919,44 @@ function updateDishSummary() {
 
   // Calculate and update the subtotal
   const subtotal = dishes.reduce((sum, dish) => sum + parseFloat(dish.cost), 0);
-  const subtotalElement = document.getElementById("billSubtotal");
+  const subtotalElement = document.getElementById('billSubtotal');
   if (subtotalElement) {
     subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
   }
 
   // Update the item count
   const itemCount = dishes.length;
-  const itemCountElement = document.getElementById("billItemCount");
+  const itemCountElement = document.getElementById('billItemCount');
   if (itemCountElement) {
     itemCountElement.textContent = itemCount.toString();
   }
 
   // Enable confirm button and add click handler with validation
-  const confirmButton = document.querySelector(".confirm-bill-btn");
+  const confirmButton = document.querySelector('.confirm-bill-btn');
   if (confirmButton) {
     confirmButton.disabled = false;
 
     // Remove any existing event listeners using a different approach
     confirmButton.onclick = function () {
       // Check if all dishes have members assigned
-      const dishesWithoutMembers = dishes.filter((dish) => !dish.members || dish.members.length === 0);
+      const dishesWithoutMembers = dishes.filter(
+        dish => !dish.members || dish.members.length === 0
+      );
 
       if (dishesWithoutMembers.length > 0) {
         // Show toast notification using showToast function
-        const missingMembersToast = document.getElementById("missingMembersToast");
+        const missingMembersToast = document.getElementById('missingMembersToast');
         if (missingMembersToast) {
           // Update error message with count
-          const errorMessageEl = missingMembersToast.querySelector(".toast-error-message");
+          const errorMessageEl = missingMembersToast.querySelector('.toast-error-message');
           if (errorMessageEl) {
             errorMessageEl.textContent = `${dishesWithoutMembers.length} item${
-              dishesWithoutMembers.length !== 1 ? "s" : ""
-            } ${dishesWithoutMembers.length !== 1 ? "have" : "has"} no members assigned`;
+              dishesWithoutMembers.length !== 1 ? 's' : ''
+            } ${dishesWithoutMembers.length !== 1 ? 'have' : 'has'} no members assigned`;
           }
 
           // Show the toast
-          showToast("missingMembersToast");
+          showToast('missingMembersToast');
         }
         return;
       }
@@ -958,32 +966,32 @@ function updateDishSummary() {
     };
   }
 
-  const addMoreItemsBtn = document.querySelector(".add-more-items-btn");
+  const addMoreItemsBtn = document.querySelector('.add-more-items-btn');
   if (addMoreItemsBtn) {
     addMoreItemsBtn.onclick = function () {
       // Keep the bill summary modal visible and ensure it's in at least peeking state
-      const billSummaryModal = document.getElementById("billSummaryModal");
-      const overlay = document.getElementById("billSummaryOverlay");
+      const billSummaryModal = document.getElementById('billSummaryModal');
+      const overlay = document.getElementById('billSummaryOverlay');
 
       if (billSummaryModal) {
-        billSummaryModal.style.display = "block";
+        billSummaryModal.style.display = 'block';
 
         // If not already in an open state, set to peeking
-        billSummaryModal.classList.remove("fully-open", "half-open");
-        billSummaryModal.classList.add("peeking");
+        billSummaryModal.classList.remove('fully-open', 'half-open');
+        billSummaryModal.classList.add('peeking');
         if (overlay) {
-          overlay.classList.remove("active");
+          overlay.classList.remove('active');
         }
       }
 
       // Scroll the addSettleItemView container to the bottom
-      const addSettleItemView = document.querySelector(".add-settle-item-container");
+      const addSettleItemView = document.querySelector('.add-settle-item-container');
       if (addSettleItemView) {
         // Use smooth scrolling for better UX
         setTimeout(() => {
           addSettleItemView.scrollTo({
             top: 0,
-            behavior: "smooth",
+            behavior: 'smooth'
           });
         }, 100);
       }
@@ -994,48 +1002,48 @@ function updateDishSummary() {
 // Function to show the Finalise Settle Bill screen
 function showFinaliseSettleBillScreen() {
   //uncheck the checkbox of settle equally
-  document.getElementById("settleEqually").checked = false;
-  showSettleView("finaliseSettleBillScreen");
+  document.getElementById('settleEqually').checked = false;
+  showSettleView('finaliseSettleBillScreen');
   // Hide addSettleItemView but keep settleNowScreen active
-  const addSettleItemView = document.getElementById("addSettleItemView");
+  const addSettleItemView = document.getElementById('addSettleItemView');
   if (addSettleItemView) {
-    addSettleItemView.classList.remove("active");
+    addSettleItemView.classList.remove('active');
   }
 
   // Keep the settle now screen active
-  const settleNowScreen = document.getElementById("settleNowScreen");
+  const settleNowScreen = document.getElementById('settleNowScreen');
   if (settleNowScreen) {
-    settleNowScreen.classList.add("active");
-    settleNowScreen.classList.remove("inactive");
+    settleNowScreen.classList.add('active');
+    settleNowScreen.classList.remove('inactive');
   }
 
   // Keep the bill summary modal visible and ensure it's in at least peeking state
-  const billSummaryModal = document.getElementById("billSummaryModal");
-  const overlay = document.getElementById("billSummaryOverlay");
+  const billSummaryModal = document.getElementById('billSummaryModal');
+  const overlay = document.getElementById('billSummaryOverlay');
 
   if (billSummaryModal) {
-    billSummaryModal.style.display = "block";
+    billSummaryModal.style.display = 'block';
 
     // If not already in an open state, set to peeking
-    billSummaryModal.classList.remove("fully-open", "half-open");
-    billSummaryModal.classList.add("peeking");
+    billSummaryModal.classList.remove('fully-open', 'half-open');
+    billSummaryModal.classList.add('peeking');
     if (overlay) {
-      overlay.classList.remove("active");
+      overlay.classList.remove('active');
     }
   }
 
   // Show the Finalise Settle Bill screen
-  const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
+  const finaliseScreen = document.getElementById('finaliseSettleBillScreen');
   if (finaliseScreen) {
-    finaliseScreen.classList.remove("inactive");
-    finaliseScreen.classList.add("active");
+    finaliseScreen.classList.remove('inactive');
+    finaliseScreen.classList.add('active');
   }
 
   // Set up the PayNow name selection handling
   setupPaynowMemberSelection();
 
   // Add event listener to the Settle Lah button
-  const settleLahButton = finaliseScreen.querySelector(".settle-lah-btn");
+  const settleLahButton = finaliseScreen.querySelector('.settle-lah-btn');
   if (settleLahButton) {
     settleLahButton.onclick = function () {
       showLoadingScreen();
@@ -1043,19 +1051,19 @@ function showFinaliseSettleBillScreen() {
   }
 
   // Remove all alphabetic characters from discountValue input on blur for smooth UX
-  const discountValueInput = document.getElementById("discountValue");
+  const discountValueInput = document.getElementById('discountValue');
   if (discountValueInput) {
-    discountValueInput.addEventListener("blur", function () {
+    discountValueInput.addEventListener('blur', function () {
       // Only allow numbers, dot, and optional trailing %
       let value = discountValueInput.value;
       // Remove all alphabetic characters except for a trailing %
-      value = value.replace(/[a-zA-Z]+/g, "");
+      value = value.replace(/[a-zA-Z]+/g, '');
       // If more than one %, keep only the last one
       const percentMatch = value.match(/%/g);
       if (percentMatch && percentMatch.length > 1) {
         // Remove all % except the last one
-        value = value.replace(/%/g, "");
-        value += "%";
+        value = value.replace(/%/g, '');
+        value += '%';
       }
       discountValueInput.value = value;
     });
@@ -1063,32 +1071,32 @@ function showFinaliseSettleBillScreen() {
 
   function showLoadingScreen() {
     // Get input values first for validation
-    const paynowNameCheck = document.getElementById("paynowName").value.trim();
-    const paynowPhoneCheck = document.getElementById("paynowPhone").value.trim();
+    const paynowNameCheck = document.getElementById('paynowName').value.trim();
+    const paynowPhoneCheck = document.getElementById('paynowPhone').value.trim();
 
     // Validate required PayNow fields
     let isValid = true;
 
     // Check PayNow Name
-    const paynowNameError = document.getElementById("paynowNameError");
+    const paynowNameError = document.getElementById('paynowNameError');
     if (!paynowNameCheck) {
-      paynowNameError.style.display = "block";
-      document.getElementById("paynowName").classList.add("error");
+      paynowNameError.style.display = 'block';
+      document.getElementById('paynowName').classList.add('error');
       isValid = false;
     } else {
-      paynowNameError.style.display = "none";
-      document.getElementById("paynowName").classList.remove("error");
+      paynowNameError.style.display = 'none';
+      document.getElementById('paynowName').classList.remove('error');
     }
 
     // Check PayNow Phone
-    const paynowPhoneError = document.getElementById("paynowPhoneError");
+    const paynowPhoneError = document.getElementById('paynowPhoneError');
     if (!paynowPhoneCheck) {
-      paynowPhoneError.style.display = "block";
-      document.getElementById("paynowPhone").classList.add("error");
+      paynowPhoneError.style.display = 'block';
+      document.getElementById('paynowPhone').classList.add('error');
       isValid = false;
     } else {
-      paynowPhoneError.style.display = "none";
-      document.getElementById("paynowPhone").classList.remove("error");
+      paynowPhoneError.style.display = 'none';
+      document.getElementById('paynowPhone').classList.remove('error');
     }
 
     // Return early if validation fails
@@ -1097,18 +1105,18 @@ function showFinaliseSettleBillScreen() {
     }
 
     if (billSummaryModal) {
-      billSummaryModal.style.display = "none";
+      billSummaryModal.style.display = 'none';
       if (overlay) {
-        overlay.classList.remove("active");
+        overlay.classList.remove('active');
       }
     }
 
     // Reset and show loading screen
     resetLoadingAnimation();
-    showSettleView("loadingScreen");
+    showSettleView('loadingScreen');
 
     // Get the loading bar element
-    const loadingBar = document.querySelector(".loading-bar");
+    const loadingBar = document.querySelector('.loading-bar');
 
     // Set initial width
     let width = 0;
@@ -1125,17 +1133,17 @@ function showFinaliseSettleBillScreen() {
       }
 
       // Update the width
-      loadingBar.style.width = width + "%";
+      loadingBar.style.width = width + '%';
     }, 100);
 
-    const settleMatter = document.getElementById("settleMatter").value || "No one ask!";
-    const taxProfile = document.getElementById("taxProfile").value;
-    const discount = document.getElementById("discountValue").value || "0";
-    const applyServiceCharge = document.getElementById("serviceChargeCheckbox").checked;
-    const applyGst = document.getElementById("gstCheckbox").checked;
-    const paynowName = document.getElementById("paynowName").value;
-    const paynowID = document.getElementById("paynowPhone").value;
-    const serviceChargeValue = document.getElementById("serviceChargeValue").value || "10";
+    const settleMatter = document.getElementById('settleMatter').value || 'No one ask!';
+    const taxProfile = document.getElementById('taxProfile').value;
+    const discount = document.getElementById('discountValue').value || '0';
+    const applyServiceCharge = document.getElementById('serviceChargeCheckbox').checked;
+    const applyGst = document.getElementById('gstCheckbox').checked;
+    const paynowName = document.getElementById('paynowName').value;
+    const paynowID = document.getElementById('paynowPhone').value;
+    const serviceChargeValue = document.getElementById('serviceChargeValue').value || '10';
 
     const billData = {
       members,
@@ -1148,51 +1156,51 @@ function showFinaliseSettleBillScreen() {
       paynowName,
       paynowID,
       serviceChargeValue,
-      birthdayPerson,
+      birthdayPerson
     };
 
-    fetchWithUserId("/calculate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(billData),
+    fetchWithUserId('/calculate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(billData)
     })
-      .then((response) => response.json())
-      .then((result) => {
+      .then(response => response.json())
+      .then(result => {
         const backendData = {
           settleMatter: result.billData.settleMatter,
-          dateString: new Date(result.billData.timestamp).toLocaleDateString("en-US", {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
+          dateString: new Date(result.billData.timestamp).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
           }),
           timeString: new Date(result.billData.timestamp)
-            .toLocaleTimeString("en-US", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
+            .toLocaleTimeString('en-US', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
             })
-            .replace(" ", ""),
+            .replace(' ', ''),
           itemCount: result.billData.dishes.length,
           subtotal: `$${result.billData.breakdown.subtotal.toFixed(2)}`,
           serviceCharge: `$${result.billData.breakdown.serviceCharge.toFixed(2)}`,
-          serviceChargeRate: result.billData.serviceChargeRate || "10%", // Add service charge rate
+          serviceChargeRate: result.billData.serviceChargeRate || '10%', // Add service charge rate
           afterService: `$${result.billData.breakdown.afterService.toFixed(2)}`,
           discount: `$${result.billData.breakdown.discountAmount.toFixed(2)}`,
-          discountInput: result.billData.discount || "", // Original discount input value
+          discountInput: result.billData.discount || '', // Original discount input value
           afterDiscount: `$${result.billData.breakdown.afterDiscount.toFixed(2)}`,
           gst: `$${result.billData.breakdown.gst.toFixed(2)}`,
-          gstRate: result.billData.gstRate || "9%", // Add GST rate
+          gstRate: result.billData.gstRate || '9%', // Add GST rate
           totalAmount: `$${result.billData.breakdown.total.toFixed(2)}`,
-          payer: result.billData.payer || { name: result.billData.paynowName },
+          payer: result.billData.payer || { name: result.billData.paynowName }
         };
 
         // Update the loading receipt with the processed data
-        const loadingReceipt = document.getElementById("loadingReceipt");
-        const successReceipt = document.getElementById("successReceipt");
+        const loadingReceipt = document.getElementById('loadingReceipt');
+        const successReceipt = document.getElementById('successReceipt');
         updateReceiptDetails(loadingReceipt, backendData);
         updateReceiptDetails(successReceipt, backendData);
 
-        document.getElementById("shareOptionList").innerHTML = `
+        document.getElementById('shareOptionList').innerHTML = `
       <div class="share-buttons">
                 <a
                   id="shareWhatsappBtn"
@@ -1271,28 +1279,28 @@ function showFinaliseSettleBillScreen() {
       `;
 
         // Add reveal bill button and set the link to the result page
-        const revealBtn = document.querySelector(".reveal-bill-btn");
+        const revealBtn = document.querySelector('.reveal-bill-btn');
         revealBtn.onclick = function () {
-          window.open(result.link, "_blank");
-          window.location.href = "/";
+          window.open(result.link, '_blank');
+          window.location.href = '/';
         };
 
         // Complete the loading bar to 100% when result is received
         const completeInterval = setInterval(() => {
           width += 5;
-          loadingBar.style.width = width + "%";
-          document.getElementById("loadingReceipt").classList.add("received");
+          loadingBar.style.width = width + '%';
+          document.getElementById('loadingReceipt').classList.add('received');
 
           if (width >= 100) {
             clearInterval(completeInterval);
 
             // Add "finished" class to loadingReceipt after loading completes
             setTimeout(function () {
-              document.getElementById("loadingReceipt").classList.add("finished");
+              document.getElementById('loadingReceipt').classList.add('finished');
 
               // Show success screen after animation completes
               setTimeout(function () {
-                showSettleView("successScreen");
+                showSettleView('successScreen');
               }, 1000);
             }, 5000); // Changed to 5 seconds for a better user experience
           }
@@ -1301,17 +1309,17 @@ function showFinaliseSettleBillScreen() {
         // Add bill to history in Firebase (no localStorage needed)
         addBillToHistory(result.id, result.billData);
       })
-      .catch((err) => {
+      .catch(err => {
         clearInterval(loadingInterval);
-        showError("Error calculating bill. Please try again.");
+        showError('Error calculating bill. Please try again.');
       });
   }
 
   // Update service charge label to match the value in the input
-  const serviceChargeInput = document.getElementById("serviceChargeValue");
+  const serviceChargeInput = document.getElementById('serviceChargeValue');
   const serviceChargeLabel = document.querySelector('label[for="serviceChargeCheckbox"]');
   if (serviceChargeInput && serviceChargeLabel) {
-    serviceChargeInput.addEventListener("input", function () {
+    serviceChargeInput.addEventListener('input', function () {
       // The label structure includes the input field, so we don't need to modify it directly
     });
   }
@@ -1319,7 +1327,7 @@ function showFinaliseSettleBillScreen() {
 
 // Function to populate the PayNow name select with members
 function populatePaynowNameSelect() {
-  const paynowNameSelect = document.getElementById("paynowNameSelect");
+  const paynowNameSelect = document.getElementById('paynowNameSelect');
   // Clear existing options except the first two (placeholder and custom)
   while (paynowNameSelect.options.length > 2) {
     paynowNameSelect.remove(2);
@@ -1327,8 +1335,8 @@ function populatePaynowNameSelect() {
 
   // Add members as options
   if (members && members.length > 0) {
-    members.forEach((member) => {
-      const option = document.createElement("option");
+    members.forEach(member => {
+      const option = document.createElement('option');
       option.value = member.name;
       option.textContent = member.name;
       paynowNameSelect.appendChild(option);
@@ -1343,34 +1351,34 @@ function setupPaynowNameSelection() {
 
 // Function to show the PayNow member selection modal
 function showPaynowMemberModal() {
-  showModal("paynowMemberModal");
-  const membersList = document.getElementById("paynowMembersList");
-  const customNameInput = document.getElementById("customPaynowName");
-  const paynowNameInput = document.getElementById("paynowName");
-  const paynowNameSelection = document.querySelector(".paynow-name-selection");
-  const selectBtn = document.getElementById("selectPaynowMemberBtn");
-  const groupMembersDiv = document.getElementById("groupMembers");
-  const confirmBtn = document.getElementById("confirmPaynowMemberBtn");
+  showModal('paynowMemberModal');
+  const membersList = document.getElementById('paynowMembersList');
+  const customNameInput = document.getElementById('customPaynowName');
+  const paynowNameInput = document.getElementById('paynowName');
+  const paynowNameSelection = document.querySelector('.paynow-name-selection');
+  const selectBtn = document.getElementById('selectPaynowMemberBtn');
+  const groupMembersDiv = document.getElementById('groupMembers');
+  const confirmBtn = document.getElementById('confirmPaynowMemberBtn');
 
   // Clear previous content
-  membersList.innerHTML = "";
-  customNameInput.value = "";
+  membersList.innerHTML = '';
+  customNameInput.value = '';
 
   // Get members from the groupMembers div
-  const memberElements = groupMembersDiv.querySelectorAll(".member-avatar-wrapper");
+  const memberElements = groupMembersDiv.querySelectorAll('.member-avatar-wrapper');
 
   // Add members to the modal
-  memberElements.forEach((memberElement) => {
-    const memberName = memberElement.getAttribute("data-name");
-    const catIconImg = memberElement.querySelector(".cat-avatar-img").src;
+  memberElements.forEach(memberElement => {
+    const memberName = memberElement.getAttribute('data-name');
+    const catIconImg = memberElement.querySelector('.cat-avatar-img').src;
 
-    const memberDiv = document.createElement("div");
-    memberDiv.className = "member-avatar-wrapper";
-    memberDiv.setAttribute("data-name", memberName);
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'member-avatar-wrapper';
+    memberDiv.setAttribute('data-name', memberName);
 
     // Check if this member is currently selected
     if (paynowNameInput.value === memberName) {
-      memberDiv.classList.add("selected");
+      memberDiv.classList.add('selected');
     }
 
     memberDiv.innerHTML = `
@@ -1380,42 +1388,42 @@ function showPaynowMemberModal() {
       <div class="member-name">${memberName}</div>
     `;
 
-    memberDiv.addEventListener("click", () => {
+    memberDiv.addEventListener('click', () => {
       // Remove selected class from all members
       document
-        .querySelectorAll("#paynowMembersList .member-avatar-wrapper")
-        .forEach((m) => m.classList.remove("selected"));
+        .querySelectorAll('#paynowMembersList .member-avatar-wrapper')
+        .forEach(m => m.classList.remove('selected'));
       // Add selected class to clicked member
-      memberDiv.classList.add("selected");
+      memberDiv.classList.add('selected');
     });
 
     membersList.appendChild(memberDiv);
   });
 
   // Handle custom name input
-  customNameInput.addEventListener("input", () => {
+  customNameInput.addEventListener('input', () => {
     // Remove selected class from all members
     document
-      .querySelectorAll("#paynowMembersList .member-avatar-wrapper")
-      .forEach((m) => m.classList.remove("selected"));
+      .querySelectorAll('#paynowMembersList .member-avatar-wrapper')
+      .forEach(m => m.classList.remove('selected'));
   });
 
   // Handle confirm button click
-  confirmBtn.addEventListener("click", () => {
-    let selectedName = "";
-    const selectedMember = membersList.querySelector(".member-avatar-wrapper.selected");
+  confirmBtn.addEventListener('click', () => {
+    let selectedName = '';
+    const selectedMember = membersList.querySelector('.member-avatar-wrapper.selected');
 
     if (selectedMember) {
-      selectedName = selectedMember.getAttribute("data-name");
-      paynowNameSelection.classList.add("member-selected");
+      selectedName = selectedMember.getAttribute('data-name');
+      paynowNameSelection.classList.add('member-selected');
     } else if (customNameInput.value.trim()) {
       selectedName = customNameInput.value.trim();
-      paynowNameSelection.classList.remove("member-selected");
+      paynowNameSelection.classList.remove('member-selected');
     }
 
     if (selectedName) {
       paynowNameInput.value = selectedName;
-      selectBtn.querySelector(".btn-text").textContent = selectedName;
+      selectBtn.querySelector('.btn-text').textContent = selectedName;
       closePaynowMemberModal();
     }
   });
@@ -1423,32 +1431,32 @@ function showPaynowMemberModal() {
 
 // Function to close the PayNow member selection modal
 function closePaynowMemberModal() {
-  hideModal("paynowMemberModal");
+  hideModal('paynowMemberModal');
 }
 
 // Function to set up the PayNow member selection
 function setupPaynowMemberSelection() {
-  const selectBtn = document.getElementById("selectPaynowMemberBtn");
-  const closeBtn = document.getElementById("paynowMemberModal").querySelector(".close-modal");
-  const cancelBtn = document.getElementById("paynowMemberModal").querySelector(".cancel-btn");
+  const selectBtn = document.getElementById('selectPaynowMemberBtn');
+  const closeBtn = document.getElementById('paynowMemberModal').querySelector('.close-modal');
+  const cancelBtn = document.getElementById('paynowMemberModal').querySelector('.cancel-btn');
 
-  selectBtn.addEventListener("click", () => {
+  selectBtn.addEventListener('click', () => {
     showPaynowMemberModal();
   });
 
-  closeBtn.addEventListener("click", closePaynowMemberModal);
-  cancelBtn.addEventListener("click", closePaynowMemberModal);
+  closeBtn.addEventListener('click', closePaynowMemberModal);
+  cancelBtn.addEventListener('click', closePaynowMemberModal);
 }
 
 function showSuccessScreen() {
   // Update avatar group with actual members
-  const avatarGroup = document.querySelector(".success-footer .avatar-group");
+  const avatarGroup = document.querySelector('.success-footer .avatar-group');
 
   // Check if we're in desktop mode
-  const isDesktopMode = window.matchMedia("(min-width: 1100px)").matches;
+  const isDesktopMode = window.matchMedia('(min-width: 1100px)').matches;
 
   // Clear current avatars
-  avatarGroup.innerHTML = "";
+  avatarGroup.innerHTML = '';
 
   // Get actual members from the global members array
   // Show up to 5 members, if more exist, show a "+" sign
@@ -1459,30 +1467,34 @@ function showSuccessScreen() {
   // Add member avatars
   visibleMembers.forEach((member, index) => {
     // Create avatar container
-    const avatar = document.createElement("div");
-    avatar.className = "avatar";
+    const avatar = document.createElement('div');
+    avatar.className = 'avatar';
 
     // Create and set avatar image
-    const avatarImg = document.createElement("img");
-    avatarImg.className = "avatar-img";
+    const avatarImg = document.createElement('img');
+    avatarImg.className = 'avatar-img';
 
     // Determine avatar number based on member format
     let avatarNumber;
 
-    if (typeof member === "object" && member.avatar) {
+    if (typeof member === 'object' && member.avatar) {
       // Use the member's avatar if it's in object format
       avatarNumber = member.avatar;
     } else {
       // For string format members, try to find their avatar in localStorage groups
-      const memberName = typeof member === "object" ? member.name : member;
+      const memberName = typeof member === 'object' ? member.name : member;
       let foundInGroups = false;
-      const storedGroups = JSON.parse(localStorage.getItem("groups")) || {};
+      const storedGroups = JSON.parse(localStorage.getItem('groups')) || {};
 
       // Search through all groups for this member
-      Object.values(storedGroups).forEach((groupMembers) => {
-        groupMembers.forEach((groupMember) => {
+      Object.values(storedGroups).forEach(groupMembers => {
+        groupMembers.forEach(groupMember => {
           // If we find a matching name and it has an avatar
-          if (typeof groupMember === "object" && groupMember.name === memberName && groupMember.avatar) {
+          if (
+            typeof groupMember === 'object' &&
+                  groupMember.name === memberName &&
+                  groupMember.avatar
+          ) {
             avatarNumber = groupMember.avatar;
             foundInGroups = true;
           }
@@ -1491,9 +1503,9 @@ function showSuccessScreen() {
 
       // If not found in groups, fallback to index-based avatar or generate a consistent one
       if (!foundInGroups) {
-        if (typeof member === "object" && member.name) {
+        if (typeof member === 'object' && member.name) {
           // Generate consistent avatar based on name
-          const nameHash = member.name.split("").reduce((a, b) => {
+          const nameHash = member.name.split('').reduce((a, b) => {
             a = (a << 5) - a + b.charCodeAt(0);
             return a & a;
           }, 0);
@@ -1519,11 +1531,11 @@ function showSuccessScreen() {
     // If no members, still show at least the default 5 avatars
     if (members.length === 0) {
       for (let i = 0; i < 5; i++) {
-        const avatar = document.createElement("div");
-        avatar.className = "avatar";
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
 
-        const avatarImg = document.createElement("img");
-        avatarImg.className = "avatar-img";
+        const avatarImg = document.createElement('img');
+        avatarImg.className = 'avatar-img';
         avatarImg.src = `assets/cat-icon/cat-${i + 1}.svg`;
 
         avatar.appendChild(avatarImg);
@@ -1532,17 +1544,17 @@ function showSuccessScreen() {
     }
 
     // Add the "+" text node
-    const plusSign = document.createTextNode("+");
+    const plusSign = document.createTextNode('+');
     avatarGroup.appendChild(plusSign);
   }
 
   // Add event listeners to buttons
-  const shareBtn = document.querySelector(".share-bill-btn");
-  const shareModal = document.getElementById("shareBillModal");
+  const shareBtn = document.querySelector('.share-bill-btn');
+  const shareModal = document.getElementById('shareBillModal');
 
-  if (!shareModal.classList.contains("active") && isDesktopMode) {
+  if (!shareModal.classList.contains('active') && isDesktopMode) {
     // Display the modal and overlay
-    shareModal.classList.add("active");
+    shareModal.classList.add('active');
   }
 
   shareBtn.onclick = function () {
@@ -1553,18 +1565,18 @@ function showSuccessScreen() {
 
 // Function to show share modal
 function showShareModal() {
-  const modal = document.getElementById("shareBillModal");
-  const overlay = document.getElementById("shareBillOverlay");
-  const closeBtn = document.querySelector(".share-close-modal");
+  const modal = document.getElementById('shareBillModal');
+  const overlay = document.getElementById('shareBillOverlay');
+  const closeBtn = document.querySelector('.share-close-modal');
 
   // Check if we're in desktop mode
-  const isDesktopMode = window.matchMedia("(min-width: 1100px)").matches;
+  const isDesktopMode = window.matchMedia('(min-width: 1100px)').matches;
 
   // Only show if not already active (prevents animation restart in desktop)
-  if (!modal.classList.contains("active")) {
+  if (!modal.classList.contains('active')) {
     // Display the modal and overlay
-    modal.classList.add("active");
-    overlay.classList.add("active");
+    modal.classList.add('active');
+    overlay.classList.add('active');
   }
 
   // Make sure the close button works
@@ -1580,75 +1592,75 @@ function showShareModal() {
 
 // Function to close share modal
 function closeShareModal() {
-  const modal = document.getElementById("shareBillModal");
-  const overlay = document.getElementById("shareBillOverlay");
+  const modal = document.getElementById('shareBillModal');
+  const overlay = document.getElementById('shareBillOverlay');
 
   // Remove active class from both modal and overlay simultaneously
   // This allows both to animate out at the same time
-  modal.classList.remove("active");
-  overlay.classList.remove("active");
+  modal.classList.remove('active');
+  overlay.classList.remove('active');
 }
 
 // Function to hide the Finalise Settle Bill screen
 function hideFinaliseSettleBillScreen() {
   // Hide the Finalise Settle Bill screen
-  const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
+  const finaliseScreen = document.getElementById('finaliseSettleBillScreen');
   if (finaliseScreen) {
-    finaliseScreen.classList.remove("active");
-    finaliseScreen.classList.add("inactive");
+    finaliseScreen.classList.remove('active');
+    finaliseScreen.classList.add('inactive');
   }
 
   // Show the addSettleItemView screen
-  const addSettleItemView = document.getElementById("addSettleItemView");
+  const addSettleItemView = document.getElementById('addSettleItemView');
   if (addSettleItemView) {
-    addSettleItemView.classList.add("active");
+    addSettleItemView.classList.add('active');
   }
 
   // Keep the settle now screen active
-  const settleNowScreen = document.getElementById("settleNowScreen");
+  const settleNowScreen = document.getElementById('settleNowScreen');
   if (settleNowScreen) {
-    settleNowScreen.classList.remove("inactive");
-    settleNowScreen.classList.add("active");
+    settleNowScreen.classList.remove('inactive');
+    settleNowScreen.classList.add('active');
   }
-  showSettleView("addSettleItemView");
+  showSettleView('addSettleItemView');
 
   showSummary();
 }
 
 // Initialize drag functionality for the bill summary modal
 function initializeBillSummaryDrag() {
-  const modal = document.getElementById("billSummaryModal");
-  const overlay = document.getElementById("billSummaryOverlay");
-  const dragHandle = document.querySelector(".bill-summary-drag-handle");
+  const modal = document.getElementById('billSummaryModal');
+  const overlay = document.getElementById('billSummaryOverlay');
+  const dragHandle = document.querySelector('.bill-summary-drag-handle');
   let startY = 0;
   let startTop = 0;
-  let currentState = "peeking";
+  let currentState = 'peeking';
   let isDragging = false;
   let isMouseDrag = false;
 
   function handleDragStart(e) {
-    if (e.type === "mousedown" && e.button !== 0) return; // Only process left mouse button
+    if (e.type === 'mousedown' && e.button !== 0) {return;} // Only process left mouse button
 
     isDragging = true;
-    isMouseDrag = e.type === "mousedown";
-    startY = e.type.includes("touch") ? e.touches[0].clientY : e.clientY;
+    isMouseDrag = e.type === 'mousedown';
+    startY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
 
     // Get the current position from the transform
     const style = window.getComputedStyle(modal);
     startTop = parseInt(style.bottom);
 
-    if (e.type === "mousedown") {
+    if (e.type === 'mousedown') {
       e.preventDefault();
     }
   }
 
   function handleDragMove(e) {
-    if (!isDragging) return;
+    if (!isDragging) {return;}
 
     // For mouse events, only process if this is an active mouse drag
-    if (e.type === "mousemove" && !isMouseDrag) return;
+    if (e.type === 'mousemove' && !isMouseDrag) {return;}
 
-    const currentY = e.type.includes("touch") ? e.touches[0].clientY : e.clientY;
+    const currentY = e.type.includes('touch') ? e.touches[0].clientY : e.clientY;
     const deltaY = startY - currentY;
 
     // Calculate new position (delta is inverted because we're moving from bottom)
@@ -1670,9 +1682,9 @@ function initializeBillSummaryDrag() {
 
   function handleDragEnd(e) {
     // For mouse events, only process if this is an active mouse drag
-    if (e.type === "mouseup" && !isMouseDrag) return;
+    if (e.type === 'mouseup' && !isMouseDrag) {return;}
 
-    if (!isDragging) return;
+    if (!isDragging) {return;}
     isDragging = false;
     isMouseDrag = false;
 
@@ -1684,71 +1696,71 @@ function initializeBillSummaryDrag() {
     // Determine which state to snap to based on position
     if (finalBottom > -modalHeight * 0.25) {
       // Almost at the top - fully open
-      modal.classList.remove("peeking", "half-open");
-      modal.classList.add("fully-open");
-      currentState = "fully-open";
-      overlay.classList.add("active");
+      modal.classList.remove('peeking', 'half-open');
+      modal.classList.add('fully-open');
+      currentState = 'fully-open';
+      overlay.classList.add('active');
     } else if (finalBottom > -modalHeight * 0.75) {
       // In the middle - half open
-      modal.classList.remove("peeking", "fully-open");
-      modal.classList.add("half-open");
-      currentState = "half-open";
-      overlay.classList.add("active");
+      modal.classList.remove('peeking', 'fully-open');
+      modal.classList.add('half-open');
+      currentState = 'half-open';
+      overlay.classList.add('active');
     } else {
       // Near the bottom - peeking
-      modal.classList.remove("fully-open", "half-open");
-      modal.classList.add("peeking");
-      currentState = "peeking";
-      overlay.classList.remove("active");
+      modal.classList.remove('fully-open', 'half-open');
+      modal.classList.add('peeking');
+      currentState = 'peeking';
+      overlay.classList.remove('active');
     }
 
     // Reset any inline styles to use the CSS classes
-    modal.style.bottom = "";
-    overlay.style.opacity = "";
+    modal.style.bottom = '';
+    overlay.style.opacity = '';
   }
 
   // Touch event handlers for the drag handle
-  dragHandle.addEventListener("touchstart", handleDragStart);
-  dragHandle.addEventListener("touchmove", handleDragMove);
-  dragHandle.addEventListener("touchend", handleDragEnd);
+  dragHandle.addEventListener('touchstart', handleDragStart);
+  dragHandle.addEventListener('touchmove', handleDragMove);
+  dragHandle.addEventListener('touchend', handleDragEnd);
 
   // Mouse event handlers for desktop
-  dragHandle.addEventListener("mousedown", handleDragStart);
-  document.addEventListener("mousemove", handleDragMove);
-  document.addEventListener("mouseup", handleDragEnd);
+  dragHandle.addEventListener('mousedown', handleDragStart);
+  document.addEventListener('mousemove', handleDragMove);
+  document.addEventListener('mouseup', handleDragEnd);
 
   // Overlay click handler to close the modal
-  overlay.addEventListener("click", function () {
+  overlay.addEventListener('click', function () {
     // Just minimize to peeking state, don't hide completely
-    modal.classList.remove("fully-open", "half-open");
-    modal.classList.add("peeking");
-    overlay.classList.remove("active");
+    modal.classList.remove('fully-open', 'half-open');
+    modal.classList.add('peeking');
+    overlay.classList.remove('active');
   });
 }
 
 // Function to reset the loading animation
 function resetLoadingAnimation() {
-  const loadingScreen = document.getElementById("loadingScreen");
-  const loadingBar = loadingScreen.querySelector(".loading-bar");
+  const loadingScreen = document.getElementById('loadingScreen');
+  const loadingBar = loadingScreen.querySelector('.loading-bar');
 
   // Reset the loading bar width to 0
-  loadingBar.style.transition = "none";
-  loadingBar.style.width = "0";
+  loadingBar.style.transition = 'none';
+  loadingBar.style.width = '0';
 
   // Force a reflow
   void loadingBar.offsetWidth;
 
   // Restore the transition
-  loadingBar.style.transition = "width 2s ease-in-out";
+  loadingBar.style.transition = 'width 2s ease-in-out';
 }
 
 // Initialize swipe detection for the add item view and finalise bill screen
 function initializeSwipeGesture() {
   // Get elements once
-  const addSettleItemView = document.getElementById("bill-summary-handle");
+  const addSettleItemView = document.getElementById('bill-summary-handle');
 
   // Exit early if elements don't exist
-  if (!addSettleItemView) return;
+  if (!addSettleItemView) {return;}
 
   // Constants for swipe detection - moved outside handler for better performance
   const SWIPE_THRESHOLD = 80; // Minimum distance for swipe
@@ -1760,12 +1772,12 @@ function initializeSwipeGesture() {
   const MAX_TOUCH_DURATION = 1300; // Maximum touch duration (ms)
 
   // Touch tracking variables
-  let touchData = {
+  const touchData = {
     startY: 0,
     startX: 0,
     startTime: 0,
     isProcessingGesture: false,
-    isScrolling: false,
+    isScrolling: false
   };
 
   // Trigger haptic feedback - moved outside handlers
@@ -1790,7 +1802,7 @@ function initializeSwipeGesture() {
   // Handle touch move to detect scrolling
   const handleTouchMove = function (e) {
     // Skip if already detected as scrolling
-    if (touchData.isScrolling || touchData.isProcessingGesture) return;
+    if (touchData.isScrolling || touchData.isProcessingGesture) {return;}
 
     const deltaY = Math.abs(e.touches[0].clientY - touchData.startY);
 
@@ -1804,7 +1816,7 @@ function initializeSwipeGesture() {
   // Handle touch end
   const handleTouchEnd = function (e) {
     // Skip if already processing a gesture or detected scrolling
-    if (touchData.isProcessingGesture || touchData.isScrolling) return;
+    if (touchData.isProcessingGesture || touchData.isScrolling) {return;}
 
     const endY = e.changedTouches[0].clientY;
     const endX = e.changedTouches[0].clientX;
@@ -1812,7 +1824,7 @@ function initializeSwipeGesture() {
     const touchDuration = endTime - touchData.startTime;
 
     // Early return if touch duration is outside desired range
-    if (touchDuration < MIN_TOUCH_DURATION || touchDuration > MAX_TOUCH_DURATION) return;
+    if (touchDuration < MIN_TOUCH_DURATION || touchDuration > MAX_TOUCH_DURATION) {return;}
 
     // Calculate swipe metrics
     const deltaY = touchData.startY - endY;
@@ -1823,15 +1835,15 @@ function initializeSwipeGesture() {
     // Check if this is a valid upward swipe
     if (
       deltaY > SWIPE_THRESHOLD &&
-      velocity > MIN_VELOCITY &&
-      angle > MIN_ANGLE &&
-      deltaX < deltaY * MAX_HORIZONTAL_RATIO
+         velocity > MIN_VELOCITY &&
+         angle > MIN_ANGLE &&
+         deltaX < deltaY * MAX_HORIZONTAL_RATIO
     ) {
       touchData.isProcessingGesture = true;
 
       // Provide feedback and show summary
       triggerHapticFeedback();
-      requestAnimationFrame(() => showSummary("fully-open"));
+      requestAnimationFrame(() => showSummary('fully-open'));
 
       // Reset processing flag after timeout
       setTimeout(() => {
@@ -1850,11 +1862,11 @@ function initializeSwipeGesture() {
   const touchOptions = { passive: true };
 
   // Helper to attach events to an element
-  const attachSwipeEvents = (element) => {
-    element.addEventListener("touchstart", handleTouchStart, touchOptions);
-    element.addEventListener("touchmove", handleTouchMove, touchOptions);
-    element.addEventListener("touchend", handleTouchEnd);
-    element.addEventListener("touchcancel", handleTouchCancel);
+  const attachSwipeEvents = element => {
+    element.addEventListener('touchstart', handleTouchStart, touchOptions);
+    element.addEventListener('touchmove', handleTouchMove, touchOptions);
+    element.addEventListener('touchend', handleTouchEnd);
+    element.addEventListener('touchcancel', handleTouchCancel);
   };
 
   // Attach events to both screens
@@ -1866,51 +1878,51 @@ function initializeSwipeGesture() {
 
 function editMember(index) {
   editingIndex = index;
-  document.getElementById("editMemberName").value = members[index];
-  document.getElementById("editMemberPopup").style.display = "block";
+  document.getElementById('editMemberName').value = members[index];
+  document.getElementById('editMemberPopup').style.display = 'block';
 }
 
 // Save an edited member name
 function saveEditedMember() {
-  const nameInput = document.getElementById("editMemberName");
+  const nameInput = document.getElementById('editMemberName');
   const newName = nameInput.value.trim();
   const originalName = nameInput.dataset.originalName;
-  const inputField = nameInput.closest(".input-field");
-  const errorMessage = inputField.querySelector(".error-message");
-  const avatarElement = document.querySelector(".edit-member-avatar");
+  const inputField = nameInput.closest('.input-field');
+  const errorMessage = inputField.querySelector('.error-message');
+  const avatarElement = document.querySelector('.edit-member-avatar');
   const avatarNumber = avatarElement.dataset.avatarNumber;
 
   // Validate input
   if (!newName) {
-    inputField.classList.add("error");
-    errorMessage.classList.add("visible");
+    inputField.classList.add('error');
+    errorMessage.classList.add('visible');
     return;
   }
 
   // Check if the name already exists and it's not the one being edited
   if (
-    members.some((member) => {
-      const memberName = typeof member === "object" ? member.name : member;
+    members.some(member => {
+      const memberName = typeof member === 'object' ? member.name : member;
       return memberName === newName && memberName !== originalName;
     })
   ) {
-    inputField.classList.add("error");
-    errorMessage.textContent = "This name already exists";
-    errorMessage.classList.add("visible");
+    inputField.classList.add('error');
+    errorMessage.textContent = 'This name already exists';
+    errorMessage.classList.add('visible');
     return;
   }
 
   // Update the name in the members array
-  const index = members.findIndex((member) => {
-    return typeof member === "object" ? member.name === originalName : member === originalName;
+  const index = members.findIndex(member => {
+    return typeof member === 'object' ? member.name === originalName : member === originalName;
   });
 
   if (index !== -1) {
     // If member is a string (old format), convert to object with avatar
-    if (typeof members[index] === "string") {
+    if (typeof members[index] === 'string') {
       members[index] = {
         name: newName,
-        avatar: avatarNumber,
+        avatar: avatarNumber
       };
     } else {
       // Just update the name
@@ -1919,32 +1931,32 @@ function saveEditedMember() {
   }
 
   // Update the UI
-  const memberItems = document.querySelectorAll(".member-item");
-  memberItems.forEach((item) => {
+  const memberItems = document.querySelectorAll('.member-item');
+  memberItems.forEach(item => {
     if (item.dataset.name === originalName) {
       // Update both the dataset and the displayed name
       item.dataset.name = newName;
-      item.querySelector(".member-name").textContent = newName;
+      item.querySelector('.member-name').textContent = newName;
     }
   });
 
   // Update the dish assignment UI if we're in that view
-  if (currentSettleView === "addSettleItemView") {
+  if (currentSettleView === 'addSettleItemView') {
     updateSettleItemMembersUI();
   }
 
   // Close the modal
-  hideModal("editMemberModal");
+  hideModal('editMemberModal');
 }
 
 function updateGroupSelect() {
-  const select = document.getElementById("groupSelect");
-  select.innerHTML = ""; // Clear existing options
-  Object.keys(groups).forEach((group) => {
-    const label = document.createElement("label");
-    const radio = document.createElement("input");
-    radio.type = "radio";
-    radio.name = "group"; // Group name for radio buttons
+  const select = document.getElementById('groupSelect');
+  select.innerHTML = ''; // Clear existing options
+  Object.keys(groups).forEach(group => {
+    const label = document.createElement('label');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'group'; // Group name for radio buttons
     radio.value = group;
     label.appendChild(radio);
     label.appendChild(document.createTextNode(group));
@@ -1952,75 +1964,75 @@ function updateGroupSelect() {
 
     // Add onchange event to each radio button
     radio.onchange = () => {
-      document.getElementById("next1").disabled = !radio.checked; // Enable if checked
+      document.getElementById('next1').disabled = !radio.checked; // Enable if checked
     };
   });
 }
 
 function fetchHistory() {
-  const historyList = document.querySelector(".history-list");
-  const historyLoading = document.querySelector(".history-loading");
+  const historyList = document.querySelector('.history-list');
+  const historyLoading = document.querySelector('.history-loading');
 
   // Show loading spinner
   if (historyLoading) {
-    historyLoading.classList.add("active");
+    historyLoading.classList.add('active');
   }
 
   // Clear previous content
-  historyList.innerHTML = "";
+  historyList.innerHTML = '';
 
   // Show skeleton loading placeholders - default to 3
   const placeholdersCount = 3;
 
   for (let i = 0; i < placeholdersCount; i++) {
-    const placeholder = document.createElement("div");
-    placeholder.className = "loading-placeholder";
+    const placeholder = document.createElement('div');
+    placeholder.className = 'loading-placeholder';
     historyList.appendChild(placeholder);
   }
 
   // Fetch bills directly from Firebase
-  fetchWithUserId("/api/history", {
-    method: "GET",
+  fetchWithUserId('/api/history', {
+    method: 'GET',
     headers: {
-      Accept: "application/json",
-    },
+      Accept: 'application/json'
+    }
   })
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}`);
       }
       return response.json();
     })
-    .then((data) => {
+    .then(data => {
       // Add slight delay for better UX
       setTimeout(() => {
         // Hide loading spinner
         if (historyLoading) {
-          historyLoading.classList.remove("active");
+          historyLoading.classList.remove('active');
         }
 
         // Clear skeleton loaders
-        historyList.innerHTML = "";
+        historyList.innerHTML = '';
 
         // Check if we have any bills
         if (!data || !data.bills || data.bills.length === 0) {
-          historyList.innerHTML = "<p class='no-history'>No history yet.</p>";
-          document.getElementById("clearHistoryBtn").style.display = "none";
+          historyList.innerHTML = '<p class=\'no-history\'>No history yet.</p>';
+          document.getElementById('clearHistoryBtn').style.display = 'none';
           return;
         }
 
         // Show clear history button if we have bills
-        document.getElementById("clearHistoryBtn").style.display = "block";
+        document.getElementById('clearHistoryBtn').style.display = 'block';
 
         // Process the bills
         data.bills
           .sort((a, b) => b.timestamp - a.timestamp) // Newest first
-          .forEach((bill) => {
+          .forEach(bill => {
             // Create a settle item that matches the design
-            const settleItem = document.createElement("a");
+            const settleItem = document.createElement('a');
             settleItem.href = `/bill/${bill.id}`;
-            settleItem.target = "_blank";
-            settleItem.className = "settle-item";
+            settleItem.target = '_blank';
+            settleItem.className = 'settle-item';
 
             // Format date
             const date = new Date(bill.timestamp);
@@ -2032,7 +2044,7 @@ function fetchHistory() {
             const formattedTotal = `$${roundToNearest5Cents(total)}`;
 
             // Get settle matter
-            const settleMatter = bill.settleMatter || "Settlement";
+            const settleMatter = bill.settleMatter || 'Settlement';
 
             // Get members (if available)
             const members = bill.members || [];
@@ -2041,15 +2053,15 @@ function fetchHistory() {
             const membersAvatars = members
               .slice(0, 5)
               .map(
-                (member) =>
+                member =>
                   `<div class="avatar">
                     <img class="avatar-img" src="assets/cat-icon/cat-${member.avatar || 1}.svg" />
                   </div>`
               )
-              .join("");
+              .join('');
 
             // Add + indicator if more than 5 members
-            const plusIndicator = members.length > 5 ? "+" : "";
+            const plusIndicator = members.length > 5 ? '+' : '';
 
             settleItem.innerHTML = `
               <div class="settle-top">
@@ -2080,14 +2092,14 @@ function fetchHistory() {
             historyList.appendChild(settleItem);
 
             // After historyList.appendChild(settleItem);
-            const deleteBtn = settleItem.querySelector(".delete-history-btn");
+            const deleteBtn = settleItem.querySelector('.delete-history-btn');
             if (deleteBtn) {
-              deleteBtn.addEventListener("click", function (e) {
+              deleteBtn.addEventListener('click', function (e) {
                 e.preventDefault();
                 e.stopPropagation(); // Prevent opening the bill link
 
-                const billId = this.getAttribute("data-bill-id");
-                if (confirm("Are you sure you want to delete this record?")) {
+                const billId = this.getAttribute('data-bill-id');
+                if (confirm('Are you sure you want to delete this record?')) {
                   deleteHistoryRecord(billId, settleItem);
                 }
               });
@@ -2095,29 +2107,30 @@ function fetchHistory() {
           });
       }, 800); // Delay for better UX
     })
-    .catch((error) => {
-      console.error("Error fetching history:", error);
-      historyList.innerHTML = "<p class='error'>Failed to load history. Please try again later.</p>";
+    .catch(error => {
+      console.error('Error fetching history:', error);
+      historyList.innerHTML =
+            '<p class=\'error\'>Failed to load history. Please try again later.</p>';
       if (historyLoading) {
-        historyLoading.classList.remove("active");
+        historyLoading.classList.remove('active');
       }
     });
 }
 
 function moveWithCalc(id) {
-  const container = document.getElementById("navbarContainer");
+  const container = document.getElementById('navbarContainer');
   const containerWidth = container.offsetWidth;
   const numBubbles = 3;
   const spacing = containerWidth / numBubbles;
 
   // Calculate position based on container width
-  const position = spacing * (id - 0.5) + "px";
+  const position = spacing * (id - 0.5) + 'px';
 
   // Define theme classes for each menu item
   const themeClasses = {
-    1: "theme-history",
-    2: "theme-home",
-    3: "theme-settings",
+    1: 'theme-history',
+    2: 'theme-home',
+    3: 'theme-settings'
   };
 
   moveWithClass(id, position, themeClasses[id]);
@@ -2139,8 +2152,8 @@ function moveWithClass(id, position, themeClass) {
   currentActiveBubble = id;
 
   // Remove previous theme classes
-  const container = document.getElementById("navbarContainer");
-  const bg = document.getElementById("navbg");
+  const container = document.getElementById('navbarContainer');
+  const bg = document.getElementById('navbg');
 
   // Reset all menu elements and bubbles
   for (let i = 1; i <= 3; i++) {
@@ -2148,17 +2161,17 @@ function moveWithClass(id, position, themeClass) {
     const menuElement = document.getElementById(`menu${i}`);
 
     // Reset bubbles
-    bubble.style.transform = "translateY(150%)";
-    bubble.classList.remove("bubble-bounce");
-    document.getElementById(`bubble${i}`).querySelector(".icon").style.opacity = 0;
+    bubble.style.transform = 'translateY(150%)';
+    bubble.classList.remove('bubble-bounce');
+    document.getElementById(`bubble${i}`).querySelector('.icon').style.opacity = 0;
 
     // Reset menu elements
-    menuElement.classList.remove("active");
-    menuElement.style.opacity = "0.4";
+    menuElement.classList.remove('active');
+    menuElement.style.opacity = '0.4';
   }
 
   // Remove all theme classes
-  ["theme-history", "theme-home", "theme-settings"].forEach((cls) => {
+  ['theme-history', 'theme-home', 'theme-settings'].forEach(cls => {
     container.classList.remove(cls);
     bg.classList.remove(cls);
   });
@@ -2170,31 +2183,31 @@ function moveWithClass(id, position, themeClass) {
   // Animate active bubble with a slight delay
   setTimeout(() => {
     const activeBubble = document.getElementById(`bubble${id}`);
-    activeBubble.style.transform = ""; // Remove inline transform to allow CSS animation
-    activeBubble.classList.add("bubble-bounce");
-    activeBubble.querySelector(".icon").style.opacity = 0.7;
+    activeBubble.style.transform = ''; // Remove inline transform to allow CSS animation
+    activeBubble.classList.add('bubble-bounce');
+    activeBubble.querySelector('.icon').style.opacity = 0.7;
 
     // Hide the corresponding menu element
     const activeMenu = document.getElementById(`menu${id}`);
-    activeMenu.classList.add("active");
+    activeMenu.classList.add('active');
   }, 50);
 }
 
 // Toggle dark mode
 function toggleDarkMode() {
-  if (document.body.classList.contains("dark-mode")) {
-    document.body.classList.remove("dark-mode");
-    localStorage.setItem("darkMode", "disabled");
+  if (document.body.classList.contains('dark-mode')) {
+    document.body.classList.remove('dark-mode');
+    localStorage.setItem('darkMode', 'disabled');
   } else {
-    document.body.classList.add("dark-mode");
-    localStorage.setItem("darkMode", "enabled");
+    document.body.classList.add('dark-mode');
+    localStorage.setItem('darkMode', 'enabled');
   }
 }
 
 // Update tax rates based on profile
 function updateTaxRates(profile) {
-  const serviceRate = document.getElementById("serviceRate");
-  const gstRate = document.getElementById("gstRate");
+  const serviceRate = document.getElementById('serviceRate');
+  const gstRate = document.getElementById('gstRate');
 
   // Update GST checkbox label
   updateGSTCheckboxLabel(profile);
@@ -2203,14 +2216,14 @@ function updateTaxRates(profile) {
   updatePaymentLabels(profile);
 
   // Update service charge label
-  const serviceValue = document.getElementById("serviceChargeValue")?.value || "10";
+  const serviceValue = document.getElementById('serviceChargeValue')?.value || '10';
   serviceRate.textContent = `${serviceValue}%`;
 
   // GST/VAT rates differ
-  if (profile === "singapore") {
-    gstRate.textContent = "9%";
-  } else if (profile === "malaysia") {
-    gstRate.textContent = "6%";
+  if (profile === 'singapore') {
+    gstRate.textContent = '9%';
+  } else if (profile === 'malaysia') {
+    gstRate.textContent = '6%';
   }
 }
 
@@ -2218,7 +2231,7 @@ function updateTaxRates(profile) {
 function updateGSTCheckboxLabel(profile) {
   const gstCheckboxLabel = document.querySelector('label[for="gstCheckbox"]');
   if (gstCheckboxLabel) {
-    const rate = profile === "singapore" ? "9%" : "6%";
+    const rate = profile === 'singapore' ? '9%' : '6%';
     gstCheckboxLabel.textContent = `Add ${rate} GST`;
   }
 }
@@ -2227,84 +2240,84 @@ function updateGSTCheckboxLabel(profile) {
 function updatePaymentLabels(profile) {
   const paynowNameLabel = document.querySelector('label[for="paynowName"]');
   const paynowPhoneLabel = document.querySelector('label[for="paynowPhone"]');
-  const paynowNameInput = document.getElementById("paynowName");
-  const paynowPhoneInput = document.getElementById("paynowPhone");
-  const paynowNameHelper = paynowNameInput?.parentElement.querySelector(".helper-text");
-  const paynowPhoneHelper = paynowPhoneInput?.parentElement.querySelector(".helper-text");
-  const paynowNameError = document.getElementById("paynowNameError");
-  const paynowPhoneError = document.getElementById("paynowPhoneError");
+  const paynowNameInput = document.getElementById('paynowName');
+  const paynowPhoneInput = document.getElementById('paynowPhone');
+  const paynowNameHelper = paynowNameInput?.parentElement.querySelector('.helper-text');
+  const paynowPhoneHelper = paynowPhoneInput?.parentElement.querySelector('.helper-text');
+  const paynowNameError = document.getElementById('paynowNameError');
+  const paynowPhoneError = document.getElementById('paynowPhoneError');
 
   if (paynowNameLabel && paynowPhoneLabel) {
-    if (profile === "malaysia") {
+    if (profile === 'malaysia') {
       // Update labels
-      paynowNameLabel.textContent = "Pay to";
-      paynowPhoneLabel.textContent = "Payee Phone Number";
+      paynowNameLabel.textContent = 'Pay to';
+      paynowPhoneLabel.textContent = 'Payee Phone Number';
 
       // Update placeholders
       if (paynowNameInput) {
-        paynowNameInput.placeholder = "Enter recipient name";
+        paynowNameInput.placeholder = 'Enter recipient name';
       }
 
       if (paynowPhoneInput) {
-        paynowPhoneInput.placeholder = "Enter payee phone number";
+        paynowPhoneInput.placeholder = 'Enter payee phone number';
         // Remove pattern validation for Malaysia
-        paynowPhoneInput.removeAttribute("pattern");
-        paynowPhoneInput.removeAttribute("title");
+        paynowPhoneInput.removeAttribute('pattern');
+        paynowPhoneInput.removeAttribute('title');
       }
 
       // Update helper text
       if (paynowNameHelper) {
-        paynowNameHelper.textContent = "Enter the name of payment recipient";
+        paynowNameHelper.textContent = 'Enter the name of payment recipient';
       }
 
       if (paynowPhoneHelper) {
-        paynowPhoneHelper.textContent = "Enter the payee phone number";
+        paynowPhoneHelper.textContent = 'Enter the payee phone number';
       }
 
       // Update error messages
       if (paynowNameError) {
-        paynowNameError.textContent = "Please enter recipient name";
+        paynowNameError.textContent = 'Please enter recipient name';
       }
 
       if (paynowPhoneError) {
-        paynowPhoneError.textContent = "Please enter a valid phone number";
+        paynowPhoneError.textContent = 'Please enter a valid phone number';
       }
     } else {
       // Default Singapore labels
-      paynowNameLabel.textContent = "PayNow Name";
-      paynowPhoneLabel.textContent = "PayNow Phone Number";
+      paynowNameLabel.textContent = 'PayNow Name';
+      paynowPhoneLabel.textContent = 'PayNow Phone Number';
 
       // Default Singapore placeholders
       if (paynowNameInput) {
-        paynowNameInput.placeholder = "Enter name";
+        paynowNameInput.placeholder = 'Enter name';
       }
 
       if (paynowPhoneInput) {
-        paynowPhoneInput.placeholder = "Enter phone number (e.g., 8XXX XXXX)";
+        paynowPhoneInput.placeholder = 'Enter phone number (e.g., 8XXX XXXX)';
         // Add back Singapore phone validation
-        paynowPhoneInput.setAttribute("pattern", "[89]\\d{7}");
+        paynowPhoneInput.setAttribute('pattern', '[89]\\d{7}');
         paynowPhoneInput.setAttribute(
-          "title",
-          "Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits"
+          'title',
+          'Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits'
         );
       }
 
       // Update helper text
       if (paynowNameHelper) {
-        paynowNameHelper.textContent = "Enter the name of PayNow account";
+        paynowNameHelper.textContent = 'Enter the name of PayNow account';
       }
 
       if (paynowPhoneHelper) {
-        paynowPhoneHelper.textContent = "Enter the payer phone number to generate PayNow QR";
+        paynowPhoneHelper.textContent = 'Enter the payer phone number to generate PayNow QR';
       }
 
       // Update error messages
       if (paynowNameError) {
-        paynowNameError.textContent = "Please enter PayNow name";
+        paynowNameError.textContent = 'Please enter PayNow name';
       }
 
       if (paynowPhoneError) {
-        paynowPhoneError.textContent = "Please enter a valid PayNow phone number";
+        paynowPhoneError.textContent = 'Please enter a valid PayNow phone number';
       }
     }
   }
@@ -2313,61 +2326,61 @@ function updatePaymentLabels(profile) {
 // Show the Settle Now screen
 function showSettleNowScreen() {
   // Hide all pages
-  Object.values(pageContainers).forEach((containerId) => {
+  Object.values(pageContainers).forEach(containerId => {
     const container = document.getElementById(containerId);
     if (container) {
-      container.classList.remove("active");
-      container.classList.add("inactive");
+      container.classList.remove('active');
+      container.classList.add('inactive');
     }
   });
 
   // Show the Settle Now screen
-  const settleNowScreen = document.getElementById("settleNowScreen");
-  settleNowScreen.classList.remove("inactive");
-  settleNowScreen.classList.add("active");
+  const settleNowScreen = document.getElementById('settleNowScreen');
+  settleNowScreen.classList.remove('inactive');
+  settleNowScreen.classList.add('active');
 
   // Check if there are any saved groups
   const hasSavedGroups = Object.keys(groups).length > 0;
 
   // If no saved groups, hide the saved group option and select new group
   if (!hasSavedGroups) {
-    document.querySelector(".saved-group-option").style.display = "none";
-    document.querySelector(".or-divider").style.display = "none";
-    document.querySelector(".new-group-option").classList.add("selected");
+    document.querySelector('.saved-group-option').style.display = 'none';
+    document.querySelector('.or-divider').style.display = 'none';
+    document.querySelector('.new-group-option').classList.add('selected');
   }
 
   // Reset to initial settle view
-  showSettleView("settleChoiceView");
+  showSettleView('settleChoiceView');
 
   // Hide navbar
-  document.getElementById("navbarContainer").classList.add("navbar-hidden");
+  document.getElementById('navbarContainer').classList.add('navbar-hidden');
 }
 
 // Hide the Settle Now screen and go back to home
 function hideSettleNowScreen() {
   // Hide the settle now screen
-  const settleNowScreen = document.getElementById("settleNowScreen");
-  settleNowScreen.classList.remove("active");
-  settleNowScreen.classList.add("inactive");
+  const settleNowScreen = document.getElementById('settleNowScreen');
+  settleNowScreen.classList.remove('active');
+  settleNowScreen.classList.add('inactive');
 
   // Show the home screen
-  const homeContainer = document.getElementById("homeContainer");
-  homeContainer.classList.remove("inactive");
-  homeContainer.classList.add("active");
+  const homeContainer = document.getElementById('homeContainer');
+  homeContainer.classList.remove('inactive');
+  homeContainer.classList.add('active');
 
   // Show navbar again
-  document.getElementById("navbarContainer").classList.remove("navbar-hidden");
+  document.getElementById('navbarContainer').classList.remove('navbar-hidden');
 
   // Completely hide the bill summary when leaving the settle now screen
-  const modal = document.getElementById("billSummaryModal");
+  const modal = document.getElementById('billSummaryModal');
   if (modal) {
-    modal.classList.remove("peeking", "half-open", "fully-open");
+    modal.classList.remove('peeking', 'half-open', 'fully-open');
   }
 
   // Hide the overlay
-  const overlay = document.getElementById("billSummaryOverlay");
+  const overlay = document.getElementById('billSummaryOverlay');
   if (overlay) {
-    overlay.classList.remove("active");
+    overlay.classList.remove('active');
   }
 
   updateHomePageCards();
@@ -2376,48 +2389,48 @@ function hideSettleNowScreen() {
 // Function to switch between views
 function showSettleView(viewId) {
   // Hide all views
-  document.querySelectorAll(".settle-view").forEach((view) => {
-    view.classList.remove("active");
+  document.querySelectorAll('.settle-view').forEach(view => {
+    view.classList.remove('active');
   });
 
   // Hide the finalise bill screen as it's not a regular settle-view
-  const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
+  const finaliseScreen = document.getElementById('finaliseSettleBillScreen');
   if (finaliseScreen) {
-    finaliseScreen.classList.remove("active");
-    finaliseScreen.classList.add("inactive");
+    finaliseScreen.classList.remove('active');
+    finaliseScreen.classList.add('inactive');
   }
 
   // Show the requested view
   const viewToShow = document.getElementById(viewId);
   if (viewToShow) {
-    viewToShow.classList.add("active");
+    viewToShow.classList.add('active');
     currentSettleView = viewId;
   }
 
   // Special handling for views outside the white-slide-container
-  const whiteSlideContainer = document.querySelector(".white-slide-container");
-  if (viewId === "addSettleItemView" || viewId === "finaliseSettleBillScreen") {
-    whiteSlideContainer.classList.add("hidden");
+  const whiteSlideContainer = document.querySelector('.white-slide-container');
+  if (viewId === 'addSettleItemView' || viewId === 'finaliseSettleBillScreen') {
+    whiteSlideContainer.classList.add('hidden');
     // Show the bill summary when in Add Settle Item view
     toggleBillSummaryVisibility(true);
   } else {
-    whiteSlideContainer.classList.remove("hidden");
+    whiteSlideContainer.classList.remove('hidden');
     // Hide the bill summary in all other views
     toggleBillSummaryVisibility(false);
   }
 
-  const settleNowScreen = document.getElementById("settleNowScreen");
-  if (viewId === "loadingScreen") {
-    settleNowScreen.classList.remove("active");
-    settleNowScreen.classList.add("inactive");
+  const settleNowScreen = document.getElementById('settleNowScreen');
+  if (viewId === 'loadingScreen') {
+    settleNowScreen.classList.remove('active');
+    settleNowScreen.classList.add('inactive');
   }
 
-  const loadingScreen = document.getElementById("loadingScreen");
-  if (viewId === "successScreen") {
+  const loadingScreen = document.getElementById('loadingScreen');
+  if (viewId === 'successScreen') {
     showSuccessScreen();
     setTimeout(() => {
-      loadingScreen.classList.remove("active");
-      loadingScreen.classList.add("inactive");
+      loadingScreen.classList.remove('active');
+      loadingScreen.classList.add('inactive');
     }, 2000);
   }
 
@@ -2427,63 +2440,63 @@ function showSettleView(viewId) {
 
 // Update the header text based on current view
 function updateSettleNowHeader() {
-  const header = document.querySelector(".settle-now-header h1");
+  const header = document.querySelector('.settle-now-header h1');
 
-  if (currentSettleView === "settleChoiceView") {
-    header.textContent = "Settle Now?";
-  } else if (currentSettleView === "newGroupMembersView") {
+  if (currentSettleView === 'settleChoiceView') {
+    header.textContent = 'Settle Now?';
+  } else if (currentSettleView === 'newGroupMembersView') {
     if (isEditingGroup) {
-      header.textContent = "Edit Group";
+      header.textContent = 'Edit Group';
     } else {
-      header.textContent = "Settle Now?";
+      header.textContent = 'Settle Now?';
     }
-  } else if (currentSettleView === "addSettleItemView") {
-    header.textContent = "Add Settle Item";
-  } else if (currentSettleView === "savedGroupsView") {
-    header.textContent = "Settle With Saved Group";
-  } else if (currentSettleView === "finaliseSettleBillScreen") {
-    header.textContent = "Finalise Settle Bill";
+  } else if (currentSettleView === 'addSettleItemView') {
+    header.textContent = 'Add Settle Item';
+  } else if (currentSettleView === 'savedGroupsView') {
+    header.textContent = 'Settle With Saved Group';
+  } else if (currentSettleView === 'finaliseSettleBillScreen') {
+    header.textContent = 'Finalise Settle Bill';
   }
 
   // Check if finaliseSettleBillScreen is active and update its header separately
-  const finaliseScreen = document.getElementById("finaliseSettleBillScreen");
-  if (finaliseScreen && finaliseScreen.classList.contains("active")) {
-    const finaliseHeader = finaliseScreen.querySelector(".settle-now-header h1");
+  const finaliseScreen = document.getElementById('finaliseSettleBillScreen');
+  if (finaliseScreen && finaliseScreen.classList.contains('active')) {
+    const finaliseHeader = finaliseScreen.querySelector('.settle-now-header h1');
     if (finaliseHeader) {
-      finaliseHeader.textContent = "Finalise Settle Bill";
+      finaliseHeader.textContent = 'Finalise Settle Bill';
     }
   }
 }
 
 // Handle back button functionality based on current view
 function handleSettleBackButton() {
-  const billSummaryModal = document.getElementById("billSummaryModal");
-  if (currentSettleView === "settleChoiceView") {
+  const billSummaryModal = document.getElementById('billSummaryModal');
+  if (currentSettleView === 'settleChoiceView') {
     // If on main settle screen, go back to home
     hideSettleNowScreen();
     if (billSummaryModal) {
-      billSummaryModal.style.display = "none";
+      billSummaryModal.style.display = 'none';
     }
-  } else if (currentSettleView === "newGroupMembersView") {
+  } else if (currentSettleView === 'newGroupMembersView') {
     // Reset birthday person selection when going back
     birthdayPerson = null;
 
     // If editing a group, return to saved groups view
     if (isEditingGroup) {
       isEditingGroup = false;
-      showSettleView("savedGroupsView");
+      showSettleView('savedGroupsView');
       // Update the header to match the saved groups view
       updateSettleNowHeader();
     } else {
       // If on new group members view, go back to settle choice
-      showSettleView("settleChoiceView");
+      showSettleView('settleChoiceView');
     }
     if (billSummaryModal) {
-      billSummaryModal.style.display = "none";
+      billSummaryModal.style.display = 'none';
     }
-  } else if (currentSettleView === "addSettleItemView") {
-    showModal("backConfirmModal");
-  } else if (currentSettleView === "savedGroupsView") {
+  } else if (currentSettleView === 'addSettleItemView') {
+    showModal('backConfirmModal');
+  } else if (currentSettleView === 'savedGroupsView') {
     // Reset birthday person selection when going back
     birthdayPerson = null;
 
@@ -2494,24 +2507,24 @@ function handleSettleBackButton() {
 
     // Update the UI based on whether we have saved groups
     if (!hasSavedGroups) {
-      document.querySelector(".saved-group-option").style.display = "none";
-      document.querySelector(".or-divider").style.display = "none";
-      document.querySelector(".new-group-option").classList.add("selected");
+      document.querySelector('.saved-group-option').style.display = 'none';
+      document.querySelector('.or-divider').style.display = 'none';
+      document.querySelector('.new-group-option').classList.add('selected');
     } else {
-      document.querySelector(".saved-group-option").style.display = "flex";
-      document.querySelector(".or-divider").style.display = "flex";
+      document.querySelector('.saved-group-option').style.display = 'flex';
+      document.querySelector('.or-divider').style.display = 'flex';
 
       // Make sure the Get Started button is enabled
-      document.querySelector(".get-started-btn").disabled = false;
-      settleChoiceError.style.display = "none";
+      document.querySelector('.get-started-btn').disabled = false;
+      settleChoiceError.style.display = 'none';
     }
 
-    showSettleView("settleChoiceView");
+    showSettleView('settleChoiceView');
 
     if (billSummaryModal) {
-      billSummaryModal.style.display = "none";
+      billSummaryModal.style.display = 'none';
     }
-  } else if (currentSettleView === "finaliseSettleBillScreen") {
+  } else if (currentSettleView === 'finaliseSettleBillScreen') {
     hideFinaliseSettleBillScreen();
   }
 }
@@ -2519,16 +2532,16 @@ function handleSettleBackButton() {
 // Function to load and render saved groups
 function loadSavedGroups() {
   // First load from localStorage
-  const localGroups = JSON.parse(localStorage.getItem("groups")) || {};
+  const localGroups = JSON.parse(localStorage.getItem('groups')) || {};
 
   // Initialize groups with local data
   groups = { ...localGroups };
 
-  showSettleView("savedGroupsView");
+  showSettleView('savedGroupsView');
 
   // Show loading state on Get Started button
-  const savedGroupsLoading = document.querySelector(".saved-groups-loading");
-  savedGroupsLoading.classList.add("active");
+  const savedGroupsLoading = document.querySelector('.saved-groups-loading');
+  savedGroupsLoading.classList.add('active');
   savedGroupsLoading.disabled = true;
 
   // Then try to fetch from Firebase and merge
@@ -2536,15 +2549,15 @@ function loadSavedGroups() {
     .then(() => {
       renderSavedGroups();
     })
-    .catch((error) => {
-      console.error("Error fetching groups from Firebase:", error);
+    .catch(error => {
+      console.error('Error fetching groups from Firebase:', error);
       // Continue with local groups only
       renderSavedGroups();
     })
     .finally(() => {
       // Remove loading state from button
       if (savedGroupsLoading) {
-        savedGroupsLoading.classList.remove("active");
+        savedGroupsLoading.classList.remove('active');
         savedGroupsLoading.disabled = false;
       }
     });
@@ -2554,7 +2567,7 @@ function loadSavedGroups() {
 async function fetchGroupsFromFirebase() {
   try {
     // Use fetchWithUserId to handle the API call
-    const response = await fetchWithUserId("/api/groups");
+    const response = await fetchWithUserId('/api/groups');
 
     if (!response.ok) {
       throw new Error(`Failed to fetch groups from Firebase: ${response.statusText}`);
@@ -2566,11 +2579,11 @@ async function fetchGroupsFromFirebase() {
       // Merge Firebase groups with local groups (Firebase takes precedence)
       groups = { ...groups, ...data.groups };
       // Save the merged groups to localStorage for offline access
-      localStorage.setItem("groups", JSON.stringify(groups));
+      localStorage.setItem('groups', JSON.stringify(groups));
       // console.log(`Fetched ${Object.keys(data.groups).length} groups from Firebase`);
     }
   } catch (error) {
-    console.error("Error fetching groups from Firebase:", error);
+    console.error('Error fetching groups from Firebase:', error);
     // Rethrow the error to be handled by the caller
     throw error;
   }
@@ -2579,20 +2592,20 @@ async function fetchGroupsFromFirebase() {
 // Function to render the saved groups UI
 function renderSavedGroups() {
   const groupsList = Object.keys(groups);
-  const container = document.querySelector(".saved-groups-list-container");
-  const noGroupsMessage = document.querySelector(".no-saved-groups");
+  const container = document.querySelector('.saved-groups-list-container');
+  const noGroupsMessage = document.querySelector('.no-saved-groups');
 
   // Clear previous content
-  container.innerHTML = "";
+  container.innerHTML = '';
 
   if (groupsList.length === 0) {
     // Show no groups message
-    noGroupsMessage.style.display = "flex";
-    document.querySelector(".saved-groups-next-btn").disabled = true;
+    noGroupsMessage.style.display = 'flex';
+    document.querySelector('.saved-groups-next-btn').disabled = true;
   } else {
     // Hide no groups message and show groups
-    noGroupsMessage.style.display = "none";
-    document.querySelector(".saved-groups-next-btn").disabled = false;
+    noGroupsMessage.style.display = 'none';
+    document.querySelector('.saved-groups-next-btn').disabled = false;
 
     // Add each group to the container with increasing delays
     groupsList.forEach((groupName, index) => {
@@ -2605,48 +2618,48 @@ function renderSavedGroups() {
 
 // Create a saved group card element
 function createSavedGroupCard(groupName, membersList, cardIndex) {
-  const card = document.createElement("div");
-  card.className = "saved-group-card";
+  const card = document.createElement('div');
+  card.className = 'saved-group-card';
   card.dataset.groupName = groupName;
   const baseDelay = 0.2 + cardIndex * 0.2; // Base delay increases by 0.2s for each card
   card.style.animationDelay = `${baseDelay}s`; // Add initial delay for the card
 
   // Create title
-  const title = document.createElement("div");
-  title.className = "saved-group-title";
+  const title = document.createElement('div');
+  title.className = 'saved-group-title';
   title.textContent = groupName;
   title.style.animationDelay = `${baseDelay + 0.1}s`; // Slightly delayed after card
 
   // Create members area
-  const membersContainer = document.createElement("div");
-  membersContainer.className = "saved-group-members";
+  const membersContainer = document.createElement('div');
+  membersContainer.className = 'saved-group-members';
   membersContainer.style.animationDelay = `${baseDelay + 0.2}s`; // Delayed after title
 
   // Show all member avatars
   const displayMembers = membersList;
 
   displayMembers.forEach((member, index) => {
-    const avatarWrapper = document.createElement("div");
-    avatarWrapper.className = "member-avatar-wrapper";
+    const avatarWrapper = document.createElement('div');
+    avatarWrapper.className = 'member-avatar-wrapper';
     avatarWrapper.style.animationDelay = `${baseDelay + 0.3 + index * 0.2}s`; // Stagger the avatar animations
 
-    const avatarIcon = document.createElement("div");
-    avatarIcon.className = "member-avatar";
+    const avatarIcon = document.createElement('div');
+    avatarIcon.className = 'member-avatar';
 
     // Create img element for cat avatar
-    const img = document.createElement("img");
+    const img = document.createElement('img');
 
     // Determine the avatar number based on member format
     let memberName, avatarNumber;
 
-    if (typeof member === "object" && member.name) {
+    if (typeof member === 'object' && member.name) {
       memberName = member.name;
       avatarNumber = member.avatar || Math.floor(Math.random() * 20) + 1;
     } else {
       memberName = member;
       // For backward compatibility with old format, generate a consistent avatar
       // based on the member's name string
-      const nameHash = memberName.split("").reduce((a, b) => {
+      const nameHash = memberName.split('').reduce((a, b) => {
         a = (a << 5) - a + b.charCodeAt(0);
         return a & a;
       }, 0);
@@ -2655,14 +2668,14 @@ function createSavedGroupCard(groupName, membersList, cardIndex) {
 
     img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
     img.alt = `Cat avatar ${avatarNumber}`;
-    img.className = "cat-avatar-img saved-group-avatar-img";
+    img.className = 'cat-avatar-img saved-group-avatar-img';
 
     avatarIcon.appendChild(img);
     avatarWrapper.appendChild(avatarIcon);
 
     // Add member name
-    const memberNameElement = document.createElement("div");
-    memberNameElement.className = "member-name";
+    const memberNameElement = document.createElement('div');
+    memberNameElement.className = 'member-name';
     memberNameElement.textContent = memberName;
     avatarWrapper.appendChild(memberNameElement);
 
@@ -2670,32 +2683,32 @@ function createSavedGroupCard(groupName, membersList, cardIndex) {
   });
 
   // Add member count
-  const memberCount = document.createElement("div");
-  memberCount.className = "member-count";
+  const memberCount = document.createElement('div');
+  memberCount.className = 'member-count';
   memberCount.style.animationDelay = `${baseDelay + 0.6}s`; // Delayed after avatars
 
   // Show total members count
   memberCount.textContent = `${membersList.length} members`;
 
   // Create action buttons
-  const actionButtons = document.createElement("div");
-  actionButtons.className = "action-buttons";
+  const actionButtons = document.createElement('div');
+  actionButtons.className = 'action-buttons';
   actionButtons.style.animationDelay = `${baseDelay + 0.7}s`; // Delayed after member count
 
   // Edit button
-  const editBtn = document.createElement("button");
-  editBtn.className = "group-action-btn edit-btn";
-  editBtn.innerHTML = "<img class='group-action-btn-img' src='assets/edit.svg' alt='Edit' />";
-  editBtn.addEventListener("click", (e) => {
+  const editBtn = document.createElement('button');
+  editBtn.className = 'group-action-btn edit-btn';
+  editBtn.innerHTML = '<img class=\'group-action-btn-img\' src=\'assets/edit.svg\' alt=\'Edit\' />';
+  editBtn.addEventListener('click', e => {
     e.stopPropagation();
     editSavedGroup(groupName, e);
   });
 
   // Delete button
-  const deleteBtn = document.createElement("button");
-  deleteBtn.className = "group-action-btn delete-btn";
-  deleteBtn.innerHTML = "<img class='group-action-btn-img' src='assets/bin.svg' alt='Delete' />";
-  deleteBtn.addEventListener("click", (e) => {
+  const deleteBtn = document.createElement('button');
+  deleteBtn.className = 'group-action-btn delete-btn';
+  deleteBtn.innerHTML = '<img class=\'group-action-btn-img\' src=\'assets/bin.svg\' alt=\'Delete\' />';
+  deleteBtn.addEventListener('click', e => {
     e.stopPropagation();
     deleteSavedGroup(groupName, e);
   });
@@ -2710,7 +2723,7 @@ function createSavedGroupCard(groupName, membersList, cardIndex) {
   card.appendChild(actionButtons);
 
   // Make the whole card clickable to select it
-  card.addEventListener("click", () => {
+  card.addEventListener('click', () => {
     selectSavedGroup(groupName);
   });
 
@@ -2720,17 +2733,17 @@ function createSavedGroupCard(groupName, membersList, cardIndex) {
 // Function to select a saved group
 function selectSavedGroup(groupName) {
   // Deselect all cards first
-  document.querySelectorAll(".saved-group-card").forEach((card) => {
-    card.classList.remove("selected");
+  document.querySelectorAll('.saved-group-card').forEach(card => {
+    card.classList.remove('selected');
   });
 
   // Select the clicked card
   const selectedCard = document.querySelector(`.saved-group-card[data-group-name="${groupName}"]`);
   if (selectedCard) {
-    selectedCard.classList.add("selected");
+    selectedCard.classList.add('selected');
     currentGroup = groupName;
     members = [...groups[groupName]];
-    savedGroupError.style.display = "none";
+    savedGroupError.style.display = 'none';
   }
 }
 
@@ -2746,26 +2759,26 @@ function editSavedGroup(groupName, event) {
   members = [...groups[groupName]];
 
   // Navigate to the new group members view
-  showSettleView("newGroupMembersView");
+  showSettleView('newGroupMembersView');
 
   // Update the title to show we're editing
-  document.querySelector(".new-group-members-container h2").textContent = "Edit Group";
+  document.querySelector('.new-group-members-container h2').textContent = 'Edit Group';
 
   // Change the Next button text to Done
-  document.querySelector(".next-btn").textContent = "Done";
+  document.querySelector('.next-btn').textContent = 'Done';
 
   // Show and populate the group name input field
-  const groupNameContainer = document.querySelector(".edit-group-name-container");
-  const groupNameInput = document.getElementById("editGroupName");
+  const groupNameContainer = document.querySelector('.edit-group-name-container');
+  const groupNameInput = document.getElementById('editGroupName');
   if (groupNameContainer && groupNameInput) {
-    groupNameContainer.style.display = "block";
+    groupNameContainer.style.display = 'block';
     groupNameInput.value = groupName;
 
     // Clear any existing error message
-    const errorElement = groupNameInput.parentElement.querySelector(".error-message");
+    const errorElement = groupNameInput.parentElement.querySelector('.error-message');
     if (errorElement) {
-      errorElement.style.display = "none";
-      errorElement.textContent = "Please enter group's name";
+      errorElement.style.display = 'none';
+      errorElement.textContent = 'Please enter group\'s name';
     }
   }
 
@@ -2785,10 +2798,10 @@ function deleteSavedGroup(groupName, event) {
   }
 
   // Store the group name for the confirmation
-  document.getElementById("deleteGroupModal").dataset.groupName = groupName;
+  document.getElementById('deleteGroupModal').dataset.groupName = groupName;
 
   // Show the delete confirmation modal
-  showModal("deleteGroupModal");
+  showModal('deleteGroupModal');
 }
 
 // Show modal function
@@ -2797,24 +2810,24 @@ function showModal(modalId) {
   if (modal) {
     // First set display to flex, then add the active class after a small delay
     // This allows the CSS transition to work properly
-    modal.style.display = "flex";
+    modal.style.display = 'flex';
     setTimeout(() => {
-      modal.classList.add("active");
+      modal.classList.add('active');
     }, 10);
 
     // Reset any form errors
-    const errorMessages = modal.querySelectorAll(".error-message");
-    errorMessages.forEach((el) => el.classList.remove("visible"));
+    const errorMessages = modal.querySelectorAll('.error-message');
+    errorMessages.forEach(el => el.classList.remove('visible'));
 
-    const inputFields = modal.querySelectorAll(".input-field");
-    inputFields.forEach((el) => el.classList.remove("error"));
+    const inputFields = modal.querySelectorAll('.input-field');
+    inputFields.forEach(el => el.classList.remove('error'));
 
     // Reset form inputs only for the add member modal, not the edit modal
-    if (modalId === "addMemberModal") {
-      const inputs = modal.querySelectorAll("input");
-      inputs.forEach((input) => (input.value = ""));
+    if (modalId === 'addMemberModal') {
+      const inputs = modal.querySelectorAll('input');
+      inputs.forEach(input => (input.value = ''));
       // Focus the first input field in the modal
-      const firstInput = modal.querySelector("input");
+      const firstInput = modal.querySelector('input');
       if (firstInput) {
         setTimeout(() => {
           // Force keyboard to appear on iOS devices
@@ -2834,21 +2847,21 @@ function showModal(modalId) {
 function hideModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) {
-    const modalContent = modal.querySelector(".modal-content");
+    const modalContent = modal.querySelector('.modal-content');
 
     // Add closing classes to trigger animations
-    modal.classList.add("closing");
+    modal.classList.add('closing');
     if (modalContent) {
-      modalContent.classList.add("closing");
+      modalContent.classList.add('closing');
     }
 
     // Wait for animation to complete before hiding
     setTimeout(() => {
-      modal.classList.remove("active", "closing");
+      modal.classList.remove('active', 'closing');
       if (modalContent) {
-        modalContent.classList.remove("closing");
+        modalContent.classList.remove('closing');
       }
-      modal.style.display = "none";
+      modal.style.display = 'none';
     }, 300);
   }
 }
@@ -2862,7 +2875,7 @@ function showGroupMembersView(groupName) {
   } else {
     // Default empty members array if no group selected
     members = [];
-    currentGroup = "";
+    currentGroup = '';
   }
 
   // Reset birthday person selection when loading a group
@@ -2872,10 +2885,10 @@ function showGroupMembersView(groupName) {
   initializeMemberList();
 
   // Reset Next button text to "Next"
-  document.querySelector(".next-btn").textContent = "Next";
+  document.querySelector('.next-btn').textContent = 'Next';
 
   // Show the group members view
-  showSettleView("newGroupMembersView");
+  showSettleView('newGroupMembersView');
 }
 
 // Save the current members to localStorage
@@ -2885,16 +2898,16 @@ function saveGroupToStorage() {
 
     // If we're editing a group, check if the name has changed
     if (isEditingGroup) {
-      const groupNameInput = document.getElementById("editGroupName");
+      const groupNameInput = document.getElementById('editGroupName');
       if (groupNameInput) {
         const newGroupName = groupNameInput.value.trim();
-        const errorElement = groupNameInput.parentElement.querySelector(".error-message");
+        const errorElement = groupNameInput.parentElement.querySelector('.error-message');
 
         // Validate that the group name is not empty
         if (!newGroupName) {
           if (errorElement) {
-            errorElement.textContent = "Please enter group's name";
-            errorElement.style.display = "block";
+            errorElement.textContent = 'Please enter group\'s name';
+            errorElement.style.display = 'block';
           }
           return; // Don't save if name is empty
         }
@@ -2905,8 +2918,8 @@ function saveGroupToStorage() {
           if (groups[newGroupName]) {
             // Show error - group name already exists
             if (errorElement) {
-              errorElement.textContent = "A group with this name already exists";
-              errorElement.style.display = "block";
+              errorElement.textContent = 'A group with this name already exists';
+              errorElement.style.display = 'block';
             }
             return; // Don't save if name conflicts
           }
@@ -2926,13 +2939,13 @@ function saveGroupToStorage() {
 
         // Clear any error messages if validation passed
         if (errorElement) {
-          errorElement.style.display = "none";
+          errorElement.style.display = 'none';
         }
       }
     }
 
     groups[groupNameToSave] = [...members];
-    localStorage.setItem("groups", JSON.stringify(groups));
+    localStorage.setItem('groups', JSON.stringify(groups));
     // console.log(`Saved group "${groupNameToSave}" with ${members.length} members`);
 
     // Also save to Firebase
@@ -2950,19 +2963,19 @@ async function saveGroupToFirebase(groupName, groupMembers) {
       name: groupName,
       members: groupMembers,
       timestamp: Date.now(),
-      userId: userId || null,
+      userId: userId || null
     };
 
     // Use fetchWithUserId to handle the API call
-    const response = await fetchWithUserId("/api/groups/save", {
-      method: "POST",
+    const response = await fetchWithUserId('/api/groups/save', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
         groupName: groupName,
-        groupData: groupData,
-      }),
+        groupData: groupData
+      })
     });
 
     if (!response.ok) {
@@ -2981,7 +2994,7 @@ async function saveGroupToFirebase(groupName, groupMembers) {
 async function deleteGroupFromFirebase(groupName) {
   try {
     const response = await fetchWithUserId(`/api/groups/${encodeURIComponent(groupName)}`, {
-      method: "DELETE",
+      method: 'DELETE'
     });
 
     if (!response.ok) {
@@ -2996,37 +3009,37 @@ async function deleteGroupFromFirebase(groupName) {
 
 // Add member to UI
 function addMemberToUI(memberName, avatarNumber) {
-  const memberList = document.querySelector(".member-list");
+  const memberList = document.querySelector('.member-list');
 
-  const memberItem = document.createElement("div");
-  memberItem.className = "member-item";
+  const memberItem = document.createElement('div');
+  memberItem.className = 'member-item';
   memberItem.dataset.name = memberName; // Store member name as data attribute
   // Add animation delay based on the number of existing members
-  const existingMembers = document.querySelectorAll(".member-item").length;
+  const existingMembers = document.querySelectorAll('.member-item').length;
   memberItem.style.animationDelay = `${(existingMembers + 1) * 0.15}s`;
 
-  const avatarDiv = document.createElement("div");
-  avatarDiv.className = "member-avatar";
+  const avatarDiv = document.createElement('div');
+  avatarDiv.className = 'member-avatar';
 
   // Create img element for cat avatar
-  const img = document.createElement("img");
+  const img = document.createElement('img');
   img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
   img.alt = `Cat avatar ${avatarNumber}`;
-  img.className = "cat-avatar-img";
+  img.className = 'cat-avatar-img';
   avatarDiv.appendChild(img);
 
   // Store the avatar number as data attribute
   avatarDiv.dataset.avatarNumber = avatarNumber;
 
-  const nameDiv = document.createElement("div");
-  nameDiv.className = "member-name";
+  const nameDiv = document.createElement('div');
+  nameDiv.className = 'member-name';
   nameDiv.textContent = memberName;
 
   memberItem.appendChild(avatarDiv);
   memberItem.appendChild(nameDiv);
 
   // Add click event to open edit modal
-  memberItem.addEventListener("click", function () {
+  memberItem.addEventListener('click', function () {
     // Use the current text content from the nameDiv rather than the original memberName variable
     // This ensures we get the updated name if it was edited
     const currentName = nameDiv.textContent;
@@ -3039,21 +3052,21 @@ function addMemberToUI(memberName, avatarNumber) {
 
 // Open edit member modal
 function openEditMemberModal(memberName, avatarNumber) {
-  const modal = document.getElementById("editMemberModal");
-  const nameInput = document.getElementById("editMemberName");
-  const avatarElement = document.querySelector(".edit-member-avatar");
+  const modal = document.getElementById('editMemberModal');
+  const nameInput = document.getElementById('editMemberName');
+  const avatarElement = document.querySelector('.edit-member-avatar');
 
   // Set values
   nameInput.value = memberName;
 
   // Clear previous avatar content
-  avatarElement.innerHTML = "";
+  avatarElement.innerHTML = '';
 
   // Create and add avatar image
-  const img = document.createElement("img");
+  const img = document.createElement('img');
   img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
   img.alt = `Cat avatar ${avatarNumber}`;
-  img.className = "cat-avatar-img";
+  img.className = 'cat-avatar-img';
   avatarElement.appendChild(img);
 
   // Store avatar number
@@ -3063,17 +3076,17 @@ function openEditMemberModal(memberName, avatarNumber) {
   nameInput.dataset.originalName = memberName;
 
   // Show modal
-  showModal("editMemberModal");
+  showModal('editMemberModal');
 }
 
 // Remove member
 function removeMember() {
-  const nameInput = document.getElementById("editMemberName");
+  const nameInput = document.getElementById('editMemberName');
   const memberName = nameInput.dataset.originalName;
 
   // Remove from members array - find index using the name property
-  const index = members.findIndex((member) =>
-    typeof member === "object" ? member.name === memberName : member === memberName
+  const index = members.findIndex(member =>
+    typeof member === 'object' ? member.name === memberName : member === memberName
   );
 
   if (index !== -1) {
@@ -3081,12 +3094,12 @@ function removeMember() {
   }
 
   // Remove from UI
-  const memberItems = document.querySelectorAll(".member-item");
-  memberItems.forEach((item) => {
+  const memberItems = document.querySelectorAll('.member-item');
+  memberItems.forEach(item => {
     if (item.dataset.name === memberName) {
       // Add fade-out animation
-      item.style.opacity = "0";
-      item.style.transform = "translateY(10px)";
+      item.style.opacity = '0';
+      item.style.transform = 'translateY(10px)';
       setTimeout(() => {
         item.remove();
       }, 300);
@@ -3094,131 +3107,135 @@ function removeMember() {
   });
 
   // Update the dish assignment UI if we're in that view
-  if (currentSettleView === "addSettleItemView") {
+  if (currentSettleView === 'addSettleItemView') {
     setTimeout(() => {
       updateSettleItemMembersUI();
     }, 350); // Wait for fade-out animation to complete
   }
 
   // Close the modal
-  hideModal("editMemberModal");
+  hideModal('editMemberModal');
 }
 
 // Add a new member
 function addNewMember() {
-  const memberNameInput = document.getElementById("memberName");
+  const memberNameInput = document.getElementById('memberName');
   const memberName = memberNameInput.value.trim();
-  const inputField = memberNameInput.closest(".input-field");
-  const errorMessage = inputField.querySelector(".error-message");
+  const inputField = memberNameInput.closest('.input-field');
+  const errorMessage = inputField.querySelector('.error-message');
 
   // Check if we've reached the maximum number of members (20)
   if (members.length >= 20) {
-    inputField.classList.add("error");
-    errorMessage.classList.add("visible");
-    errorMessage.textContent = "Maximum of 20 members allowed";
+    inputField.classList.add('error');
+    errorMessage.classList.add('visible');
+    errorMessage.textContent = 'Maximum of 20 members allowed';
     return;
   }
 
   // Validate input
   if (!memberName) {
-    inputField.classList.add("error");
-    errorMessage.classList.add("visible");
-    errorMessage.textContent = "Please enter a name";
+    inputField.classList.add('error');
+    errorMessage.classList.add('visible');
+    errorMessage.textContent = 'Please enter a name';
     return;
   }
 
   // Check if the name already exists
-  if (members.some((member) => (typeof member === "object" ? member.name === memberName : member === memberName))) {
-    inputField.classList.add("error");
-    errorMessage.textContent = "This name already exists";
-    errorMessage.classList.add("visible");
+  if (
+    members.some(member =>
+      typeof member === 'object' ? member.name === memberName : member === memberName
+    )
+  ) {
+    inputField.classList.add('error');
+    errorMessage.textContent = 'This name already exists';
+    errorMessage.classList.add('visible');
     return;
   }
 
   // Get all used avatar numbers
   const usedAvatars = members
-    .filter((member) => typeof member === "object" && member.avatar)
-    .map((member) => member.avatar);
+    .filter(member => typeof member === 'object' && member.avatar)
+    .map(member => member.avatar);
 
   // Generate a list of available avatars (1-20)
   const allAvatars = Array.from({ length: 20 }, (_, i) => i + 1);
-  const availableAvatars = allAvatars.filter((num) => !usedAvatars.includes(num));
+  const availableAvatars = allAvatars.filter(num => !usedAvatars.includes(num));
 
   // If all avatars are used, just pick a random one
   // Otherwise, use an avatar that hasn't been used yet
   const avatarNumber =
-    availableAvatars.length > 0
-      ? availableAvatars[Math.floor(Math.random() * availableAvatars.length)]
-      : Math.floor(Math.random() * 20) + 1;
+      availableAvatars.length > 0
+        ? availableAvatars[Math.floor(Math.random() * availableAvatars.length)]
+        : Math.floor(Math.random() * 20) + 1;
 
   // Add the member to the array as an object with name and avatar
   members.push({
     name: memberName,
-    avatar: avatarNumber,
+    avatar: avatarNumber
   });
 
   // Create and add the member to the UI
   addMemberToUI(memberName, avatarNumber);
 
   // Update the dish assignment UI if we're in that view
-  if (currentSettleView === "addSettleItemView") {
+  if (currentSettleView === 'addSettleItemView') {
     updateSettleItemMembersUI();
   }
 
   // Clear the input field
-  memberNameInput.value = "";
-  inputField.classList.remove("error");
-  errorMessage.classList.remove("visible");
+  memberNameInput.value = '';
+  inputField.classList.remove('error');
+  errorMessage.classList.remove('visible');
 
   // Hide the modal
-  hideModal("addMemberModal");
+  hideModal('addMemberModal');
 }
 
 function clearHistory() {
   // Show the confirmation modal
-  showModal("clearHistoryConfirmModal");
+  showModal('clearHistoryConfirmModal');
 }
 
 // Function to actually clear the history after confirmation
 function confirmClearHistory() {
   // Show loading in the history list
-  const historyList = document.querySelector(".history-list");
+  const historyList = document.querySelector('.history-list');
   if (historyList) {
-    historyList.innerHTML = "<p class='no-history'>Clearing history...</p>";
+    historyList.innerHTML = '<p class=\'no-history\'>Clearing history...</p>';
   }
 
   // Call the API to clear history from Firebase
-  fetchWithUserId("/api/history/clear", {
-    method: "DELETE",
+  fetchWithUserId('/api/history/clear', {
+    method: 'DELETE',
     headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    }
   })
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
-        throw new Error("Failed to clear history from server");
+        throw new Error('Failed to clear history from server');
       }
       return response.json();
     })
-    .then((data) => {
+    .then(data => {
       // Refresh the history list
       fetchHistory();
 
       // Hide the confirmation modal
-      hideModal("clearHistoryConfirmModal");
+      hideModal('clearHistoryConfirmModal');
 
       // Show success toast
-      showToast("historyClearedToast");
+      showToast('historyClearedToast');
     })
-    .catch((error) => {
-      console.error("Error clearing history:", error);
+    .catch(error => {
+      console.error('Error clearing history:', error);
 
       // Refresh the history list anyway to restore display
       fetchHistory();
 
       // Hide the confirmation modal
-      hideModal("clearHistoryConfirmModal");
+      hideModal('clearHistoryConfirmModal');
     });
 }
 
@@ -3226,18 +3243,18 @@ function confirmClearHistory() {
 function showToast(toastId) {
   const toast = document.getElementById(toastId);
   if (toast) {
-    toast.classList.add("show");
+    toast.classList.add('show');
 
     // Store the timeout ID so we can clear it if the toast is manually dismissed
     const timeoutId = setTimeout(() => {
-      toast.classList.remove("show");
+      toast.classList.remove('show');
     }, 3000); // Hide after 3 seconds
 
     // Add touch/click event to dismiss the toast
-    toast.addEventListener("click", function dismissToast() {
+    toast.addEventListener('click', function dismissToast() {
       clearTimeout(timeoutId);
-      toast.classList.remove("show");
-      toast.removeEventListener("click", dismissToast);
+      toast.classList.remove('show');
+      toast.removeEventListener('click', dismissToast);
 
       // Add subtle haptic feedback if available
       if (window.navigator && window.navigator.vibrate) {
@@ -3250,27 +3267,31 @@ function showToast(toastId) {
 // Initialize page navigation event listeners
 function initPageNavigation() {
   // Handle Settle Now button click from home screen
-  document.getElementById("startSettleCard").addEventListener("click", function () {
+  document.getElementById('startSettleCard').addEventListener('click', function () {
     showSettleNowScreen();
   });
 
   // Handle Clear History button click
-  document.getElementById("clearHistoryBtn")?.addEventListener("click", function () {
+  document.getElementById('clearHistoryBtn')?.addEventListener('click', function () {
     clearHistory();
   });
 
   // Handle Confirm Clear History button click
-  document.getElementById("confirmClearHistoryBtn")?.addEventListener("click", function () {
+  document.getElementById('confirmClearHistoryBtn')?.addEventListener('click', function () {
     confirmClearHistory();
   });
 
   // Handle Get Started button click
-  document.querySelector(".get-started-btn").addEventListener("click", function () {
-    const savedGroupSelected = document.querySelector(".saved-group-option").classList.contains("selected");
-    const newGroupSelected = document.querySelector(".new-group-option").classList.contains("selected");
-    const errorMessage = document.querySelector(".new-group-error-message");
+  document.querySelector('.get-started-btn').addEventListener('click', function () {
+    const savedGroupSelected = document
+      .querySelector('.saved-group-option')
+      .classList.contains('selected');
+    const newGroupSelected = document
+      .querySelector('.new-group-option')
+      .classList.contains('selected');
+    const errorMessage = document.querySelector('.new-group-error-message');
 
-    errorMessage.style.display = "none";
+    errorMessage.style.display = 'none';
 
     if (savedGroupSelected) {
       // Check if we have saved groups
@@ -3279,83 +3300,83 @@ function initPageNavigation() {
         loadSavedGroups();
       } else {
         // No saved groups, show message
-        alert("No saved groups found. Please create a new group first.");
-        document.querySelector(".new-group-option").click();
+        alert('No saved groups found. Please create a new group first.');
+        document.querySelector('.new-group-option').click();
       }
     } else if (newGroupSelected) {
       // Start with empty members
       members = [];
-      currentGroup = "";
+      currentGroup = '';
 
       // Reset birthday person selection for new group
       birthdayPerson = null;
 
       // Make sure Next button says "Next"
-      const nextBtn = document.querySelector(".next-btn");
-      if (nextBtn) nextBtn.textContent = "Next";
+      const nextBtn = document.querySelector('.next-btn');
+      if (nextBtn) {nextBtn.textContent = 'Next';}
 
       // Make sure title is correct
-      const title = document.querySelector(".new-group-members-container h2");
-      if (title) title.textContent = "Settle With New Group";
+      const title = document.querySelector('.new-group-members-container h2');
+      if (title) {title.textContent = 'Settle With New Group';}
 
       // Hide the group name input field for new groups
-      const groupNameContainer = document.querySelector(".edit-group-name-container");
+      const groupNameContainer = document.querySelector('.edit-group-name-container');
       if (groupNameContainer) {
-        groupNameContainer.style.display = "none";
+        groupNameContainer.style.display = 'none';
       }
 
       // Reset editing flag
       isEditingGroup = false;
 
-      showSettleView("newGroupMembersView");
+      showSettleView('newGroupMembersView');
       initializeMemberList();
-      settleChoiceError.style.display = "none";
+      settleChoiceError.style.display = 'none';
     } else {
       // No option selected, show message
-      settleChoiceError.style.display = "block";
+      settleChoiceError.style.display = 'block';
     }
   });
 
   // Handle Back button click on Settle Now screen
-  document.querySelector(".back-button").addEventListener("click", function () {
+  document.querySelector('.back-button').addEventListener('click', function () {
     handleSettleBackButton();
   });
 
   // Handle saved group option click
-  document.querySelector(".saved-group-option").addEventListener("click", function () {
+  document.querySelector('.saved-group-option').addEventListener('click', function () {
     // Toggle selected state first
-    this.classList.add("selected");
-    document.querySelector(".new-group-option").classList.remove("selected");
+    this.classList.add('selected');
+    document.querySelector('.new-group-option').classList.remove('selected');
 
     // Enable the Get Started button
-    document.querySelector(".get-started-btn").disabled = false;
-    settleChoiceError.style.display = "none";
+    document.querySelector('.get-started-btn').disabled = false;
+    settleChoiceError.style.display = 'none';
   });
 
   // Handle new group option click
-  document.querySelector(".new-group-option").addEventListener("click", function () {
+  document.querySelector('.new-group-option').addEventListener('click', function () {
     // Toggle selected state
-    this.classList.add("selected");
-    document.querySelector(".saved-group-option").classList.remove("selected");
+    this.classList.add('selected');
+    document.querySelector('.saved-group-option').classList.remove('selected');
 
     // Enable the Get Started button
-    document.querySelector(".get-started-btn").disabled = false;
-    settleChoiceError.style.display = "none";
+    document.querySelector('.get-started-btn').disabled = false;
+    settleChoiceError.style.display = 'none';
   });
 
   // Handle Next button click in new group members view
-  document.querySelectorAll(".next-btn, .new-group-next-btn").forEach((button) => {
-    button.addEventListener("click", function () {
+  document.querySelectorAll('.next-btn, .new-group-next-btn').forEach(button => {
+    button.addEventListener('click', function () {
       // If we're editing a group, save changes before proceeding
       if (isEditingGroup && currentGroup) {
         // Save the updated members to the group
         saveGroupToStorage();
 
         // Store the group name for the confirmation
-        document.getElementById("groupUpdatedModal").dataset.groupName = currentGroup;
+        document.getElementById('groupUpdatedModal').dataset.groupName = currentGroup;
 
         // Show the group updated modal
-        showModal("groupUpdatedModal");
+        showModal('groupUpdatedModal');
 
         // Important: Return early to prevent further execution
         return;
@@ -3364,31 +3385,31 @@ function initPageNavigation() {
       // Only proceed to add settle item if NOT editing a group
       // Check if we have members
       if (members.length === 0 || members.length < 2) {
-        const errorMessage = document.querySelector(".new-group-error-message");
-        errorMessage.style.display = "block";
+        const errorMessage = document.querySelector('.new-group-error-message');
+        errorMessage.style.display = 'block';
         return;
       } else {
-        const errorMessage = document.querySelector(".new-group-error-message");
-        errorMessage.style.display = "none";
+        const errorMessage = document.querySelector('.new-group-error-message');
+        errorMessage.style.display = 'none';
       }
 
       // Set the previous view to newGroupMembersView so user can edit members
-      previousView = "newGroupMembersView";
+      previousView = 'newGroupMembersView';
 
       // Ensure the New favourite group button is visible since we're coming from new group
-      const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
-      const successMessage = document.querySelector(".group-success-message");
+      const newFavouriteGroupBtn = document.querySelector('.new-favourite-group-btn');
+      const successMessage = document.querySelector('.group-success-message');
 
       if (newFavouriteGroupBtn && successMessage) {
-        newFavouriteGroupBtn.style.display = "flex";
-        successMessage.classList.remove("visible");
+        newFavouriteGroupBtn.style.display = 'flex';
+        successMessage.classList.remove('visible');
       }
 
       // Navigate to add settle item view
-      showSettleView("addSettleItemView");
+      showSettleView('addSettleItemView');
 
       // Scroll the addSettleItemView container to the top
-      const addSettleItemView = document.getElementById("addSettleItemView");
+      const addSettleItemView = document.getElementById('addSettleItemView');
       if (addSettleItemView) {
         addSettleItemView.scrollTop = 0;
       }
@@ -3399,57 +3420,57 @@ function initPageNavigation() {
   });
 
   // Handle add member button click
-  document.querySelector(".add-member-button").addEventListener("click", function () {
-    showModal("addMemberModal");
+  document.querySelector('.add-member-button').addEventListener('click', function () {
+    showModal('addMemberModal');
   });
 
   // Handle close modal buttons
-  document.querySelectorAll(".close-modal").forEach(function (button) {
-    button.addEventListener("click", function () {
-      const modal = this.closest(".modal");
+  document.querySelectorAll('.close-modal').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const modal = this.closest('.modal');
       hideModal(modal.id);
     });
   });
 
   // Handle add member submit button click
-  document.querySelector(".add-member-submit").addEventListener("click", function () {
+  document.querySelector('.add-member-submit').addEventListener('click', function () {
     addNewMember();
   });
 
   // Handle save edited member button click
-  document.querySelector(".save-member-btn").addEventListener("click", function () {
+  document.querySelector('.save-member-btn').addEventListener('click', function () {
     saveEditedMember();
   });
 
   // Handle remove member button click
-  document.querySelector(".remove-member-btn").addEventListener("click", function () {
+  document.querySelector('.remove-member-btn').addEventListener('click', function () {
     removeMember();
   });
 
   // Handle Enter key press in member name inputs
-  document.getElementById("memberName").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
+  document.getElementById('memberName').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
       addNewMember();
     }
   });
 
-  document.getElementById("editMemberName").addEventListener("keypress", function (e) {
-    if (e.key === "Enter") {
+  document.getElementById('editMemberName').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') {
       saveEditedMember();
     }
   });
 
   // Handle input in group name field to clear error messages
-  document.getElementById("editGroupName").addEventListener("input", function () {
-    const errorElement = this.parentElement.querySelector(".error-message");
-    if (errorElement && errorElement.style.display !== "none") {
-      errorElement.style.display = "none";
+  document.getElementById('editGroupName').addEventListener('input', function () {
+    const errorElement = this.parentElement.querySelector('.error-message');
+    if (errorElement && errorElement.style.display !== 'none') {
+      errorElement.style.display = 'none';
     }
   });
 
   // Handle click outside the modals to close them
-  document.querySelectorAll(".modal").forEach(function (modal) {
-    modal.addEventListener("click", function (e) {
+  document.querySelectorAll('.modal').forEach(function (modal) {
+    modal.addEventListener('click', function (e) {
       if (e.target === this) {
         hideModal(this.id);
       }
@@ -3457,23 +3478,23 @@ function initPageNavigation() {
   });
 
   // Handle Next button click in saved groups view
-  document.querySelector(".saved-groups-next-btn").addEventListener("click", function () {
+  document.querySelector('.saved-groups-next-btn').addEventListener('click', function () {
     if (!currentGroup) {
-      const savedGroupError = document.querySelector(".saved-group-error");
-      savedGroupError.style.display = "block";
+      const savedGroupError = document.querySelector('.saved-group-error');
+      savedGroupError.style.display = 'block';
       return;
     } else {
-      savedGroupError.style.display = "none";
+      savedGroupError.style.display = 'none';
     }
 
     // Store current view before navigating
-    previousView = "savedGroupsView";
+    previousView = 'savedGroupsView';
 
     // Navigate to add settle item view
-    showSettleView("addSettleItemView");
+    showSettleView('addSettleItemView');
 
     // Scroll the addSettleItemView container to the top
-    const addSettleItemView = document.getElementById("addSettleItemView");
+    const addSettleItemView = document.getElementById('addSettleItemView');
     if (addSettleItemView) {
       addSettleItemView.scrollTop = 0;
     }
@@ -3482,53 +3503,53 @@ function initPageNavigation() {
     updateSettleItemMembersUI();
 
     // Show group name instead of "New favourite group?" button
-    const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
-    const successMessage = document.querySelector(".group-success-message");
-    const groupNameDisplay = document.querySelector(".group-name-display");
+    const newFavouriteGroupBtn = document.querySelector('.new-favourite-group-btn');
+    const successMessage = document.querySelector('.group-success-message');
+    const groupNameDisplay = document.querySelector('.group-name-display');
 
     if (newFavouriteGroupBtn && successMessage && groupNameDisplay) {
       // Hide the button and show success message with group name
-      newFavouriteGroupBtn.style.display = "none";
+      newFavouriteGroupBtn.style.display = 'none';
       groupNameDisplay.textContent = `Group "${currentGroup}" selected`;
-      successMessage.classList.add("visible");
+      successMessage.classList.add('visible');
     }
   });
 }
 
 // Set up bill summary modal close button
-const billSummaryCloseBtn = document.querySelector("#billSummaryModal .summary-close-modal");
+const billSummaryCloseBtn = document.querySelector('#billSummaryModal .summary-close-modal');
 if (billSummaryCloseBtn) {
-  billSummaryCloseBtn.addEventListener("click", function () {
+  billSummaryCloseBtn.addEventListener('click', function () {
     closeBillSummaryModal();
   });
 }
 
 function closeBillSummaryModal() {
   // Just minimize to peeking state, don't hide completely
-  const modal = document.getElementById("billSummaryModal");
-  modal.classList.remove("fully-open", "half-open");
-  modal.classList.add("peeking");
+  const modal = document.getElementById('billSummaryModal');
+  modal.classList.remove('fully-open', 'half-open');
+  modal.classList.add('peeking');
 
   // Hide the overlay
-  const overlay = document.getElementById("billSummaryOverlay");
-  overlay.classList.remove("active");
+  const overlay = document.getElementById('billSummaryOverlay');
+  overlay.classList.remove('active');
 }
 
 // Make sure navbar is visible initially
-const navbarContainer = document.getElementById("navbarContainer");
+const navbarContainer = document.getElementById('navbarContainer');
 if (navbarContainer) {
-  navbarContainer.classList.remove("navbar-hidden");
+  navbarContainer.classList.remove('navbar-hidden');
 }
 
 // Add Item button click handler
-const addItemBtn = document.querySelector(".add-item-btn");
+const addItemBtn = document.querySelector('.add-item-btn');
 if (addItemBtn) {
-  addItemBtn.addEventListener("click", function () {
+  addItemBtn.addEventListener('click', function () {
     // Get item details
-    const itemName = document.getElementById("itemName").value.trim();
-    const itemPrice = document.getElementById("itemPrice").value.trim();
-    const assignedMembers = Array.from(document.querySelector(".assigned-members").children).map(
-      (item) => item.dataset.name
+    const itemName = document.getElementById('itemName').value.trim();
+    const itemPrice = document.getElementById('itemPrice').value.trim();
+    const assignedMembers = Array.from(document.querySelector('.assigned-members').children).map(
+      item => item.dataset.name
     );
 
     // Validate input
@@ -3536,26 +3557,26 @@ if (addItemBtn) {
 
     // Check item name
     if (!itemName) {
-      document.getElementById("itemNameError").classList.add("visible");
+      document.getElementById('itemNameError').classList.add('visible');
       hasError = true;
     } else {
-      document.getElementById("itemNameError").classList.remove("visible");
+      document.getElementById('itemNameError').classList.remove('visible');
     }
 
     // Check item price
     if (!itemPrice) {
-      document.getElementById("itemPriceError").classList.add("visible");
+      document.getElementById('itemPriceError').classList.add('visible');
       hasError = true;
     } else {
-      document.getElementById("itemPriceError").classList.remove("visible");
+      document.getElementById('itemPriceError').classList.remove('visible');
     }
 
     // Check if members are assigned
     if (assignedMembers.length === 0) {
-      document.querySelector(".member-required-message").style.display = "block";
+      document.querySelector('.member-required-message').style.display = 'block';
       hasError = true;
     } else {
-      document.querySelector(".member-required-message").style.display = "none";
+      document.querySelector('.member-required-message').style.display = 'none';
     }
 
     if (hasError) {
@@ -3563,33 +3584,33 @@ if (addItemBtn) {
     }
 
     // Reset form
-    document.getElementById("itemName").value = "";
-    document.getElementById("itemPrice").value = "";
-    document.querySelector(".assigned-members").innerHTML = "";
-    document.getElementById("settleEqually").checked = false;
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemPrice').value = '';
+    document.querySelector('.assigned-members').innerHTML = '';
+    document.getElementById('settleEqually').checked = false;
 
     // Create a new dish object
     const newDish = {
       name: itemName,
       cost: itemPrice,
-      members: assignedMembers,
+      members: assignedMembers
     };
 
     // Add the dish to the dishes array
-    if (!dishes) dishes = [];
+    if (!dishes) {dishes = [];}
     dishes.push(newDish);
 
     // Show the bill summary
     showSummary();
 
     // Scroll the dishSummaryContainer container to the bottom
-    const dishSummaryContainer = document.getElementById("dishSummaryContainer");
+    const dishSummaryContainer = document.getElementById('dishSummaryContainer');
     if (dishSummaryContainer) {
       // Use smooth scrolling for better UX
       setTimeout(() => {
         dishSummaryContainer.scrollTo({
           top: dishSummaryContainer.scrollHeight,
-          behavior: "smooth",
+          behavior: 'smooth'
         });
       }, 100);
     }
@@ -3597,107 +3618,107 @@ if (addItemBtn) {
 }
 
 // New favourite group button handler
-const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
+const newFavouriteGroupBtn = document.querySelector('.new-favourite-group-btn');
 if (newFavouriteGroupBtn) {
-  newFavouriteGroupBtn.addEventListener("click", function () {
+  newFavouriteGroupBtn.addEventListener('click', function () {
     // Show the create group modal
-    showModal("createGroupModal");
+    showModal('createGroupModal');
 
     // Reset the form
-    const groupNameInput = document.getElementById("groupName");
+    const groupNameInput = document.getElementById('groupName');
     if (groupNameInput) {
-      groupNameInput.value = "";
-      const inputField = groupNameInput.closest(".input-field");
-      inputField.classList.remove("error");
-      const errorMessage = inputField.querySelector(".error-message");
-      errorMessage.classList.remove("visible");
-      errorMessage.textContent = "Please enter group's name";
+      groupNameInput.value = '';
+      const inputField = groupNameInput.closest('.input-field');
+      inputField.classList.remove('error');
+      const errorMessage = inputField.querySelector('.error-message');
+      errorMessage.classList.remove('visible');
+      errorMessage.textContent = 'Please enter group\'s name';
     }
   });
 }
 
 // Save group button handler (in member editing view)
-const saveGroupBtn = document.querySelector(".save-group-btn");
+const saveGroupBtn = document.querySelector('.save-group-btn');
 if (saveGroupBtn) {
-  saveGroupBtn.addEventListener("click", function () {
+  saveGroupBtn.addEventListener('click', function () {
     // Show the create group modal
-    showModal("createGroupModal");
+    showModal('createGroupModal');
 
     // Reset the form
-    const groupNameInput = document.getElementById("groupName");
+    const groupNameInput = document.getElementById('groupName');
     if (groupNameInput) {
-      groupNameInput.value = "";
-      const inputField = groupNameInput.closest(".input-field");
-      inputField.classList.remove("error");
-      const errorMessage = inputField.querySelector(".error-message");
-      errorMessage.classList.remove("visible");
-      errorMessage.textContent = "Please enter group's name";
+      groupNameInput.value = '';
+      const inputField = groupNameInput.closest('.input-field');
+      inputField.classList.remove('error');
+      const errorMessage = inputField.querySelector('.error-message');
+      errorMessage.classList.remove('visible');
+      errorMessage.textContent = 'Please enter group\'s name';
     }
   });
 }
 
 // Cancel button in create group modal
-const cancelGroupBtn = document.querySelector(".create-group-modal .cancel-btn");
+const cancelGroupBtn = document.querySelector('.create-group-modal .cancel-btn');
 if (cancelGroupBtn) {
-  cancelGroupBtn.addEventListener("click", function () {
-    hideModal("createGroupModal");
+  cancelGroupBtn.addEventListener('click', function () {
+    hideModal('createGroupModal');
   });
 }
 
 // Confirm button in create group modal
-const confirmGroupBtn = document.querySelector(".create-group-modal .confirm-btn");
+const confirmGroupBtn = document.querySelector('.create-group-modal .confirm-btn');
 if (confirmGroupBtn) {
-  confirmGroupBtn.addEventListener("click", function () {
-    const groupNameInput = document.getElementById("groupName");
+  confirmGroupBtn.addEventListener('click', function () {
+    const groupNameInput = document.getElementById('groupName');
     const groupName = groupNameInput.value.trim();
-    const inputField = groupNameInput.closest(".input-field");
-    const errorMessage = inputField.querySelector(".error-message");
+    const inputField = groupNameInput.closest('.input-field');
+    const errorMessage = inputField.querySelector('.error-message');
 
     // Validate input
     if (!groupName) {
-      inputField.classList.add("error");
-      errorMessage.classList.add("visible");
+      inputField.classList.add('error');
+      errorMessage.classList.add('visible');
       return;
     }
 
     // Check if the group name already exists
     if (groups[groupName]) {
-      inputField.classList.add("error");
-      errorMessage.textContent = "This group name already exists";
-      errorMessage.classList.add("visible");
+      inputField.classList.add('error');
+      errorMessage.textContent = 'This group name already exists';
+      errorMessage.classList.add('visible');
       return;
     }
 
     // Create new group
     groups[groupName] = [...members];
-    localStorage.setItem("groups", JSON.stringify(groups));
+    localStorage.setItem('groups', JSON.stringify(groups));
     currentGroup = groupName;
 
     // Also save to Firebase
     saveGroupToFirebase(currentGroup, [...members]);
 
     // Hide the modal
-    hideModal("createGroupModal");
+    hideModal('createGroupModal');
 
     // Show success message
-    const successMessage = document.querySelector(".group-success-message");
-    const groupNameDisplay = document.querySelector(".group-name-display");
-    const newGroupBtn = document.querySelector(".new-favourite-group-btn");
-    const saveGroupSection = document.querySelector(".save-group-section");
+    const successMessage = document.querySelector('.group-success-message');
+    const groupNameDisplay = document.querySelector('.group-name-display');
+    const newGroupBtn = document.querySelector('.new-favourite-group-btn');
+    const saveGroupSection = document.querySelector('.save-group-section');
 
     if (successMessage && groupNameDisplay) {
       // Update group name in success message and show it
       groupNameDisplay.textContent = `Group "${groupName}" created`;
-      successMessage.classList.add("visible");
+      successMessage.classList.add('visible');
 
       // Hide the "New favourite group?" button temporarily
       if (newGroupBtn) {
-        newGroupBtn.style.display = "none";
+        newGroupBtn.style.display = 'none';
       }
 
       // Hide the save group button if visible
       if (saveGroupSection) {
-        saveGroupSection.style.display = "none";
+        saveGroupSection.style.display = 'none';
       }
 
       // Hide success message and restore button after 3 seconds
@@ -3713,25 +3734,25 @@ if (confirmGroupBtn) {
 }
 
 // Close button in create group modal
-const closeGroupModalBtn = document.querySelector(".create-group-modal .close-modal");
+const closeGroupModalBtn = document.querySelector('.create-group-modal .close-modal');
 if (closeGroupModalBtn) {
-  closeGroupModalBtn.addEventListener("click", function () {
-    hideModal("createGroupModal");
+  closeGroupModalBtn.addEventListener('click', function () {
+    hideModal('createGroupModal');
   });
 }
 
 // Group updated confirmation
-const groupUpdatedConfirmBtn = document.querySelector(".group-updated-confirm-btn");
+const groupUpdatedConfirmBtn = document.querySelector('.group-updated-confirm-btn');
 if (groupUpdatedConfirmBtn) {
-  groupUpdatedConfirmBtn.addEventListener("click", function () {
-    const modal = document.getElementById("groupUpdatedModal");
+  groupUpdatedConfirmBtn.addEventListener('click', function () {
+    const modal = document.getElementById('groupUpdatedModal');
     hideModal(modal.id);
 
     // Reset editing flag
     isEditingGroup = false;
 
     // Return to the saved groups view
-    showSettleView("savedGroupsView");
+    showSettleView('savedGroupsView');
     updateSettleNowHeader();
 
     // Refresh the saved groups list
@@ -3740,21 +3761,21 @@ if (groupUpdatedConfirmBtn) {
 }
 
 // Delete group confirmation
-const deleteConfirmBtn = document.querySelector(".delete-confirm-btn");
+const deleteConfirmBtn = document.querySelector('.delete-confirm-btn');
 if (deleteConfirmBtn) {
-  deleteConfirmBtn.addEventListener("click", async function () {
-    const modal = document.getElementById("deleteGroupModal");
+  deleteConfirmBtn.addEventListener('click', async function () {
+    const modal = document.getElementById('deleteGroupModal');
     const groupName = modal.dataset.groupName;
 
     if (groupName) {
       // First delete from local storage
       delete groups[groupName];
-      localStorage.setItem("groups", JSON.stringify(groups));
+      localStorage.setItem('groups', JSON.stringify(groups));
 
       // Then try to delete from Firebase
       try {
         const response = await fetchWithUserId(`/api/groups/${encodeURIComponent(groupName)}`, {
-          method: "DELETE",
+          method: 'DELETE'
         });
 
         if (!response.ok) {
@@ -3778,20 +3799,20 @@ if (deleteConfirmBtn) {
 }
 
 // Back confirmation
-const backConfirmBtn = document.querySelector(".back-confirm-btn");
+const backConfirmBtn = document.querySelector('.back-confirm-btn');
 if (backConfirmBtn) {
-  backConfirmBtn.addEventListener("click", function () {
+  backConfirmBtn.addEventListener('click', function () {
     // Hide the modal
-    hideModal("backConfirmModal");
-    const billSummaryModal = document.getElementById("billSummaryModal");
+    hideModal('backConfirmModal');
+    const billSummaryModal = document.getElementById('billSummaryModal');
     if (billSummaryModal) {
-      billSummaryModal.style.display = "none";
+      billSummaryModal.style.display = 'none';
     }
-    document.querySelector(".assigned-members").innerHTML = "";
-    document.getElementById("dishSummaryContainer").innerHTML = "";
-    document.getElementById("itemName").value = "";
-    document.getElementById("itemPrice").value = "";
-    document.getElementById("settleEqually").checked = false;
+    document.querySelector('.assigned-members').innerHTML = '';
+    document.getElementById('dishSummaryContainer').innerHTML = '';
+    document.getElementById('itemName').value = '';
+    document.getElementById('itemPrice').value = '';
+    document.getElementById('settleEqually').checked = false;
 
     // Clear dishes array and update the dish list
     dishes = [];
@@ -3810,43 +3831,45 @@ if (backConfirmBtn) {
     updateSettleNowHeader();
 
     // Clear receipt file input
-    const receiptFileInput = document.getElementById("receiptImage");
+    const receiptFileInput = document.getElementById('receiptImage');
     if (receiptFileInput) {
-      receiptFileInput.value = "";
+      receiptFileInput.value = '';
       // Reset upload text
-      const uploadTextElement = document.querySelector(".upload-text");
+      const uploadTextElement = document.querySelector('.upload-text');
       if (uploadTextElement) {
-        uploadTextElement.textContent = "Choose File";
+        uploadTextElement.textContent = 'Choose File';
       }
     }
 
     // If going back to newGroupMembersView, ensure the title is correct
-    if (previousView === "newGroupMembersView") {
+    if (previousView === 'newGroupMembersView') {
       // Update title if we're editing a group
       if (isEditingGroup) {
-        document.querySelector(".new-group-members-container h2").textContent = "Edit Group Members";
+        document.querySelector('.new-group-members-container h2').textContent =
+               'Edit Group Members';
       } else {
-        document.querySelector(".new-group-members-container h2").textContent = "Settle With New Group";
+        document.querySelector('.new-group-members-container h2').textContent =
+               'Settle With New Group';
       }
-    } else if (previousView === "settleChoiceView") {
+    } else if (previousView === 'settleChoiceView') {
       // Check if there are any saved groups
       const hasSavedGroups = Object.keys(groups).length > 0;
 
       // If no saved groups, hide the saved group option and select new group
       if (!hasSavedGroups) {
-        document.querySelector(".saved-group-option").style.display = "none";
-        document.querySelector(".or-divider").style.display = "none";
-        document.querySelector(".new-group-option").classList.add("selected");
+        document.querySelector('.saved-group-option').style.display = 'none';
+        document.querySelector('.or-divider').style.display = 'none';
+        document.querySelector('.new-group-option').classList.add('selected');
       } else {
-        document.querySelector(".saved-group-option").style.display = "flex";
-        document.querySelector(".or-divider").style.display = "flex";
+        document.querySelector('.saved-group-option').style.display = 'flex';
+        document.querySelector('.or-divider').style.display = 'flex';
       }
     }
   });
 }
 
 // Weather API configuration
-const WEATHER_API_KEY = "3f6c36c6fa294f523e38bddac2c7bb6f"; // Replace with your OpenWeatherMap API key
+const WEATHER_API_KEY = process.env.WEATHER_API_KEY; // Replace with your OpenWeatherMap API key
 const SINGAPORE_LAT = 1.3521;
 const SINGAPORE_LON = 103.8198;
 
@@ -3859,33 +3882,33 @@ async function fetchWeatherData() {
     const data = await response.json();
 
     // Update weather card
-    document.querySelector(".weather-location p").textContent = data.weather[0].description;
-    document.querySelector(".weather-temp h1").textContent = `${Math.round(data.main.temp)}°`;
+    document.querySelector('.weather-location p').textContent = data.weather[0].description;
+    document.querySelector('.weather-temp h1').textContent = `${Math.round(data.main.temp)}°`;
 
     // Update weather icon based on weather condition
-    const weatherIcon = document.querySelector(".weather-icon");
+    const weatherIcon = document.querySelector('.weather-icon');
     const iconCode = data.weather[0].icon;
     weatherIcon.innerHTML = `<img src="https://openweathermap.org/img/wn/${iconCode}@2x.png" alt="Weather icon">`;
   } catch (error) {
-    console.error("Error fetching weather data:", error);
+    console.error('Error fetching weather data:', error);
   }
 }
 
 // Document ready function
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   // Initialize dishes array if it doesn't exist
-  if (typeof dishes === "undefined") {
+  if (typeof dishes === 'undefined') {
     window.dishes = [];
   }
 
   // Update welcome message with user's name from localStorage
-  const welcomeHeading = document.querySelector(".welcome-section h1");
+  const welcomeHeading = document.querySelector('.welcome-section h1');
   if (welcomeHeading) {
-    const userName = localStorage.getItem("settlelah_user_name");
+    const userName = localStorage.getItem('settlelah_user_name');
     if (userName) {
       welcomeHeading.textContent = `Welcome back, ${userName}!`;
     } else {
-      welcomeHeading.textContent = "Welcome back!";
+      welcomeHeading.textContent = 'Welcome back!';
     }
   }
 
@@ -3912,34 +3935,34 @@ document.addEventListener("DOMContentLoaded", function () {
   switchPage(2);
 
   // Check if dark mode was previously enabled
-  if (localStorage.getItem("darkMode") === "enabled") {
-    document.body.classList.add("dark-mode");
-    document.getElementById("darkModeToggle").checked = true;
+  if (localStorage.getItem('darkMode') === 'enabled') {
+    document.body.classList.add('dark-mode');
+    document.getElementById('darkModeToggle').checked = true;
   }
 
   // Initialize tax profile
-  const savedTaxProfile = localStorage.getItem("taxProfile");
+  const savedTaxProfile = localStorage.getItem('taxProfile');
   if (savedTaxProfile) {
-    document.getElementById("taxProfile").value = savedTaxProfile;
+    document.getElementById('taxProfile').value = savedTaxProfile;
     updateTaxRates(savedTaxProfile);
   } else {
     // Default is Singapore
-    localStorage.setItem("taxProfile", "singapore");
-    updateTaxRates("singapore");
+    localStorage.setItem('taxProfile', 'singapore');
+    updateTaxRates('singapore');
   }
 
   // Add event listener for tax profile changes
-  document.getElementById("taxProfile").addEventListener("change", function () {
+  document.getElementById('taxProfile').addEventListener('change', function () {
     const taxProfile = this.value;
-    localStorage.setItem("taxProfile", taxProfile);
+    localStorage.setItem('taxProfile', taxProfile);
     updateTaxRates(taxProfile);
     // You can add additional functionality here when tax profile changes
     // console.log(`Tax profile changed to: ${taxProfile}`);
   });
 
   // Ensure menu icons have pointer events
-  document.querySelectorAll(".menuElement").forEach((menu) => {
-    menu.style.pointerEvents = "auto";
+  document.querySelectorAll('.menuElement').forEach(menu => {
+    menu.style.pointerEvents = 'auto';
   });
 
   // Fetch weather data when page loads
@@ -3949,35 +3972,35 @@ document.addEventListener("DOMContentLoaded", function () {
   setInterval(fetchWeatherData, 30 * 60 * 1000);
 
   // Close buttons for all confirmation modals
-  document.querySelectorAll(".modal .close-modal").forEach(function (button) {
-    button.addEventListener("click", function () {
-      const modal = this.closest(".modal");
+  document.querySelectorAll('.modal .close-modal').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const modal = this.closest('.modal');
       hideModal(modal.id);
     });
   });
 
   // Cancel buttons for all confirmation modals
-  document.querySelectorAll(".modal .cancel-btn").forEach(function (button) {
-    button.addEventListener("click", function () {
-      const modal = this.closest(".modal");
+  document.querySelectorAll('.modal .cancel-btn').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const modal = this.closest('.modal');
       hideModal(modal.id);
     });
   });
 
   // Optimize input focus handling for item-details-section
   const setupInputFocusHandling = function () {
-    const itemNameInput = document.getElementById("itemName");
-    const itemPriceInput = document.getElementById("itemPrice");
+    const itemNameInput = document.getElementById('itemName');
+    const itemPriceInput = document.getElementById('itemPrice');
 
     if (itemNameInput && itemPriceInput) {
       // Prepare the inputs for fast focus by touching them once
-      [itemNameInput, itemPriceInput].forEach((input) => {
+      [itemNameInput, itemPriceInput].forEach(input => {
         // Prevent any animation delays when focusing inputs
         input.addEventListener(
-          "touchstart",
+          'touchstart',
           function (e) {
             // Ensure this input is ready to be focused immediately
-            this.style.willChange = "transform";
+            this.style.willChange = 'transform';
             // Don't prevent default to allow focus
           },
           { passive: true }
@@ -3985,9 +4008,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
         // Ensure proper cleanup after focus/blur
         input.addEventListener(
-          "blur",
+          'blur',
           function () {
-            this.style.willChange = "auto";
+            this.style.willChange = 'auto';
           },
           { passive: true }
         );
@@ -3999,11 +4022,14 @@ document.addEventListener("DOMContentLoaded", function () {
   setupInputFocusHandling();
 
   // Also set it up again when the addSettleItemView becomes active
-  const addSettleItemView = document.getElementById("addSettleItemView");
+  const addSettleItemView = document.getElementById('addSettleItemView');
   if (addSettleItemView) {
     const observer = new MutationObserver(function (mutations) {
       mutations.forEach(function (mutation) {
-        if (mutation.attributeName === "class" && addSettleItemView.classList.contains("active")) {
+        if (
+          mutation.attributeName === 'class' &&
+               addSettleItemView.classList.contains('active')
+        ) {
           // View is now active, optimize inputs
           setupInputFocusHandling();
         }
@@ -4014,10 +4040,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Add event listener for file input change to display the file name
-  const fileInput = document.getElementById("receiptImage");
+  const fileInput = document.getElementById('receiptImage');
   if (fileInput) {
-    fileInput.addEventListener("change", function () {
-      const uploadTextElement = document.querySelector(".upload-text");
+    fileInput.addEventListener('change', function () {
+      const uploadTextElement = document.querySelector('.upload-text');
       if (uploadTextElement) {
         if (fileInput.files.length > 0) {
           // Replace button text with filename
@@ -4030,21 +4056,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
 // Initialize tax profile dropdown function
 function initTaxProfileDropdown() {
-  const taxProfileDropdown = document.getElementById("taxProfile");
+  const taxProfileDropdown = document.getElementById('taxProfile');
   if (taxProfileDropdown) {
     // Sync the dropdown with localStorage on initialization
     syncTaxProfileDropdown();
 
-    taxProfileDropdown.addEventListener("change", function () {
+    taxProfileDropdown.addEventListener('change', function () {
       updateTaxRates(this.value);
     });
   }
 
   // Add event listener for service charge input
-  const serviceChargeInput = document.getElementById("serviceChargeValue");
+  const serviceChargeInput = document.getElementById('serviceChargeValue');
   if (serviceChargeInput) {
-    serviceChargeInput.addEventListener("input", function () {
-      const serviceRate = document.getElementById("serviceRate");
+    serviceChargeInput.addEventListener('input', function () {
+      const serviceRate = document.getElementById('serviceRate');
       if (serviceRate) {
         serviceRate.textContent = `${this.value}%`;
       }
@@ -4055,13 +4081,13 @@ function initTaxProfileDropdown() {
 // Initialize theme toggle function
 function initThemeToggle() {
   // Dark mode toggle functionality
-  document.getElementById("darkModeToggle").addEventListener("change", function () {
+  document.getElementById('darkModeToggle').addEventListener('change', function () {
     if (this.checked) {
-      document.body.classList.add("dark-mode");
-      localStorage.setItem("darkMode", "enabled");
+      document.body.classList.add('dark-mode');
+      localStorage.setItem('darkMode', 'enabled');
     } else {
-      document.body.classList.remove("dark-mode");
-      localStorage.setItem("darkMode", "disabled");
+      document.body.classList.remove('dark-mode');
+      localStorage.setItem('darkMode', 'disabled');
     }
   });
 }
@@ -4069,20 +4095,20 @@ function initThemeToggle() {
 // Initialize member list with default members
 function initializeMemberList() {
   // Clear the member list first
-  const memberList = document.querySelector(".member-list");
+  const memberList = document.querySelector('.member-list');
   if (memberList) {
-    memberList.innerHTML = "";
+    memberList.innerHTML = '';
 
     // Add each member to the UI
-    members.forEach((member) => {
+    members.forEach(member => {
       // Handle both object format and legacy string format
-      if (typeof member === "object" && member.name) {
+      if (typeof member === 'object' && member.name) {
         addMemberToUI(member.name, member.avatar);
       } else {
         // For legacy data format (string), generate a consistent avatar
         const memberName = member;
         // Generate consistent avatar based on name
-        const nameHash = memberName.split("").reduce((a, b) => {
+        const nameHash = memberName.split('').reduce((a, b) => {
           a = (a << 5) - a + b.charCodeAt(0);
           return a & a;
         }, 0);
@@ -4095,46 +4121,46 @@ function initializeMemberList() {
 }
 
 // Add resize event listener
-window.addEventListener("resize", handleResize);
+window.addEventListener('resize', handleResize);
 
 // Function to create a new group with the modal
 function createNewGroup() {
-  showModal("createGroupModal");
+  showModal('createGroupModal');
 }
 
 // Show saved groups modal with available groups
 function showSavedGroupsModal() {
   // Get all saved groups
   const groupsList = Object.keys(groups);
-  const savedGroupsList = document.querySelector(".saved-groups-list");
-  const noGroupsMessage = document.querySelector(".no-saved-groups");
+  const savedGroupsList = document.querySelector('.saved-groups-list');
+  const noGroupsMessage = document.querySelector('.no-saved-groups');
 
   // Clear previous items
-  savedGroupsList.innerHTML = "";
+  savedGroupsList.innerHTML = '';
 
   if (groupsList.length === 0) {
     // Show no groups message
-    savedGroupsList.style.display = "none";
-    noGroupsMessage.style.display = "block";
+    savedGroupsList.style.display = 'none';
+    noGroupsMessage.style.display = 'block';
   } else {
     // Hide no groups message and show the list
-    savedGroupsList.style.display = "flex";
-    noGroupsMessage.style.display = "none";
+    savedGroupsList.style.display = 'flex';
+    noGroupsMessage.style.display = 'none';
 
     // Add each group to the list
-    groupsList.forEach((groupName) => {
+    groupsList.forEach(groupName => {
       const memberCount = groups[groupName].length;
-      const groupItem = document.createElement("div");
-      groupItem.className = "group-item";
+      const groupItem = document.createElement('div');
+      groupItem.className = 'group-item';
       groupItem.innerHTML = `
         <div class="group-item-name">${groupName}</div>
         <div class="group-item-count">${memberCount} members</div>
       `;
 
       // Add click event to select the group
-      groupItem.addEventListener("click", function () {
+      groupItem.addEventListener('click', function () {
         // Select this group and show members
-        hideModal("savedGroupsModal");
+        hideModal('savedGroupsModal');
         showGroupMembersView(groupName);
       });
 
@@ -4143,49 +4169,49 @@ function showSavedGroupsModal() {
   }
 
   // Show the modal
-  showModal("savedGroupsModal");
+  showModal('savedGroupsModal');
 }
 
 // New function to update members in the Add Settle Item screen
 function updateSettleItemMembersUI() {
   // Update members in the favorite group section
-  const groupMembers = document.querySelector(".group-members");
-  groupMembers.innerHTML = "";
+  const groupMembers = document.querySelector('.group-members');
+  groupMembers.innerHTML = '';
 
   // Add each member to the group members area
-  members.forEach((member) => {
+  members.forEach(member => {
     // Handle both object format and legacy string format
     let memberName, avatarNumber;
 
-    if (typeof member === "object" && member.name) {
+    if (typeof member === 'object' && member.name) {
       memberName = member.name;
       avatarNumber = member.avatar;
     } else {
       memberName = member;
       // Generate consistent avatar based on name
-      const nameHash = memberName.split("").reduce((a, b) => {
+      const nameHash = memberName.split('').reduce((a, b) => {
         a = (a << 5) - a + b.charCodeAt(0);
         return a & a;
       }, 0);
       avatarNumber = Math.abs(nameHash % 20) + 1;
     }
 
-    const memberWrapper = document.createElement("div");
-    memberWrapper.className = "member-avatar-wrapper sortable-item";
+    const memberWrapper = document.createElement('div');
+    memberWrapper.className = 'member-avatar-wrapper sortable-item';
     memberWrapper.dataset.name = memberName;
 
-    const memberAvatar = document.createElement("div");
-    memberAvatar.className = "member-avatar";
+    const memberAvatar = document.createElement('div');
+    memberAvatar.className = 'member-avatar';
 
     // Create img element for cat avatar instead of using CSS classes
-    const img = document.createElement("img");
+    const img = document.createElement('img');
     img.src = `assets/cat-icon/cat-${avatarNumber}.svg`;
     img.alt = `Cat avatar ${avatarNumber}`;
-    img.className = "cat-avatar-img";
+    img.className = 'cat-avatar-img';
     memberAvatar.appendChild(img);
 
-    const memberNameDiv = document.createElement("div");
-    memberNameDiv.className = "member-name";
+    const memberNameDiv = document.createElement('div');
+    memberNameDiv.className = 'member-name';
     memberNameDiv.textContent = memberName;
 
     memberWrapper.appendChild(memberAvatar);
@@ -4200,32 +4226,34 @@ function updateSettleItemMembersUI() {
   initializeMemberDragForSettleItem();
 
   // Make sure the scan-item-btn is visible when entering the add settle item view
-  const scanItemBtn = document.querySelector(".scan-item-btn");
+  const scanItemBtn = document.querySelector('.scan-item-btn');
   if (scanItemBtn) {
-    scanItemBtn.style.display = "flex";
+    scanItemBtn.style.display = 'flex';
   }
 }
 
 // Initialize drag functionality for members in the settle item view
 function initializeMemberDragForSettleItem() {
   // Make group members draggable
-  const groupMembers = document.querySelector(".group-members");
-  const assignedMembers = document.querySelector(".assigned-members");
-  const settleEquallyCheckbox = document.getElementById("settleEqually");
+  const groupMembers = document.querySelector('.group-members');
+  const assignedMembers = document.querySelector('.assigned-members');
+  const settleEquallyCheckbox = document.getElementById('settleEqually');
 
   // Add event listener to the settleEqually checkbox
-  settleEquallyCheckbox.addEventListener("change", function () {
+  settleEquallyCheckbox.addEventListener('change', function () {
     // Clear assigned members first
-    assignedMembers.innerHTML = "";
+    assignedMembers.innerHTML = '';
 
     if (this.checked) {
       // When checked, add all members
-      members.forEach((member) => {
+      members.forEach(member => {
         // Get member name
-        const memberName = typeof member === "object" ? member.name : member;
+        const memberName = typeof member === 'object' ? member.name : member;
 
         // Clone member element from group members
-        const originalMember = Array.from(groupMembers.children).find((child) => child.dataset.name === memberName);
+        const originalMember = Array.from(groupMembers.children).find(
+          child => child.dataset.name === memberName
+        );
 
         if (originalMember) {
           const clonedMember = originalMember.cloneNode(true);
@@ -4233,7 +4261,7 @@ function initializeMemberDragForSettleItem() {
           // Add double-tap to remove functionality
           let tapped = false;
 
-          clonedMember.addEventListener("touchend", function (e) {
+          clonedMember.addEventListener('touchend', function (e) {
             if (!tapped) {
               tapped = true;
               setTimeout(function () {
@@ -4249,7 +4277,7 @@ function initializeMemberDragForSettleItem() {
           });
 
           // Keep dblclick for desktop
-          clonedMember.addEventListener("dblclick", function () {
+          clonedMember.addEventListener('dblclick', function () {
             clonedMember.remove();
             // If member is removed, uncheck the settle equally checkbox
             settleEquallyCheckbox.checked = false;
@@ -4262,9 +4290,9 @@ function initializeMemberDragForSettleItem() {
   });
 
   // Initialize Sortable.js for the group members
-  if (typeof Sortable !== "undefined") {
+  if (typeof Sortable !== 'undefined') {
     Sortable.create(groupMembers, {
-      group: { name: "settleMembers", pull: "clone", put: false },
+      group: { name: 'settleMembers', pull: 'clone', put: false },
       sort: false,
       animation: 150,
       onStart: function () {
@@ -4272,11 +4300,11 @@ function initializeMemberDragForSettleItem() {
         if (navigator.vibrate) {
           navigator.vibrate(25);
         }
-      },
+      }
     });
 
     Sortable.create(assignedMembers, {
-      group: "settleMembers",
+      group: 'settleMembers',
       animation: 150,
       onAdd: function (evt) {
         const item = evt.item;
@@ -4284,8 +4312,8 @@ function initializeMemberDragForSettleItem() {
 
         // Check if member is already assigned to avoid duplicates
         const existingMembers = Array.from(assignedMembers.children)
-          .filter((el) => el !== item) // Exclude newly added item
-          .map((el) => el.dataset.name);
+          .filter(el => el !== item) // Exclude newly added item
+          .map(el => el.dataset.name);
 
         if (existingMembers.includes(memberName)) {
           item.remove(); // Remove if already exists
@@ -4298,7 +4326,7 @@ function initializeMemberDragForSettleItem() {
         // Double-tap to remove - more efficient implementation
         let tapped = false;
 
-        item.addEventListener("touchend", function (e) {
+        item.addEventListener('touchend', function (e) {
           if (!tapped) {
             tapped = true;
             setTimeout(function () {
@@ -4317,7 +4345,7 @@ function initializeMemberDragForSettleItem() {
         });
 
         // Keep dblclick for desktop
-        item.addEventListener("dblclick", function () {
+        item.addEventListener('dblclick', function () {
           item.remove();
         });
       },
@@ -4326,7 +4354,7 @@ function initializeMemberDragForSettleItem() {
         if (navigator.vibrate) {
           navigator.vibrate(25);
         }
-      },
+      }
     });
   }
 }
@@ -4334,50 +4362,50 @@ function initializeMemberDragForSettleItem() {
 function copyToClipboard(url) {
   navigator.clipboard
     .writeText(url)
-    .then(() => alert("Link copied to clipboard!"))
-    .catch((err) => alert("Failed to copy link."));
+    .then(() => alert('Link copied to clipboard!'))
+    .catch(err => alert('Failed to copy link.'));
 }
 
 // Function to reset scanning overlay state
 function resetScanningOverlay() {
-  const scanOverlay = document.querySelector(".scan-receipt-overlay");
-  const scanningText = document.querySelector(".scanning-text");
-  const scanButton = document.getElementById("scanReceiptBtn");
+  const scanOverlay = document.querySelector('.scan-receipt-overlay');
+  const scanningText = document.querySelector('.scanning-text');
+  const scanButton = document.getElementById('scanReceiptBtn');
 
   if (scanOverlay) {
-    scanOverlay.classList.remove("active");
-    scanOverlay.style.transition = "";
-    scanOverlay.style.opacity = "";
+    scanOverlay.classList.remove('active');
+    scanOverlay.style.transition = '';
+    scanOverlay.style.opacity = '';
   }
 
   if (scanningText) {
-    scanningText.textContent = "Scanning your receipt...";
-    scanningText.style.animation = "";
-    scanningText.style.color = "";
+    scanningText.textContent = 'Scanning your receipt...';
+    scanningText.style.animation = '';
+    scanningText.style.color = '';
   }
 
   if (scanButton) {
     scanButton.disabled = false;
-    scanButton.textContent = "Scan Receipt";
+    scanButton.textContent = 'Scan Receipt';
   }
 }
 
 // Scan item button handler
-const scanItemBtn = document.querySelector(".scan-item-btn");
+const scanItemBtn = document.querySelector('.scan-item-btn');
 if (scanItemBtn) {
-  scanItemBtn.addEventListener("click", function () {
+  scanItemBtn.addEventListener('click', function () {
     // Reset scanning overlay state before showing modal
     resetScanningOverlay();
     // Show the scan receipt modal
-    showModal("scanReceiptModal");
+    showModal('scanReceiptModal');
   });
 }
 
 // Scan receipt button in modal handler
-document.addEventListener("DOMContentLoaded", function () {
-  const scanReceiptBtn = document.getElementById("scanReceiptBtn");
+document.addEventListener('DOMContentLoaded', function () {
+  const scanReceiptBtn = document.getElementById('scanReceiptBtn');
   if (scanReceiptBtn) {
-    scanReceiptBtn.addEventListener("click", function () {
+    scanReceiptBtn.addEventListener('click', function () {
       scanReceipt();
     });
   }
@@ -4394,18 +4422,18 @@ async function updateHomePageCards() {
 
 // Function to update the Last Created Group card
 async function updateLastCreatedGroup() {
-  const groupCard = document.querySelector(".group-card:nth-child(4)");
-  if (!groupCard) return;
+  const groupCard = document.querySelector('.group-card:nth-child(4)');
+  if (!groupCard) {return;}
 
   // Show skeleton loading
-  groupCard.classList.add("loading");
+  groupCard.classList.add('loading');
 
   let groups = {};
   let fromFirebase = false;
 
   try {
     // First try to fetch from Firebase
-    const response = await fetchWithUserId("/api/groups");
+    const response = await fetchWithUserId('/api/groups');
 
     if (response.ok) {
       const data = await response.json();
@@ -4413,15 +4441,15 @@ async function updateLastCreatedGroup() {
         groups = data.groups;
         fromFirebase = true;
         // Update localStorage with latest Firebase data
-        localStorage.setItem("groups", JSON.stringify(groups));
+        localStorage.setItem('groups', JSON.stringify(groups));
       }
     } else {
       throw new Error(`Firebase fetch failed: ${response.statusText}`);
     }
   } catch (error) {
-    console.error("Error fetching groups from Firebase, falling back to localStorage:", error);
+    console.error('Error fetching groups from Firebase, falling back to localStorage:', error);
     // Fallback to localStorage
-    groups = JSON.parse(localStorage.getItem("groups") || "{}");
+    groups = JSON.parse(localStorage.getItem('groups') || '{}');
     fromFirebase = false;
   }
 
@@ -4430,20 +4458,21 @@ async function updateLastCreatedGroup() {
   if (groupNames.length === 0) {
     // No groups found, show empty state message after loading animation
     setTimeout(() => {
-      const groupHeader = groupCard.querySelector(".card-header p");
+      const groupHeader = groupCard.querySelector('.card-header p');
       if (groupHeader) {
-        groupHeader.textContent = "No groups yet";
+        groupHeader.textContent = 'No groups yet';
       }
 
       // Clear avatar group and add empty state message
-      const avatarGroup = groupCard.querySelector(".avatar-group");
+      const avatarGroup = groupCard.querySelector('.avatar-group');
       if (avatarGroup) {
-        avatarGroup.innerHTML = '<p class="empty-state-message">Create a group when you settle</p>';
+        avatarGroup.innerHTML =
+               '<p class="empty-state-message">Create a group when you settle</p>';
       }
 
       // Remove loading state and show the element
-      groupCard.classList.remove("loading");
-      groupCard.style.display = "block";
+      groupCard.classList.remove('loading');
+      groupCard.style.display = 'block';
     }, 2000);
     return;
   }
@@ -4456,114 +4485,114 @@ async function updateLastCreatedGroup() {
   // Update content with slight delay to show the loading animation
   setTimeout(() => {
     // Update group name in header
-    const groupHeader = groupCard.querySelector(".card-header p");
+    const groupHeader = groupCard.querySelector('.card-header p');
     if (groupHeader) {
       groupHeader.textContent = lastGroupName;
     }
 
     // Update avatar group with actual members
-    const avatarGroup = groupCard.querySelector(".avatar-group");
+    const avatarGroup = groupCard.querySelector('.avatar-group');
     if (avatarGroup && members && members.length > 0) {
-      avatarGroup.innerHTML = "";
+      avatarGroup.innerHTML = '';
 
       // Show up to 5 members
       const membersToShow = members.slice(0, 5);
 
-      membersToShow.forEach((member) => {
+      membersToShow.forEach(member => {
         // Handle both object format and legacy string format
         let avatarNumber;
 
-        if (typeof member === "object" && member.name) {
+        if (typeof member === 'object' && member.name) {
           avatarNumber = member.avatar;
         } else {
           // Generate consistent avatar based on name
-          const nameHash = member.split("").reduce((a, b) => {
+          const nameHash = member.split('').reduce((a, b) => {
             a = (a << 5) - a + b.charCodeAt(0);
             return a & a;
           }, 0);
           avatarNumber = Math.abs(nameHash % 20) + 1;
         }
 
-        const avatarDiv = document.createElement("div");
-        avatarDiv.className = "avatar";
+        const avatarDiv = document.createElement('div');
+        avatarDiv.className = 'avatar';
         avatarDiv.innerHTML = `<img class="avatar-img" src="assets/cat-icon/cat-${avatarNumber}.svg" />`;
         avatarGroup.appendChild(avatarDiv);
       });
 
       // Add '+' indicator if more than 5 members
       if (members.length > 5) {
-        const plusIndicator = document.createElement("div");
-        plusIndicator.textContent = "+";
+        const plusIndicator = document.createElement('div');
+        plusIndicator.textContent = '+';
         avatarGroup.appendChild(plusIndicator);
       }
     }
 
     // Remove loading state and show the element
-    groupCard.classList.remove("loading");
-    groupCard.style.display = "block";
+    groupCard.classList.remove('loading');
+    groupCard.style.display = 'block';
   }, 2000);
 }
 
 // Function to update the Last Settle card
 function updateLastSettle() {
-  const settleCard = document.querySelector(".group-card:nth-child(5)");
-  if (!settleCard) return;
+  const settleCard = document.querySelector('.group-card:nth-child(5)');
+  if (!settleCard) {return;}
 
   // Show skeleton loading
-  settleCard.classList.add("loading");
+  settleCard.classList.add('loading');
 
   // Fetch the most recent bill from Firebase
-  fetchWithUserId("/api/history/latest", {
-    method: "GET",
+  fetchWithUserId('/api/history/latest', {
+    method: 'GET',
     headers: {
-      Accept: "application/json",
-    },
+      Accept: 'application/json'
+    }
   })
-    .then((response) => {
+    .then(response => {
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}`);
       }
       return response.json();
     })
-    .then((data) => {
+    .then(data => {
       // Add slight delay to show the loading animation
       setTimeout(() => {
         // Remove loading state and show the element
-        settleCard.classList.remove("loading");
-        settleCard.style.display = "block";
+        settleCard.classList.remove('loading');
+        settleCard.style.display = 'block';
 
         // If no bill found
         if (!data || !data.bill) {
           // Update header to indicate empty state
-          const arrowIcon = settleCard.querySelector(".arrow-icon");
+          const arrowIcon = settleCard.querySelector('.arrow-icon');
           if (arrowIcon) {
-            arrowIcon.style.display = "none";
+            arrowIcon.style.display = 'none';
           }
 
           // Clear existing content and add empty state message
-          const settleInfo = settleCard.querySelector(".settle-info");
+          const settleInfo = settleCard.querySelector('.settle-info');
           if (settleInfo) {
             // Clear amount, matter, group info
-            const amountEl = settleInfo.querySelector(".settle-info-amount");
-            const matterEl = settleInfo.querySelector(".settle-info-matter");
-            const groupEl = settleInfo.querySelector(".settle-info-group");
+            const amountEl = settleInfo.querySelector('.settle-info-amount');
+            const matterEl = settleInfo.querySelector('.settle-info-matter');
+            const groupEl = settleInfo.querySelector('.settle-info-group');
 
-            if (amountEl) amountEl.textContent = "No settlements yet";
-            if (matterEl) matterEl.textContent = "Start settling bills with your friends";
-            if (groupEl) groupEl.textContent = "Tap 'Settle Now' to begin";
+            if (amountEl) {amountEl.textContent = 'No settlements yet';}
+            if (matterEl) {matterEl.textContent = 'Start settling bills with your friends';}
+            if (groupEl) {groupEl.textContent = 'Tap \'Settle Now\' to begin';}
           }
 
           // Clear date and avatars
-          const dateEl = settleCard.querySelector(".settle-info-date span");
-          if (dateEl) dateEl.textContent = "";
+          const dateEl = settleCard.querySelector('.settle-info-date span');
+          if (dateEl) {dateEl.textContent = '';}
 
-          const avatarGroup = settleCard.querySelector(".avatar-group");
+          const avatarGroup = settleCard.querySelector('.avatar-group');
           if (avatarGroup) {
-            avatarGroup.innerHTML = "";
+            avatarGroup.innerHTML = '';
           }
 
           // Remove the link behavior when there's no data
-          settleCard.href = "javascript:void(0)";
+          settleCard.href = 'javascript:void(0)';
           return;
         }
 
@@ -4572,92 +4601,92 @@ function updateLastSettle() {
         updateSettleCardContent(settleCard, bill.id, bill);
       }, 300);
     })
-    .catch((error) => {
-      console.error("Error fetching latest settlement:", error);
-      settleCard.classList.remove("loading");
-      settleCard.style.display = "block";
+    .catch(error => {
+      console.error('Error fetching latest settlement:', error);
+      settleCard.classList.remove('loading');
+      settleCard.style.display = 'block';
 
       // Show error state
-      const settleInfo = settleCard.querySelector(".settle-info");
+      const settleInfo = settleCard.querySelector('.settle-info');
       if (settleInfo) {
-        const amountEl = settleInfo.querySelector(".settle-info-amount");
-        if (amountEl) amountEl.textContent = "Error loading";
+        const amountEl = settleInfo.querySelector('.settle-info-amount');
+        if (amountEl) {amountEl.textContent = 'Error loading';}
       }
     });
 }
 
 // Helper function to update settle card content
 function updateSettleCardContent(card, billId, data) {
-  if (!data) return;
+  if (!data) {return;}
 
   // Set the link to the result page
   card.href = `/bill/${billId}`;
-  card.target = "_blank";
+  card.target = '_blank';
 
   // Update amount
-  const amountElement = card.querySelector("#lastSettle .settle-info-amount");
+  const amountElement = card.querySelector('#lastSettle .settle-info-amount');
   if (amountElement && data.breakdown && data.breakdown.total) {
     // Apply rounding to the final total amount only
     amountElement.textContent = `$${roundToNearest5Cents(data.breakdown.total)}`;
   }
 
   // Update matter
-  const matterElement = card.querySelector("#lastSettle .settle-info-matter");
+  const matterElement = card.querySelector('#lastSettle .settle-info-matter');
   if (matterElement) {
-    matterElement.textContent = data.settleMatter || "Settlement";
+    matterElement.textContent = data.settleMatter || 'Settlement';
   }
 
   // Update group info
-  const groupElement = card.querySelector("#lastSettle .settle-info-group");
+  const groupElement = card.querySelector('#lastSettle .settle-info-group');
   if (groupElement) {
     const memberCount = data.members ? data.members.length : 0;
     groupElement.textContent = `${memberCount} members`;
   }
 
   // Update date
-  const dateElement = card.querySelector("#lastSettle .settle-info-date span");
+  const dateElement = card.querySelector('#lastSettle .settle-info-date span');
   if (dateElement && data.timestamp) {
     const date = new Date(data.timestamp);
     dateElement.textContent = date.toLocaleString();
   }
 
   // Update avatars
-  const avatarGroup = card.querySelector("#lastSettle .avatar-group");
+  const avatarGroup = card.querySelector('#lastSettle .avatar-group');
   if (avatarGroup && data.members && data.members.length > 0) {
-    avatarGroup.innerHTML = "";
+    avatarGroup.innerHTML = '';
 
     // Show up to 5 members
     const membersToShow = data.members.slice(0, 5);
 
-    membersToShow.forEach((member) => {
-      const avatarDiv = document.createElement("div");
-      avatarDiv.className = "avatar";
+    membersToShow.forEach(member => {
+      const avatarDiv = document.createElement('div');
+      avatarDiv.className = 'avatar';
       avatarDiv.innerHTML = `<img class="avatar-img" src="assets/cat-icon/cat-${member.avatar || 1}.svg" />`;
       avatarGroup.appendChild(avatarDiv);
     });
 
     // Add '+' indicator if more than 5 members
     if (data.members.length > 5) {
-      const plusIndicator = document.createElement("div");
-      plusIndicator.textContent = "+";
+      const plusIndicator = document.createElement('div');
+      plusIndicator.textContent = '+';
       avatarGroup.appendChild(plusIndicator);
     }
   }
 }
 
 // Call this function when the page loads
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   updateHomePageCards();
 
   // Update when switching to home page
-  document.getElementById("menu2").addEventListener("click", function () {
+  document.getElementById('menu2').addEventListener('click', function () {
     updateHomePageCards();
   });
 });
 
 // Function to round amounts to the nearest 0.05
 function roundToNearest5Cents(value) {
-  if (typeof value === "string") {
+  if (typeof value === 'string') {
     value = parseFloat(value);
   }
 
@@ -4687,20 +4716,20 @@ function roundToNearest5Cents(value) {
 // Show a notification to the user
 function showNotification(message) {
   // Create and show a toast notification
-  const toast = document.createElement("div");
-  toast.className = "toast-notification";
+  const toast = document.createElement('div');
+  toast.className = 'toast-notification';
   toast.textContent = message;
 
   document.body.appendChild(toast);
 
   // Trigger animation
   setTimeout(() => {
-    toast.classList.add("show");
+    toast.classList.add('show');
   }, 10);
 
   // Remove after 3 seconds
   setTimeout(() => {
-    toast.classList.remove("show");
+    toast.classList.remove('show');
     setTimeout(() => {
       document.body.removeChild(toast);
     }, 300);
@@ -4709,8 +4738,8 @@ function showNotification(message) {
 
 // Function to sync the tax profile dropdown with localStorage value
 function syncTaxProfileDropdown() {
-  const taxProfileDropdown = document.getElementById("taxProfile");
-  const savedTaxProfile = localStorage.getItem("taxProfile") || "singapore";
+  const taxProfileDropdown = document.getElementById('taxProfile');
+  const savedTaxProfile = localStorage.getItem('taxProfile') || 'singapore';
 
   if (taxProfileDropdown) {
     // Set the dropdown value to match localStorage
@@ -4722,19 +4751,19 @@ function syncTaxProfileDropdown() {
 }
 
 // Add a window.onload handler to ensure tax profile syncs even if user refreshes
-window.addEventListener("load", function () {
+window.addEventListener('load', function () {
   // Sync the tax profile dropdown with localStorage
   syncTaxProfileDropdown();
 });
 
 // Prevent number inputs from changing on scroll
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   // Select all numeric inputs
   const numberInputs = document.querySelectorAll('input[type="number"]');
 
-  numberInputs.forEach((input) => {
+  numberInputs.forEach(input => {
     input.addEventListener(
-      "wheel",
+      'wheel',
       function (e) {
         // Prevent the default behavior (value change) when scrolling
         e.preventDefault();
@@ -4789,26 +4818,29 @@ async function syncDataFromFirebase() {
 
     // console.log("Firebase sync complete");
   } catch (error) {
-    console.error("Error syncing data from Firebase:", error);
+    console.error('Error syncing data from Firebase:', error);
   }
 }
 
 // Check if the app is running as a PWA
 function isRunningAsPWA() {
-  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  return (
+    window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true
+  );
 }
 
 // Initialize app functionality after window loads
 window.onload = async function () {
   if (isRunningAsPWA()) {
     // PWA-specific logic here
-    document.body.style.height = "100vh";
-    document.body.classList.add("pwa-mode");
+    document.body.style.height = '100vh';
+    document.body.classList.add('pwa-mode');
   }
 
   // First sync data from Firebase to localStorage
   await syncDataFromFirebase().then(() => {
-    console.log("Data synchronization complete");
+    console.log('Data synchronization complete');
   });
 
   // Update home page cards after sync
@@ -4820,9 +4852,9 @@ window.onload = async function () {
     initializePullToRefresh();
 
     // Initialize all needed components
-    document.getElementById("taxProfile").value = "singapore";
-    document.getElementById("serviceRate").textContent = "10%";
-    document.getElementById("gstRate").textContent = "9%";
+    document.getElementById('taxProfile').value = 'singapore';
+    document.getElementById('serviceRate').textContent = '10%';
+    document.getElementById('gstRate').textContent = '9%';
 
     // Initialize page navigation
     initPageNavigation();
@@ -4841,25 +4873,25 @@ window.onload = async function () {
 
     // Add animation classes after a delay for smoother experience
     setTimeout(() => {
-      document.querySelectorAll(".card-widget").forEach((card, index) => {
+      document.querySelectorAll('.card-widget').forEach((card, index) => {
         setTimeout(() => {
-          card.classList.add("animated");
+          card.classList.add('animated');
         }, index * 100); // Stagger animations
       });
     }, 100);
 
     setTimeout(() => {
-      document.querySelectorAll(".group-card").forEach((card, index) => {
+      document.querySelectorAll('.group-card').forEach((card, index) => {
         setTimeout(() => {
-          card.classList.add("animated");
+          card.classList.add('animated');
         }, index * 100); // Stagger animations
       });
     }, 100);
 
     // If a preloader exists, hide it
-    const preloader = document.getElementById("preloader");
+    const preloader = document.getElementById('preloader');
     if (preloader) {
-      preloader.classList.add("fade-out");
+      preloader.classList.add('fade-out');
       setTimeout(() => {
         if (preloader.parentNode) {
           preloader.parentNode.removeChild(preloader);
@@ -4871,20 +4903,20 @@ window.onload = async function () {
 
 function deleteHistoryRecord(billId, itemElement) {
   fetchWithUserId(`/api/history/${encodeURIComponent(billId)}`, {
-    method: "DELETE",
+    method: 'DELETE',
     headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
+      'Content-Type': 'application/json',
+      Accept: 'application/json'
+    }
   })
-    .then((response) => {
-      if (!response.ok) throw new Error("Failed to delete record");
+    .then(response => {
+      if (!response.ok) {throw new Error('Failed to delete record');}
       // Remove the item from the UI with animation
       if (itemElement && itemElement.parentNode) {
         // Add fade out animation before removing
-        itemElement.style.transition = "all 0.3s ease";
-        itemElement.style.opacity = "0";
-        itemElement.style.transform = "translateX(-100%)";
+        itemElement.style.transition = 'all 0.3s ease';
+        itemElement.style.opacity = '0';
+        itemElement.style.transform = 'translateX(-100%)';
 
         setTimeout(() => {
           if (itemElement.parentNode) {
@@ -4894,10 +4926,10 @@ function deleteHistoryRecord(billId, itemElement) {
       }
 
       // Show success toast
-      showToast("itemDeletedToast");
+      showToast('itemDeletedToast');
     })
-    .catch((err) => {
-      alert("Error deleting record. Please try again.");
+    .catch(err => {
+      alert('Error deleting record. Please try again.');
       console.error(err);
     });
 }
@@ -4905,141 +4937,141 @@ function deleteHistoryRecord(billId, itemElement) {
 // Function to update any receipt with settlement details
 function updateReceiptDetails(receiptContainer, data) {
   // Find all detail elements by their class names instead of IDs
-  const settleMatterEl = receiptContainer.querySelector(".successSettleMatter");
-  const dateEl = receiptContainer.querySelector(".successDate");
-  const timeEl = receiptContainer.querySelector(".successTime");
-  const itemCountEl = receiptContainer.querySelector(".successItemCount");
-  const subtotalEl = receiptContainer.querySelector(".successSubtotal");
-  const serviceChargeEl = receiptContainer.querySelector(".successServiceCharge");
-  const serviceChargeRow = receiptContainer.querySelector(".serviceChargeRow");
-  const serviceChargeRate = receiptContainer.querySelector(".serviceChargeRate");
-  const afterServiceEl = receiptContainer.querySelector(".successAfterService");
-  const afterServiceRow = receiptContainer.querySelector(".afterServiceRow");
-  const discountEl = receiptContainer.querySelector(".successDiscount");
-  const discountRow = receiptContainer.querySelector(".discountRow");
-  const discountRate = receiptContainer.querySelector(".discount-rate");
-  const afterDiscountEl = receiptContainer.querySelector(".successAfterDiscount");
-  const afterDiscountRow = receiptContainer.querySelector(".afterDiscountRow");
-  const gstEl = receiptContainer.querySelector(".successGST");
-  const gstRow = receiptContainer.querySelector(".gstRow");
-  const gstRate = receiptContainer.querySelector(".gstRate");
-  const amountEl = receiptContainer.querySelector(".successAmount");
-  const originalAmountEl = receiptContainer.querySelector(".successOriginalAmount");
-  const originalAmountRow = receiptContainer.querySelector(".originalAmountRow");
-  const payerEl = receiptContainer.querySelector(".successPayer");
+  const settleMatterEl = receiptContainer.querySelector('.successSettleMatter');
+  const dateEl = receiptContainer.querySelector('.successDate');
+  const timeEl = receiptContainer.querySelector('.successTime');
+  const itemCountEl = receiptContainer.querySelector('.successItemCount');
+  const subtotalEl = receiptContainer.querySelector('.successSubtotal');
+  const serviceChargeEl = receiptContainer.querySelector('.successServiceCharge');
+  const serviceChargeRow = receiptContainer.querySelector('.serviceChargeRow');
+  const serviceChargeRate = receiptContainer.querySelector('.serviceChargeRate');
+  const afterServiceEl = receiptContainer.querySelector('.successAfterService');
+  const afterServiceRow = receiptContainer.querySelector('.afterServiceRow');
+  const discountEl = receiptContainer.querySelector('.successDiscount');
+  const discountRow = receiptContainer.querySelector('.discountRow');
+  const discountRate = receiptContainer.querySelector('.discount-rate');
+  const afterDiscountEl = receiptContainer.querySelector('.successAfterDiscount');
+  const afterDiscountRow = receiptContainer.querySelector('.afterDiscountRow');
+  const gstEl = receiptContainer.querySelector('.successGST');
+  const gstRow = receiptContainer.querySelector('.gstRow');
+  const gstRate = receiptContainer.querySelector('.gstRate');
+  const amountEl = receiptContainer.querySelector('.successAmount');
+  const originalAmountEl = receiptContainer.querySelector('.successOriginalAmount');
+  const originalAmountRow = receiptContainer.querySelector('.originalAmountRow');
+  const payerEl = receiptContainer.querySelector('.successPayer');
 
   // Update the text content if elements exist
-  if (settleMatterEl) settleMatterEl.textContent = data.settleMatter || "No one ask!";
-  if (dateEl) dateEl.textContent = data.dateString;
-  if (timeEl) timeEl.textContent = data.timeString;
-  if (itemCountEl) itemCountEl.textContent = data.itemCount;
-  if (subtotalEl) subtotalEl.textContent = data.subtotal;
+  if (settleMatterEl) {settleMatterEl.textContent = data.settleMatter || 'No one ask!';}
+  if (dateEl) {dateEl.textContent = data.dateString;}
+  if (timeEl) {timeEl.textContent = data.timeString;}
+  if (itemCountEl) {itemCountEl.textContent = data.itemCount;}
+  if (subtotalEl) {subtotalEl.textContent = data.subtotal;}
 
   // Update payer information if available
   if (payerEl && data.payer) {
     payerEl.textContent = data.payer.name;
   } else if (payerEl) {
-    payerEl.textContent = data.paynowName || "Not specified";
+    payerEl.textContent = data.paynowName || 'Not specified';
   }
 
   // Handle Service Charge
   if (serviceChargeEl && serviceChargeRow) {
-    const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
+    const serviceChargeValue = parseFloat(data.serviceCharge.replace('$', ''));
     if (serviceChargeValue > 0) {
       serviceChargeEl.textContent = `$${serviceChargeValue.toFixed(2)}`;
-      serviceChargeRow.style.display = "";
+      serviceChargeRow.style.display = '';
 
       // Set service charge rate
       if (serviceChargeRate) {
-        serviceChargeRate.textContent = data.serviceChargeRate || "10%";
+        serviceChargeRate.textContent = data.serviceChargeRate || '10%';
       }
     } else {
-      serviceChargeRow.style.display = "none";
+      serviceChargeRow.style.display = 'none';
     }
   }
 
   // Handle After Service
   if (afterServiceEl && afterServiceRow) {
-    const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
+    const serviceChargeValue = parseFloat(data.serviceCharge.replace('$', ''));
     if (serviceChargeValue > 0) {
       // Calculate after service amount from subtotal + service charge
-      const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
+      const subtotalValue = parseFloat(data.subtotal.replace('$', ''));
       const afterServiceValue = subtotalValue + serviceChargeValue;
       afterServiceEl.textContent = `$${afterServiceValue.toFixed(2)}`;
-      afterServiceRow.style.display = "";
+      afterServiceRow.style.display = '';
     } else {
-      afterServiceRow.style.display = "none";
+      afterServiceRow.style.display = 'none';
     }
   }
 
   // Handle Discount
   if (discountEl && discountRow) {
     // Extract discount from data if available, otherwise don't show
-    const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
+    const discountValue = parseFloat(data.discount?.replace('$', '') || '0');
     if (discountValue > 0) {
       discountEl.textContent = `$${discountValue.toFixed(2)}`;
       // Update discount rate display with original input
       if (discountRate && data.discountInput) {
         discountRate.textContent = `(${data.discountInput})`;
       }
-      discountRow.style.display = "";
+      discountRow.style.display = '';
     } else {
-      discountRow.style.display = "none";
+      discountRow.style.display = 'none';
     }
   }
 
   // Handle After Discount
   if (afterDiscountEl && afterDiscountRow) {
-    const discountValue = parseFloat(data.discount?.replace("$", "") || "0");
+    const discountValue = parseFloat(data.discount?.replace('$', '') || '0');
     if (discountValue > 0) {
       // Calculate amount after discount
-      const subtotalValue = parseFloat(data.subtotal.replace("$", ""));
-      const serviceChargeValue = parseFloat(data.serviceCharge.replace("$", ""));
+      const subtotalValue = parseFloat(data.subtotal.replace('$', ''));
+      const serviceChargeValue = parseFloat(data.serviceCharge.replace('$', ''));
       const afterServiceValue = subtotalValue + serviceChargeValue;
       const afterDiscountValue = afterServiceValue - discountValue;
       afterDiscountEl.textContent = `$${afterDiscountValue.toFixed(2)}`;
-      afterDiscountRow.style.display = "";
+      afterDiscountRow.style.display = '';
     } else {
-      afterDiscountRow.style.display = "none";
+      afterDiscountRow.style.display = 'none';
     }
   }
 
   // Handle GST
   if (gstEl && gstRow) {
-    const gstValue = parseFloat(data.gst.replace("$", ""));
+    const gstValue = parseFloat(data.gst.replace('$', ''));
     if (gstValue > 0) {
       gstEl.textContent = `$${gstValue.toFixed(2)}`;
-      gstRow.style.display = "";
+      gstRow.style.display = '';
 
       // Set GST rate
       if (gstRate) {
-        gstRate.textContent = data.gstRate || "9%";
+        gstRate.textContent = data.gstRate || '9%';
       }
     } else {
-      gstRow.style.display = "none";
+      gstRow.style.display = 'none';
     }
   }
 
   // Display both original and rounded amounts for final total
   if (originalAmountEl && originalAmountRow && amountEl) {
-    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
+    const totalValue = parseFloat(data.totalAmount.replace('$', ''));
     const roundedTotal = roundToNearest5Cents(totalValue);
 
     // Show original amount row only if rounding was applied
     if (Math.abs(totalValue - roundedTotal) > 0.001) {
       // Using a small epsilon for float comparison
       originalAmountEl.textContent = `$${totalValue.toFixed(2)}`;
-      originalAmountRow.style.display = "";
+      originalAmountRow.style.display = '';
       // Show the rounded amount
       amountEl.textContent = `$${roundedTotal}`;
     } else {
       // No rounding needed, hide original amount row
-      originalAmountRow.style.display = "none";
+      originalAmountRow.style.display = 'none';
       amountEl.textContent = `$${totalValue.toFixed(2)}`;
     }
   } else if (amountEl) {
     // Fallback if original amount elements don't exist
-    const totalValue = parseFloat(data.totalAmount.replace("$", ""));
+    const totalValue = parseFloat(data.totalAmount.replace('$', ''));
     const roundedTotal = roundToNearest5Cents(totalValue);
     amountEl.textContent = `$${roundedTotal}`;
   }
@@ -5049,59 +5081,59 @@ function updateReceiptDetails(receiptContainer, data) {
 
 // Function to update birthday person button visibility and state
 function updateBirthdayPersonButton() {
-  const birthdayBtn = document.getElementById("birthdayPersonBtn");
-  if (!birthdayBtn) return;
+  const birthdayBtn = document.getElementById('birthdayPersonBtn');
+  if (!birthdayBtn) {return;}
 
   // Show button only if we have 2 or more members
   if (members.length >= 2) {
-    birthdayBtn.style.display = "flex";
+    birthdayBtn.style.display = 'flex';
 
     // Update button state based on whether birthday person is selected
     if (birthdayPerson) {
-      birthdayBtn.classList.add("has-birthday-person");
-      birthdayBtn.querySelector(
-        ".birthday-text"
-      ).innerHTML = `<span class="birthday-icon">🎂</span> ${birthdayPerson} (Birthday)`;
+      birthdayBtn.classList.add('has-birthday-person');
+      birthdayBtn.querySelector('.birthday-text').innerHTML =
+            `<span class="birthday-icon">🎂</span> ${birthdayPerson} (Birthday)`;
     } else {
-      birthdayBtn.classList.remove("has-birthday-person");
-      birthdayBtn.querySelector(".birthday-text").innerHTML = "<span class='birthday-icon'>🎂</span> Someone Birthday?";
+      birthdayBtn.classList.remove('has-birthday-person');
+      birthdayBtn.querySelector('.birthday-text').innerHTML =
+            '<span class=\'birthday-icon\'>🎂</span> Someone Birthday?';
     }
   } else {
-    birthdayBtn.style.display = "none";
+    birthdayBtn.style.display = 'none';
   }
 }
 
 // Function to show birthday person modal
 function showBirthdayPersonModal() {
-  const modal = document.getElementById("birthdayPersonModal");
-  const membersList = document.getElementById("birthdayMembersList");
-  const statusDisplay = document.querySelector(".birthday-status-display");
-  const statusMemberName = document.querySelector(".birthday-member-name");
-  const confirmBtn = document.getElementById("confirmBirthdayPersonBtn");
-  const clearBtn = document.getElementById("clearBirthdayPersonBtn");
+  const modal = document.getElementById('birthdayPersonModal');
+  const membersList = document.getElementById('birthdayMembersList');
+  const statusDisplay = document.querySelector('.birthday-status-display');
+  const statusMemberName = document.querySelector('.birthday-member-name');
+  const confirmBtn = document.getElementById('confirmBirthdayPersonBtn');
+  const clearBtn = document.getElementById('clearBirthdayPersonBtn');
 
   // Clear previous content
-  membersList.innerHTML = "";
+  membersList.innerHTML = '';
 
   // Create member options using same structure as paynowMembersList
-  members.forEach((member) => {
-    const memberName = typeof member === "object" ? member.name : member;
+  members.forEach(member => {
+    const memberName = typeof member === 'object' ? member.name : member;
     const avatarNumber =
-      typeof member === "object"
-        ? member.avatar
-        : Math.abs(
-            memberName.split("").reduce((a, b) => {
-              a = (a << 5) - a + b.charCodeAt(0);
-              return a & a;
-            }, 0) % 20
-          ) + 1;
+         typeof member === 'object'
+           ? member.avatar
+           : Math.abs(
+             memberName.split('').reduce((a, b) => {
+               a = (a << 5) - a + b.charCodeAt(0);
+               return a & a;
+             }, 0) % 20
+           ) + 1;
 
-    const memberDiv = document.createElement("div");
-    memberDiv.className = "member-avatar-wrapper";
-    memberDiv.setAttribute("data-name", memberName);
+    const memberDiv = document.createElement('div');
+    memberDiv.className = 'member-avatar-wrapper';
+    memberDiv.setAttribute('data-name', memberName);
 
     if (birthdayPerson === memberName) {
-      memberDiv.classList.add("selected");
+      memberDiv.classList.add('selected');
     }
 
     memberDiv.innerHTML = `
@@ -5112,24 +5144,24 @@ function showBirthdayPersonModal() {
     `;
 
     // Add click handler
-    memberDiv.addEventListener("click", function () {
+    memberDiv.addEventListener('click', function () {
       // Remove selected class from all members
-      document.querySelectorAll("#birthdayMembersList .member-avatar-wrapper").forEach((m) => {
-        m.classList.remove("selected");
+      document.querySelectorAll('#birthdayMembersList .member-avatar-wrapper').forEach(m => {
+        m.classList.remove('selected');
       });
 
       // Add selected class to this member
-      this.classList.add("selected");
+      this.classList.add('selected');
 
       // Update status display
-      statusDisplay.style.display = "block";
+      statusDisplay.style.display = 'block';
       statusMemberName.textContent = memberName;
 
       // Show clear button if this person was already selected
       if (birthdayPerson === memberName) {
-        clearBtn.style.display = "inline-block";
+        clearBtn.style.display = 'inline-block';
       } else {
-        clearBtn.style.display = "none";
+        clearBtn.style.display = 'none';
       }
     });
 
@@ -5138,30 +5170,32 @@ function showBirthdayPersonModal() {
 
   // Show/hide status display based on current selection
   if (birthdayPerson) {
-    statusDisplay.style.display = "block";
+    statusDisplay.style.display = 'block';
     statusMemberName.textContent = birthdayPerson;
-    clearBtn.style.display = "inline-block";
+    clearBtn.style.display = 'inline-block';
 
     // Pre-select the current birthday person
     const currentOption = membersList.querySelector(`[data-name="${birthdayPerson}"]`);
     if (currentOption) {
-      currentOption.classList.add("selected");
+      currentOption.classList.add('selected');
     }
   } else {
-    statusDisplay.style.display = "none";
-    clearBtn.style.display = "none";
+    statusDisplay.style.display = 'none';
+    clearBtn.style.display = 'none';
   }
 
   // Show modal
-  showModal("birthdayPersonModal");
+  showModal('birthdayPersonModal');
 }
 
 // Function to handle birthday person confirmation
 function confirmBirthdayPerson() {
-  const selectedOption = document.querySelector("#birthdayMembersList .member-avatar-wrapper.selected");
+  const selectedOption = document.querySelector(
+    '#birthdayMembersList .member-avatar-wrapper.selected'
+  );
 
   if (selectedOption) {
-    const selectedMember = selectedOption.getAttribute("data-name");
+    const selectedMember = selectedOption.getAttribute('data-name');
     birthdayPerson = selectedMember;
 
     // Update visual indicators
@@ -5169,12 +5203,12 @@ function confirmBirthdayPerson() {
     updateBirthdayPersonButton();
 
     // Show success feedback
-    showToast("birthdayPersonToast");
+    showToast('birthdayPersonToast');
 
     // Update toast message
-    const toast = document.getElementById("birthdayPersonToast");
+    const toast = document.getElementById('birthdayPersonToast');
     if (toast) {
-      const messageEl = toast.querySelector(".toast-message");
+      const messageEl = toast.querySelector('.toast-message');
       if (messageEl) {
         messageEl.textContent = `🎂 ${birthdayPerson} is the birthday person!`;
       }
@@ -5182,7 +5216,7 @@ function confirmBirthdayPerson() {
   }
 
   // Hide modal
-  hideModal("birthdayPersonModal");
+  hideModal('birthdayPersonModal');
 }
 
 // Function to clear birthday person
@@ -5194,51 +5228,51 @@ function clearBirthdayPerson() {
   updateBirthdayPersonButton();
 
   // Show feedback
-  showToast("birthdayPersonClearedToast");
+  showToast('birthdayPersonClearedToast');
 
   // Hide modal
-  hideModal("birthdayPersonModal");
+  hideModal('birthdayPersonModal');
 }
 
 // Function to update visual indicators for birthday person
 function updateBirthdayPersonVisuals() {
   // Update member avatars in the group members section
-  const groupMembers = document.querySelectorAll(".group-members .member-avatar-wrapper");
+  const groupMembers = document.querySelectorAll('.group-members .member-avatar-wrapper');
 
-  groupMembers.forEach((wrapper) => {
+  groupMembers.forEach(wrapper => {
     const memberName = wrapper.dataset.name;
-    const avatar = wrapper.querySelector(".member-avatar");
-    const nameDiv = wrapper.querySelector(".member-name");
+    const avatar = wrapper.querySelector('.member-avatar');
+    const nameDiv = wrapper.querySelector('.member-name');
 
     if (memberName === birthdayPerson) {
       // Add birthday person styling
-      avatar.classList.add("birthday-person");
-      nameDiv.classList.add("birthday-person");
+      avatar.classList.add('birthday-person');
+      nameDiv.classList.add('birthday-person');
     } else {
       // Remove birthday person styling
-      avatar.classList.remove("birthday-person");
-      nameDiv.classList.remove("birthday-person");
+      avatar.classList.remove('birthday-person');
+      nameDiv.classList.remove('birthday-person');
     }
   });
 }
 
 // Initialize birthday person functionality
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener('DOMContentLoaded', function () {
   // Birthday person button click handler
-  const birthdayBtn = document.getElementById("birthdayPersonBtn");
+  const birthdayBtn = document.getElementById('birthdayPersonBtn');
   if (birthdayBtn) {
-    birthdayBtn.addEventListener("click", showBirthdayPersonModal);
+    birthdayBtn.addEventListener('click', showBirthdayPersonModal);
   }
 
   // Birthday modal confirm button
-  const confirmBtn = document.getElementById("confirmBirthdayPersonBtn");
+  const confirmBtn = document.getElementById('confirmBirthdayPersonBtn');
   if (confirmBtn) {
-    confirmBtn.addEventListener("click", confirmBirthdayPerson);
+    confirmBtn.addEventListener('click', confirmBirthdayPerson);
   }
 
   // Birthday modal clear button
-  const clearBtn = document.getElementById("clearBirthdayPersonBtn");
+  const clearBtn = document.getElementById('clearBirthdayPersonBtn');
   if (clearBtn) {
-    clearBtn.addEventListener("click", clearBirthdayPerson);
+    clearBtn.addEventListener('click', clearBirthdayPerson);
   }
 });

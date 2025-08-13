@@ -3,8 +3,8 @@
  * This module provides simplified authentication handling for your application
  */
 
-const firebase = require("firebase/app");
-require("firebase/auth");
+const firebase = require('firebase/app');
+require('firebase/auth');
 
 // Initialize Firebase auth
 let authInitialized = false;
@@ -15,7 +15,7 @@ let firebaseApp = null;
  * @param {Object} existingApp - Your Firebase app instance
  */
 function initializeAuth(existingApp) {
-  if (authInitialized) return;
+  if (authInitialized) {return;}
 
   firebaseApp = existingApp;
   authInitialized = true;
@@ -29,7 +29,7 @@ function initializeAuth(existingApp) {
  */
 async function getAuthToken() {
   if (!authInitialized) {
-    console.warn("Auth not initialized. Call initializeAuth first.");
+    console.warn('Auth not initialized. Call initializeAuth first.');
     return null;
   }
 
@@ -45,7 +45,7 @@ async function getAuthToken() {
 
     return await currentUser.getIdToken();
   } catch (error) {
-    console.error("Error getting auth token:", error);
+    console.error('Error getting auth token:', error);
     return null;
   }
 }
@@ -56,7 +56,7 @@ async function getAuthToken() {
  */
 async function signInAnonymously() {
   if (!authInitialized) {
-    console.warn("Auth not initialized. Call initializeAuth first.");
+    console.warn('Auth not initialized. Call initializeAuth first.');
     return null;
   }
 
@@ -64,7 +64,7 @@ async function signInAnonymously() {
     const auth = firebase.auth(firebaseApp);
     return await auth.signInAnonymously();
   } catch (error) {
-    console.error("Error signing in anonymously:", error);
+    console.error('Error signing in anonymously:', error);
     throw error;
   }
 }
@@ -77,14 +77,14 @@ async function signInAnonymously() {
 async function addAuthToRequest(options = {}) {
   const token = await getAuthToken();
 
-  if (!token) return options;
+  if (!token) {return options;}
 
   return {
     ...options,
     headers: {
       ...options.headers,
-      Authorization: `Bearer ${token}`,
-    },
+      Authorization: `Bearer ${token}`
+    }
   };
 }
 
@@ -92,5 +92,5 @@ module.exports = {
   initializeAuth,
   getAuthToken,
   signInAnonymously,
-  addAuthToRequest,
+  addAuthToRequest
 };

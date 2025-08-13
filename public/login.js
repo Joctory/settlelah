@@ -1,10 +1,10 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   // Set copyright year
-  document.getElementById("copyrightYear").textContent = new Date().getFullYear();
+  document.getElementById('copyrightYear').textContent = new Date().getFullYear();
 
   // Prevent zooming on iOS Safari
   document.addEventListener(
-    "touchstart",
+    'touchstart',
     function (event) {
       if (event.touches.length > 1) {
         event.preventDefault();
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   document.addEventListener(
-    "gesturestart",
+    'gesturestart',
     function (event) {
       event.preventDefault();
     },
@@ -23,38 +23,38 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   // Variables to track passcode state
-  let passcode = "";
+  let passcode = '';
   const passcodeLength = 6;
-  const dots = document.querySelectorAll(".passcode-dot");
-  const errorElement = document.getElementById("login-error");
-  const emailInput = document.getElementById("loginEmail");
-  const emailError = document.getElementById("email-error");
-  const continueBtn = document.getElementById("continueBtn");
-  const authStepEmail = document.querySelector(".auth-step-email");
-  const authStepPasscode = document.querySelector(".auth-step-passcode");
-  const displayedEmail = document.getElementById("displayedEmail");
-  const changeEmailBtn = document.getElementById("changeEmailBtn");
-  let isProcessingInput = false; // Flag to track if we're processing input
+  const dots = document.querySelectorAll('.passcode-dot');
+  const errorElement = document.getElementById('login-error');
+  const emailInput = document.getElementById('loginEmail');
+  const emailError = document.getElementById('email-error');
+  const continueBtn = document.getElementById('continueBtn');
+  const authStepEmail = document.querySelector('.auth-step-email');
+  const authStepPasscode = document.querySelector('.auth-step-passcode');
+  const displayedEmail = document.getElementById('displayedEmail');
+  const changeEmailBtn = document.getElementById('changeEmailBtn');
+  const isProcessingInput = false; // Flag to track if we're processing input
 
   // Initially ensure the passcode step is hidden
   // (We also have CSS and inline styles as fallbacks)
-  authStepPasscode.style.display = "none";
-  authStepPasscode.style.opacity = "0";
+  authStepPasscode.style.display = 'none';
+  authStepPasscode.style.opacity = '0';
 
   // Listen for email input changes
-  emailInput.addEventListener("input", validateEmail);
-  emailInput.addEventListener("blur", validateEmailOnBlur);
-  emailInput.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" && isValidEmail(emailInput.value.trim())) {
+  emailInput.addEventListener('input', validateEmail);
+  emailInput.addEventListener('blur', validateEmailOnBlur);
+  emailInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && isValidEmail(emailInput.value.trim())) {
       proceedToPasscode();
     }
   });
 
   // Continue button
-  continueBtn.addEventListener("click", proceedToPasscode);
+  continueBtn.addEventListener('click', proceedToPasscode);
 
   // Change Email button
-  changeEmailBtn.addEventListener("click", switchToEmailInput);
+  changeEmailBtn.addEventListener('click', switchToEmailInput);
 
   // Function to validate email as user types
   function validateEmail() {
@@ -64,15 +64,15 @@ document.addEventListener("DOMContentLoaded", () => {
     continueBtn.disabled = !isValidEmail(email);
 
     // Just visual validation feedback while typing
-    if (email !== "" && !isValidEmail(email)) {
-      emailInput.classList.add("invalid-email");
-      emailInput.classList.remove("valid-email");
+    if (email !== '' && !isValidEmail(email)) {
+      emailInput.classList.add('invalid-email');
+      emailInput.classList.remove('valid-email');
     } else {
-      emailInput.classList.remove("invalid-email");
+      emailInput.classList.remove('invalid-email');
       if (isValidEmail(email)) {
-        emailInput.classList.add("valid-email");
+        emailInput.classList.add('valid-email');
       } else {
-        emailInput.classList.remove("valid-email");
+        emailInput.classList.remove('valid-email');
       }
     }
   }
@@ -81,8 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function validateEmailOnBlur() {
     const email = emailInput.value.trim();
 
-    if (email !== "" && !isValidEmail(email)) {
-      showEmailError("Please enter a valid email address");
+    if (email !== '' && !isValidEmail(email)) {
+      showEmailError('Please enter a valid email address');
     } else {
       hideError();
     }
@@ -93,32 +93,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = emailInput.value.trim();
 
     if (!isValidEmail(email)) {
-      showEmailError("Please enter a valid email address");
+      showEmailError('Please enter a valid email address');
       return;
     }
 
     // Disable the continue button and show loading
     continueBtn.disabled = true;
     const originalText = continueBtn.textContent;
-    continueBtn.textContent = "Verifying...";
+    continueBtn.textContent = 'Verifying...';
 
     // Verify email exists in database first
-    fetch("/api/verify-email", {
-      method: "POST",
+    fetch('/api/verify-email', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email }),
+      body: JSON.stringify({ email })
     })
       .then((response) => {
         if (response.status === 423) {
           // User or IP is locked
           return response.json().then(data => {
-            throw new Error(JSON.stringify({ 
-              locked: true, 
+            throw new Error(JSON.stringify({
+              locked: true,
               code: data.code,
               message: data.error,
-              remainingMinutes: data.remainingMinutes 
+              remainingMinutes: data.remainingMinutes
             }));
           });
         }
@@ -134,11 +134,11 @@ document.addEventListener("DOMContentLoaded", () => {
           proceedToPasscodeStep(email);
         } else {
           // Email doesn't exist or other error
-          showEmailError(data.message || "Invalid email or passcode. Please try again.");
+          showEmailError(data.message || 'Invalid email or passcode. Please try again.');
         }
       })
       .catch((error) => {
-        
+
         // Re-enable button
         continueBtn.disabled = false;
         continueBtn.textContent = originalText;
@@ -150,12 +150,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if (errorData.remainingMinutes) {
               lockMessage += ` Try again in ${errorData.remainingMinutes} minutes.`;
             }
-            
+
             // Show lockout message and disable the email input
             showEmailError(lockMessage);
             emailInput.disabled = true;
             continueBtn.disabled = true;
-            
+
             // Auto-enable after lockout period (for user experience)
             if (errorData.remainingMinutes) {
               setTimeout(() => {
@@ -169,8 +169,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (e) {
           // Not a structured error
         }
-        
-        showEmailError("Connection error. Please try again.");
+
+        showEmailError('Connection error. Please try again.');
       });
   }
 
@@ -180,38 +180,38 @@ document.addEventListener("DOMContentLoaded", () => {
     displayedEmail.textContent = email;
 
     // Update subtitle
-    document.querySelector(".login-subtitle").textContent = "Enter your 6-digit passcode";
+    document.querySelector('.login-subtitle').textContent = 'Enter your 6-digit passcode';
 
     // Switch to passcode step with animation
-    authStepEmail.classList.remove("active");
+    authStepEmail.classList.remove('active');
 
     // Small delay before showing passcode step for smoother animation
     setTimeout(() => {
       // First make it display: flex before animating
-      authStepPasscode.style.display = "flex";
+      authStepPasscode.style.display = 'flex';
 
       // Force a reflow to ensure the browser registers the display change
       void authStepPasscode.offsetWidth;
 
       // Then add active class to trigger animation
-      authStepPasscode.classList.add("active");
+      authStepPasscode.classList.add('active');
 
       // Apply staggered animation to dots
       dots.forEach((dot, index) => {
         setTimeout(() => {
-          dot.classList.add("bounce");
-          setTimeout(() => dot.classList.remove("bounce"), 400);
+          dot.classList.add('bounce');
+          setTimeout(() => dot.classList.remove('bounce'), 400);
         }, 100 + index * 60);
       });
 
       // Animate in the keys with staggered timing
-      document.querySelectorAll(".keypad-key").forEach((key, index) => {
-        key.style.opacity = "0";
-        key.style.transform = "translateY(8px)";
+      document.querySelectorAll('.keypad-key').forEach((key, index) => {
+        key.style.opacity = '0';
+        key.style.transform = 'translateY(8px)';
 
         setTimeout(() => {
-          key.style.opacity = "1";
-          key.style.transform = "translateY(0)";
+          key.style.opacity = '1';
+          key.style.transform = 'translateY(0)';
         }, 300 + index * 40);
       });
 
@@ -223,23 +223,23 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to switch back to email input
   function switchToEmailInput() {
     // Hide passcode step first
-    authStepPasscode.classList.remove("active");
+    authStepPasscode.classList.remove('active');
 
     // After animation completes, actually hide the element and show email step
     setTimeout(() => {
-      authStepPasscode.style.display = "none";
-      authStepEmail.classList.add("active");
+      authStepPasscode.style.display = 'none';
+      authStepEmail.classList.add('active');
 
       // Re-enable email input and continue button in case they were disabled
       emailInput.disabled = false;
       continueBtn.disabled = false;
-      continueBtn.textContent = "Continue";
+      continueBtn.textContent = 'Continue';
 
       // Focus the email input
       emailInput.focus();
 
       // Reset subtitle
-      document.querySelector(".login-subtitle").textContent = "Enter your email to continue";
+      document.querySelector('.login-subtitle').textContent = 'Enter your email to continue';
 
       // Clear passcode
       handleClear();
@@ -248,9 +248,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Check for "registered=true" parameter in URL
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("registered") === "true") {
+  if (urlParams.get('registered') === 'true') {
     // Show success message
-    showLoginMessage("Registration successful! Please log in with your email and passcode.", "success");
+    showLoginMessage('Registration successful! Please log in with your email and passcode.', 'success');
   }
 
   // Vibration utility function
@@ -261,12 +261,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Hide preloader after page loads
-  const preloader = document.getElementById("preloader");
+  const preloader = document.getElementById('preloader');
   if (preloader) {
     setTimeout(() => {
-      preloader.classList.add("fade-out");
+      preloader.classList.add('fade-out');
       setTimeout(() => {
-        preloader.style.display = "none";
+        preloader.style.display = 'none';
       }, 500);
     }, 800);
   }
@@ -275,18 +275,18 @@ document.addEventListener("DOMContentLoaded", () => {
   checkAuthentication();
 
   // Optimize key press handling with both click and touch events
-  const keypadKeys = document.querySelectorAll(".keypad-key");
+  const keypadKeys = document.querySelectorAll('.keypad-key');
 
   keypadKeys.forEach((key) => {
     // Optimized handler for both touch and click events
     const handleKeyPress = (e) => {
       e.preventDefault(); // Prevent default behavior
 
-      const keyValue = key.getAttribute("data-value");
-      const keyAction = key.getAttribute("data-action");
+      const keyValue = key.getAttribute('data-value');
+      const keyAction = key.getAttribute('data-action');
 
       // Immediate visual feedback
-      key.classList.add("pressed");
+      key.classList.add('pressed');
 
       // Vibrate on keypad press - keep it short
       vibrate(10);
@@ -294,24 +294,24 @@ document.addEventListener("DOMContentLoaded", () => {
       // Process the input immediately
       if (keyValue) {
         handleNumberInput(keyValue);
-      } else if (keyAction === "delete") {
+      } else if (keyAction === 'delete') {
         handleDelete();
-      } else if (keyAction === "clear") {
+      } else if (keyAction === 'clear') {
         handleClear();
       }
 
       // Remove the pressed class after a short delay
       // Shorter animation for more responsive feel
       setTimeout(() => {
-        key.classList.remove("pressed");
+        key.classList.remove('pressed');
       }, 80);
     };
 
     // Use touchstart for mobile - it's faster than click
-    key.addEventListener("touchstart", handleKeyPress, { passive: false });
+    key.addEventListener('touchstart', handleKeyPress, { passive: false });
 
     // Keep click for desktop compatibility
-    key.addEventListener("click", (e) => {
+    key.addEventListener('click', (e) => {
       // Only process click if it wasn't already handled by touch
       if (!e.defaultPrevented) {
         handleKeyPress(e);
@@ -319,40 +319,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Add active state handling for better feedback
-    key.addEventListener("touchend", () => key.classList.remove("pressed"));
-    key.addEventListener("touchcancel", () => key.classList.remove("pressed"));
+    key.addEventListener('touchend', () => key.classList.remove('pressed'));
+    key.addEventListener('touchcancel', () => key.classList.remove('pressed'));
   });
 
   // Listen for keyboard input as well
-  document.addEventListener("keydown", (e) => {
+  document.addEventListener('keydown', (e) => {
     // Only process keyboard input if the passcode screen is shown
-    if (!authStepPasscode.classList.contains("active")) {
+    if (!authStepPasscode.classList.contains('active')) {
       return;
     }
 
-    if (e.key >= "0" && e.key <= "9") {
+    if (e.key >= '0' && e.key <= '9') {
       // Visual feedback for keyboard presses
       const keyElement = document.querySelector(`.keypad-key[data-value="${e.key}"]`);
       if (keyElement) {
-        keyElement.classList.add("pressed");
-        setTimeout(() => keyElement.classList.remove("pressed"), 80);
+        keyElement.classList.add('pressed');
+        setTimeout(() => keyElement.classList.remove('pressed'), 80);
       }
       handleNumberInput(e.key);
-    } else if (e.key === "Backspace") {
+    } else if (e.key === 'Backspace') {
       const keyElement = document.querySelector('.keypad-key[data-action="delete"]');
       if (keyElement) {
-        keyElement.classList.add("pressed");
-        setTimeout(() => keyElement.classList.remove("pressed"), 80);
+        keyElement.classList.add('pressed');
+        setTimeout(() => keyElement.classList.remove('pressed'), 80);
       }
       handleDelete();
-    } else if (e.key === "Escape") {
+    } else if (e.key === 'Escape') {
       const keyElement = document.querySelector('.keypad-key[data-action="clear"]');
       if (keyElement) {
-        keyElement.classList.add("pressed");
-        setTimeout(() => keyElement.classList.remove("pressed"), 80);
+        keyElement.classList.add('pressed');
+        setTimeout(() => keyElement.classList.remove('pressed'), 80);
       }
       handleClear();
-    } else if (e.key === "Enter" && passcode.length === passcodeLength) {
+    } else if (e.key === 'Enter' && passcode.length === passcodeLength) {
       validatePasscode();
     }
   });
@@ -360,7 +360,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // Handle number input - optimized for responsiveness
   function handleNumberInput(number) {
     // Skip if already at max length
-    if (passcode.length >= passcodeLength) return;
+    if (passcode.length >= passcodeLength) {return;}
 
     // Clear any existing error
     hideError();
@@ -371,11 +371,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Update dots display - directly manipulate the specific dot for performance
     const currentDot = dots[passcode.length - 1];
     if (currentDot) {
-      currentDot.classList.add("filled");
+      currentDot.classList.add('filled');
 
       // Add a small bounce animation
-      currentDot.classList.add("bounce");
-      setTimeout(() => currentDot.classList.remove("bounce"), 300);
+      currentDot.classList.add('bounce');
+      setTimeout(() => currentDot.classList.remove('bounce'), 300);
     }
 
     // If passcode is complete, validate it with a slight delay
@@ -389,7 +389,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (passcode.length > 0) {
       // Clear the last dot
       const dotToEmpty = dots[passcode.length - 1];
-      if (dotToEmpty) dotToEmpty.classList.remove("filled");
+      if (dotToEmpty) {dotToEmpty.classList.remove('filled');}
 
       // Remove the last character
       passcode = passcode.slice(0, -1);
@@ -399,9 +399,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Handle clear button - optimized
   function handleClear() {
-    passcode = "";
+    passcode = '';
     // Directly update all dots for better performance
-    dots.forEach((dot) => dot.classList.remove("filled"));
+    dots.forEach((dot) => dot.classList.remove('filled'));
     hideError();
   }
 
@@ -411,77 +411,77 @@ document.addEventListener("DOMContentLoaded", () => {
     const email = displayedEmail.textContent;
     if (!isValidEmail(email)) {
       switchToEmailInput();
-      showEmailError("Please enter a valid email address");
+      showEmailError('Please enter a valid email address');
       return;
     }
 
     // Add pulsing animation to dots to indicate validation in progress
     dots.forEach((dot) => {
-      if (dot.classList.contains("filled")) {
-        dot.classList.add("pulse");
+      if (dot.classList.contains('filled')) {
+        dot.classList.add('pulse');
       }
     });
 
     // Send both email and passcode to server
-    fetch("/api/validate-passcode", {
-      method: "POST",
+    fetch('/api/validate-passcode', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ email, passcode }),
+      body: JSON.stringify({ email, passcode })
     })
       .then((response) => {
         // Handle rate limiting and other HTTP errors
         if (response.status === 429) {
           return response.json().then(errorData => {
-            throw new Error(errorData.error || "Too many attempts. Please try again later.");
+            throw new Error(errorData.error || 'Too many attempts. Please try again later.');
           });
         }
         return response.json();
       })
       .then((data) => {
         // Remove pulsing animation
-        dots.forEach((dot) => dot.classList.remove("pulse"));
+        dots.forEach((dot) => dot.classList.remove('pulse'));
 
         if (data.valid) {
           // Store user info in localStorage if available
           if (data.userId) {
-            localStorage.setItem("settlelah_user_id", data.userId);
+            localStorage.setItem('settlelah_user_id', data.userId);
           }
           if (data.name) {
-            localStorage.setItem("settlelah_user_name", data.name);
+            localStorage.setItem('settlelah_user_name', data.name);
           }
           if (data.email) {
-            localStorage.setItem("settlelah_user_email", data.email);
+            localStorage.setItem('settlelah_user_email', data.email);
           }
-          
+
           // Store JWT tokens (prefer accessToken over legacy token)
           if (data.accessToken) {
-            localStorage.setItem("settlelah_access_token", data.accessToken);
+            localStorage.setItem('settlelah_access_token', data.accessToken);
           }
           if (data.refreshToken) {
-            localStorage.setItem("settlelah_refresh_token", data.refreshToken);
+            localStorage.setItem('settlelah_refresh_token', data.refreshToken);
           }
-          
+
           // Legacy token support for backward compatibility
           if (data.token && !data.accessToken) {
-            localStorage.setItem("settlelah_user_token", data.token);
+            localStorage.setItem('settlelah_user_token', data.token);
           }
 
           handleSuccessfulLogin();
         } else {
           // Enhanced error handling with lockout information
-          let errorMessage = data.message || "Invalid email or passcode. Please try again.";
-          
+          let errorMessage = data.message || 'Invalid email or passcode. Please try again.';
+
           // Add remaining attempts info if available
           if (data.remainingAttempts !== undefined) {
             if (data.remainingAttempts === 0) {
-              errorMessage = "Account locked due to too many failed attempts. Please try again in 15 minutes.";
+              errorMessage = 'Account locked due to too many failed attempts. Please try again in 15 minutes.';
             } else {
               errorMessage += ` (${data.remainingAttempts} attempts remaining)`;
             }
           }
-          
+
           // Handle specific lockout codes
           if (data.code === 'ACCOUNT_LOCKED') {
             errorMessage = data.error;
@@ -494,14 +494,14 @@ document.addEventListener("DOMContentLoaded", () => {
               errorMessage += ` Try again in ${data.remainingMinutes} minutes.`;
             }
           }
-          
+
           handleFailedLogin(errorMessage);
         }
       })
       .catch((error) => {
-        console.error("Authentication error:", error);
-        dots.forEach((dot) => dot.classList.remove("pulse"));
-        handleFailedLogin("Authentication failed. Please try again.");
+        console.error('Authentication error:', error);
+        dots.forEach((dot) => dot.classList.remove('pulse'));
+        handleFailedLogin('Authentication failed. Please try again.');
       });
   }
 
@@ -514,10 +514,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // Show email-specific error
   function showEmailError(message) {
     emailError.textContent = message;
-    emailError.classList.add("visible");
-    emailInput.style.borderColor = "var(--error-color)";
-    emailInput.classList.add("invalid-email");
-    emailInput.classList.remove("valid-email");
+    emailError.classList.add('visible');
+    emailInput.style.borderColor = 'var(--error-color)';
+    emailInput.classList.add('invalid-email');
+    emailInput.classList.remove('valid-email');
 
     // Vibrate with a pattern for error feedback
     vibrate([50, 50, 50]);
@@ -526,33 +526,33 @@ document.addEventListener("DOMContentLoaded", () => {
   // Show a message above the login form
   function showLoginMessage(message, type) {
     // Create message element if it doesn't exist
-    let messageElement = document.querySelector(".login-message");
+    let messageElement = document.querySelector('.login-message');
 
     if (!messageElement) {
-      messageElement = document.createElement("div");
-      messageElement.classList.add("login-message");
-      const container = document.querySelector(".login-container");
+      messageElement = document.createElement('div');
+      messageElement.classList.add('login-message');
+      const container = document.querySelector('.login-container');
       container.insertBefore(messageElement, container.firstChild);
     }
 
     // Set message content and style
     messageElement.textContent = message;
-    messageElement.className = "login-message";
+    messageElement.className = 'login-message';
 
-    if (type === "success") {
-      messageElement.classList.add("success");
-    } else if (type === "error") {
-      messageElement.classList.add("error");
+    if (type === 'success') {
+      messageElement.classList.add('success');
+    } else if (type === 'error') {
+      messageElement.classList.add('error');
     }
 
     // Show the message
-    messageElement.style.display = "block";
+    messageElement.style.display = 'block';
 
     // Hide after 5 seconds
     setTimeout(() => {
-      messageElement.style.opacity = "0";
+      messageElement.style.opacity = '0';
       setTimeout(() => {
-        messageElement.style.display = "none";
+        messageElement.style.display = 'none';
       }, 300);
     }, 5000);
   }
@@ -561,19 +561,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function handleSuccessfulLogin() {
     // Add success animation to dots
     dots.forEach((dot) => {
-      dot.classList.add("success");
+      dot.classList.add('success');
     });
 
     // Store authentication in localStorage instead of sessionStorage for persistence
-    localStorage.setItem("settlelah_authenticated", "true");
+    localStorage.setItem('settlelah_authenticated', 'true');
 
     // Add timestamp for session expiration (15 days)
     const expiryTime = Date.now() + 15 * 24 * 60 * 60 * 1000;
-    localStorage.setItem("settlelah_auth_expiry", expiryTime.toString());
+    localStorage.setItem('settlelah_auth_expiry', expiryTime.toString());
 
     // Redirect to main page after animation
     setTimeout(() => {
-      window.location.href = "/";
+      window.location.href = '/';
     }, 800);
   }
 
@@ -583,14 +583,14 @@ document.addEventListener("DOMContentLoaded", () => {
     vibrate([100, 50, 100, 50, 100]);
 
     // Shake the passcode container
-    const passcodeContainer = document.querySelector(".passcode-dots");
-    passcodeContainer.classList.add("shake");
+    const passcodeContainer = document.querySelector('.passcode-dots');
+    passcodeContainer.classList.add('shake');
 
     // Clear the passcode
     setTimeout(() => {
-      passcode = "";
-      dots.forEach((dot) => dot.classList.remove("filled"));
-      passcodeContainer.classList.remove("shake");
+      passcode = '';
+      dots.forEach((dot) => dot.classList.remove('filled'));
+      passcodeContainer.classList.remove('shake');
       showError(message);
     }, 600);
   }
@@ -598,36 +598,36 @@ document.addEventListener("DOMContentLoaded", () => {
   // Show error message
   function showError(message) {
     errorElement.textContent = message;
-    errorElement.classList.add("visible");
+    errorElement.classList.add('visible');
   }
 
   // Hide error message
   function hideError() {
-    errorElement.classList.remove("visible");
-    emailError.classList.remove("visible");
-    emailInput.style.borderColor = "";
-    emailInput.classList.remove("invalid-email");
+    errorElement.classList.remove('visible');
+    emailError.classList.remove('visible');
+    emailInput.style.borderColor = '';
+    emailInput.classList.remove('invalid-email');
   }
 
   // Check if user is already authenticated
   function checkAuthentication() {
-    const isAuthenticated = localStorage.getItem("settlelah_authenticated") === "true";
-    const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
+    const isAuthenticated = localStorage.getItem('settlelah_authenticated') === 'true';
+    const authExpiry = parseInt(localStorage.getItem('settlelah_auth_expiry') || '0');
     if (isAuthenticated && authExpiry > Date.now()) {
-      window.location.href = "/";
+      window.location.href = '/';
     }
   }
 });
 
 function isRunningAsPWA() {
-  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 }
 
 // Initialize app functionality after window loads
 window.onload = function () {
   if (isRunningAsPWA()) {
     // PWA-specific logic here
-    document.body.style.height = "100vh";
-    document.documentElement.style.height = "100vh";
+    document.body.style.height = '100vh';
+    document.documentElement.style.height = '100vh';
   }
 };
