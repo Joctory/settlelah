@@ -12,8 +12,29 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - `npm start` - Start production server
 - `npm run dev` - Start development server with nodemon
 - `npm test` - Run security rules tests using Mocha
+- `npm run test:security` - Run security tests with Firebase emulators
 - `npm run deploy-rules` - Deploy Firestore security rules to Firebase
 - `npm run security-setup` - Run security setup script
+
+### Build & Optimization Commands
+- `npm run build` - Build minified CSS, JS, and HTML files for production
+- `npm run build:js` - Minify JavaScript files only (includes login.js)
+- `npm run build:css` - Minify CSS files only (includes login.css)
+- `npm run build:html` - Build HTML files using build-html.js
+- `npm run build:prod` - Build for production with NODE_ENV=production
+- `npm run build:dev` - Build HTML files only for development
+- `npm run vercel-build` - Vercel-specific build command (auto-runs on deploy)
+
+### Vercel Development Commands
+- `npm run dev:vercel` - Start Vercel dev with clear URL display
+- `npm run dev:silent` - Start Vercel dev silently on port 3000
+- `vercel dev --yes --listen 3000` - Direct Vercel dev command
+- `npm run dev` - Regular development server (port 3001)
+
+### Vercel Deployment Commands
+- `vercel --prod` - Deploy to production
+- `vercel` - Preview deployment
+- `vercel env add VARIABLE_NAME` - Add environment variable
 
 ### Firebase Commands
 - `firebase login` - Authenticate with Firebase CLI
@@ -62,7 +83,7 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 ### Bills Collection (`bills`)
 - Secure ID format: `timestamp-randomBytes-matterHash`
 - Contains: members, dishes, totals, breakdown, ownership info
-- Auto-expires after 30 days
+- Note: Bill expiration check is currently disabled (function commented out in index.js)
 
 ### Groups Collection (`groups`)
 - User-owned group configurations
@@ -87,3 +108,7 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - Firebase emulators can be used for local testing without affecting production data
 - The firestore-adapter provides fallback mechanisms for development
 - Bill IDs are validated before database operations to prevent injection attacks
+
+## Code Conventions
+
+- **Commented Functions**: When a function is commented out in the codebase, it indicates that the function is not currently active or used in the webapp. These functions should be considered inactive/disabled features.

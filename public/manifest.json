@@ -69,6 +69,7 @@
   "orientation": "portrait",
   "background_color": "#ffffff",
   "theme_color": "#000000",
+  "splash_pages": null,
   "prefer_related_applications": false,
   "scope": "/",
   "shortcuts": [

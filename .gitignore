@@ -36,3 +36,13 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+.vercel
+
+# Firebase debug logs
+firebase-debug.log
+firestore-debug.log
+.firebase/
+
+# Logs
+logs
+*.log

@@ -1,20 +1,107 @@
-// Authentication check
-function checkAuthentication() {
-  const isAuthenticated = localStorage.getItem("settlelah_authenticated") === "true";
-  const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
+// JWT Token management
+function getAccessToken() {
+  return localStorage.getItem("settlelah_access_token");
+}
 
-  // If not authenticated or token expired, redirect to login
-  if (!isAuthenticated || authExpiry <= Date.now()) {
-    // Clear any existing auth data
-    localStorage.removeItem("settlelah_authenticated");
-    localStorage.removeItem("settlelah_auth_expiry");
+function getRefreshToken() {
+  return localStorage.getItem("settlelah_refresh_token");
+}
 
-    // Redirect to login page
-    window.location.href = "/login";
-    return false;
+function getLegacyToken() {
+  return localStorage.getItem("settlelah_user_token");
+}
+
+function clearAuthTokens() {
+  localStorage.removeItem("settlelah_access_token");
+  localStorage.removeItem("settlelah_refresh_token");
+  localStorage.removeItem("settlelah_user_token");
+  localStorage.removeItem("settlelah_authenticated");
+  localStorage.removeItem("settlelah_auth_expiry");
+  localStorage.removeItem("settlelah_user_id");
+  localStorage.removeItem("settlelah_user_name");
+  localStorage.removeItem("settlelah_user_email");
+}
+
+// Check if access token is expired (basic client-side check)
+function isTokenExpired(token) {
+  if (!token) return true;
+
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error("Error parsing token:", error);
+    return true;
+  }
+}
+
+// Refresh access token using refresh token
+async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken || isTokenExpired(refreshToken)) {
+    console.log("No valid refresh token available");
+    return null;
   }
 
-  return true;
+  try {
+    const response = await fetch("/api/refresh-token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      localStorage.setItem("settlelah_access_token", data.accessToken);
+      return data.accessToken;
+    } else {
+      console.error("Token refresh failed:", await response.text());
+      return null;
+    }
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return null;
+  }
+}
+
+// Authentication check
+function checkAuthentication() {
+  const accessToken = getAccessToken();
+  const refreshToken = getRefreshToken();
+  const legacyAuth = localStorage.getItem("settlelah_authenticated") === "true";
+  const authExpiry = parseInt(localStorage.getItem("settlelah_auth_expiry") || "0");
+
+  // Check JWT authentication first
+  if (accessToken && !isTokenExpired(accessToken)) {
+    return true;
+  }
+
+  // Try to refresh token if we have a valid refresh token
+  if (refreshToken && !isTokenExpired(refreshToken)) {
+    // Note: This is async, but we return true optimistically
+    // The actual refresh will happen in the background
+    refreshAccessToken().then((newToken) => {
+      if (!newToken) {
+        clearAuthTokens();
+        window.location.href = "/login";
+      }
+    });
+    return true;
+  }
+
+  // Fallback to legacy authentication
+  if (legacyAuth && authExpiry > Date.now()) {
+    return true;
+  }
+
+  // No valid authentication found
+  clearAuthTokens();
+  window.location.href = "/login";
+  return false;
 }
 
 // Helper function to get user ID from local storage
@@ -22,8 +109,8 @@ function getUserId() {
   return localStorage.getItem("settlelah_user_id");
 }
 
-// Helper function to add user ID to fetch requests
-function fetchWithUserId(url, options = {}) {
+// Enhanced fetch function with JWT support and automatic token refresh
+async function fetchWithUserId(url, options = {}) {
   const userId = getUserId();
 
   // Initialize headers if they don't exist
@@ -31,12 +118,46 @@ function fetchWithUserId(url, options = {}) {
     options.headers = {};
   }
 
-  // Add user ID header if it exists
+  // Add user ID header if available (for backward compatibility)
   if (userId) {
     options.headers["x-user-id"] = userId;
   }
 
-  return fetch(url, options);
+  // Add JWT authorization header
+  let accessToken = getAccessToken();
+
+  // Check if access token is expired and try to refresh
+  if (!accessToken || isTokenExpired(accessToken)) {
+    accessToken = await refreshAccessToken();
+  }
+
+  if (accessToken) {
+    options.headers["Authorization"] = `Bearer ${accessToken}`;
+  } else {
+    // Fallback to legacy token
+    const legacyToken = getLegacyToken();
+    if (legacyToken) {
+      options.headers["Authorization"] = `Bearer ${legacyToken}`;
+    }
+  }
+
+  // Make the request
+  const response = await fetch(url, options);
+
+  // If we get a 401, try to refresh the token once more
+  if (response.status === 401 && accessToken) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      options.headers["Authorization"] = `Bearer ${newToken}`;
+      return fetch(url, options);
+    } else {
+      // Refresh failed, redirect to login
+      clearAuthTokens();
+      window.location.href = "/login";
+    }
+  }
+
+  return response;
 }
 
 // Initialize pull-to-refresh functionality
@@ -218,12 +339,8 @@ function logout() {
   const confirmLogout = confirm("Are you sure you want to log out?");
 
   if (confirmLogout) {
-    // Clear auth data from localStorage
-    localStorage.removeItem("settlelah_authenticated");
-    localStorage.removeItem("settlelah_auth_expiry");
-    localStorage.removeItem("settlelah_user_id");
-    localStorage.removeItem("settlelah_user_name");
-    localStorage.removeItem("settlelah_user_token");
+    // Clear all authentication tokens and data
+    clearAuthTokens();
 
     // Clear groups from localStorage
     localStorage.removeItem("groups");
@@ -456,6 +573,8 @@ function scanReceipt() {
                   const tryAgainBtn = errorToast.querySelector(".try-again-btn");
                   if (tryAgainBtn) {
                     tryAgainBtn.onclick = function () {
+                      // Reset scanning overlay state before showing modal
+                      resetScanningOverlay();
                       showModal("scanReceiptModal");
                       // Hide the toast immediately when button is clicked
                       errorToast.classList.remove("show");
@@ -1809,6 +1928,11 @@ function saveEditedMember() {
     }
   });
 
+  // Update the dish assignment UI if we're in that view
+  if (currentSettleView === "addSettleItemView") {
+    updateSettleItemMembersUI();
+  }
+
   // Close the modal
   hideModal("editMemberModal");
 }
@@ -2358,7 +2482,6 @@ function handleSettleBackButton() {
       billSummaryModal.style.display = "none";
     }
   } else if (currentSettleView === "addSettleItemView") {
-    // Show the back confirmation modal
     showModal("backConfirmModal");
   } else if (currentSettleView === "savedGroupsView") {
     // Reset birthday person selection when going back
@@ -2637,7 +2760,7 @@ function editSavedGroup(groupName, event) {
   if (groupNameContainer && groupNameInput) {
     groupNameContainer.style.display = "block";
     groupNameInput.value = groupName;
-    
+
     // Clear any existing error message
     const errorElement = groupNameInput.parentElement.querySelector(".error-message");
     if (errorElement) {
@@ -2759,14 +2882,14 @@ function showGroupMembersView(groupName) {
 function saveGroupToStorage() {
   if (currentGroup) {
     let groupNameToSave = currentGroup;
-    
+
     // If we're editing a group, check if the name has changed
     if (isEditingGroup) {
       const groupNameInput = document.getElementById("editGroupName");
       if (groupNameInput) {
         const newGroupName = groupNameInput.value.trim();
         const errorElement = groupNameInput.parentElement.querySelector(".error-message");
-        
+
         // Validate that the group name is not empty
         if (!newGroupName) {
           if (errorElement) {
@@ -2775,7 +2898,7 @@ function saveGroupToStorage() {
           }
           return; // Don't save if name is empty
         }
-        
+
         // If the name has changed, we need to delete the old group and create a new one
         if (newGroupName !== currentGroup) {
           // Validate that the new name doesn't already exist
@@ -2787,30 +2910,30 @@ function saveGroupToStorage() {
             }
             return; // Don't save if name conflicts
           }
-          
+
           // Remove the old group from local storage
           delete groups[currentGroup];
-          
+
           // Also delete the old group from Firebase
           deleteGroupFromFirebase(currentGroup);
-          
+
           // Update the current group name
           groupNameToSave = newGroupName;
           currentGroup = newGroupName;
-          
-          console.log(`Renamed group to "${newGroupName}"`);
+
+          // console.log(`Renamed group to "${newGroupName}"`);
         }
-        
+
         // Clear any error messages if validation passed
         if (errorElement) {
           errorElement.style.display = "none";
         }
       }
     }
-    
+
     groups[groupNameToSave] = [...members];
     localStorage.setItem("groups", JSON.stringify(groups));
-    console.log(`Saved group "${groupNameToSave}" with ${members.length} members`);
+    // console.log(`Saved group "${groupNameToSave}" with ${members.length} members`);
 
     // Also save to Firebase
     saveGroupToFirebase(groupNameToSave, [...members]);
@@ -2862,12 +2985,12 @@ async function deleteGroupFromFirebase(groupName) {
     });
 
     if (!response.ok) {
-      console.error(`Failed to delete group from Firebase: ${response.statusText}`);
+      // console.error(`Failed to delete group from Firebase: ${response.statusText}`);
     } else {
-      console.log(`Group "${groupName}" deleted from Firebase successfully`);
+      // console.log(`Group "${groupName}" deleted from Firebase successfully`);
     }
   } catch (error) {
-    console.error(`Error deleting group "${groupName}" from Firebase:`, error);
+    // console.error(`Error deleting group "${groupName}" from Firebase:`, error);
   }
 }
 
@@ -2970,6 +3093,13 @@ function removeMember() {
     }
   });
 
+  // Update the dish assignment UI if we're in that view
+  if (currentSettleView === "addSettleItemView") {
+    setTimeout(() => {
+      updateSettleItemMembersUI();
+    }, 350); // Wait for fade-out animation to complete
+  }
+
   // Close the modal
   hideModal("editMemberModal");
 }
@@ -3029,6 +3159,11 @@ function addNewMember() {
 
   // Create and add the member to the UI
   addMemberToUI(memberName, avatarNumber);
+
+  // Update the dish assignment UI if we're in that view
+  if (currentSettleView === "addSettleItemView") {
+    updateSettleItemMembersUI();
+  }
 
   // Clear the input field
   memberNameInput.value = "";
@@ -3237,8 +3372,8 @@ function initPageNavigation() {
         errorMessage.style.display = "none";
       }
 
-      // Set the previous view to settleChoiceView for proper back navigation
-      previousView = "settleChoiceView";
+      // Set the previous view to newGroupMembersView so user can edit members
+      previousView = "newGroupMembersView";
 
       // Ensure the New favourite group button is visible since we're coming from new group
       const newFavouriteGroupBtn = document.querySelector(".new-favourite-group-btn");
@@ -3481,6 +3616,26 @@ if (newFavouriteGroupBtn) {
   });
 }
 
+// Save group button handler (in member editing view)
+const saveGroupBtn = document.querySelector(".save-group-btn");
+if (saveGroupBtn) {
+  saveGroupBtn.addEventListener("click", function () {
+    // Show the create group modal
+    showModal("createGroupModal");
+
+    // Reset the form
+    const groupNameInput = document.getElementById("groupName");
+    if (groupNameInput) {
+      groupNameInput.value = "";
+      const inputField = groupNameInput.closest(".input-field");
+      inputField.classList.remove("error");
+      const errorMessage = inputField.querySelector(".error-message");
+      errorMessage.classList.remove("visible");
+      errorMessage.textContent = "Please enter group's name";
+    }
+  });
+}
+
 // Cancel button in create group modal
 const cancelGroupBtn = document.querySelector(".create-group-modal .cancel-btn");
 if (cancelGroupBtn) {
@@ -3528,14 +3683,22 @@ if (confirmGroupBtn) {
     const successMessage = document.querySelector(".group-success-message");
     const groupNameDisplay = document.querySelector(".group-name-display");
     const newGroupBtn = document.querySelector(".new-favourite-group-btn");
+    const saveGroupSection = document.querySelector(".save-group-section");
 
-    if (successMessage && groupNameDisplay && newGroupBtn) {
+    if (successMessage && groupNameDisplay) {
       // Update group name in success message and show it
       groupNameDisplay.textContent = `Group "${groupName}" created`;
       successMessage.classList.add("visible");
 
       // Hide the "New favourite group?" button temporarily
-      newGroupBtn.style.display = "none";
+      if (newGroupBtn) {
+        newGroupBtn.style.display = "none";
+      }
+
+      // Hide the save group button if visible
+      if (saveGroupSection) {
+        saveGroupSection.style.display = "none";
+      }
 
       // Hide success message and restore button after 3 seconds
       // setTimeout(() => {
@@ -3628,6 +3791,8 @@ if (backConfirmBtn) {
     document.getElementById("dishSummaryContainer").innerHTML = "";
     document.getElementById("itemName").value = "";
     document.getElementById("itemPrice").value = "";
+    document.getElementById("settleEqually").checked = false;
+
     // Clear dishes array and update the dish list
     dishes = [];
 
@@ -3643,6 +3808,17 @@ if (backConfirmBtn) {
 
     // Update the header text
     updateSettleNowHeader();
+
+    // Clear receipt file input
+    const receiptFileInput = document.getElementById("receiptImage");
+    if (receiptFileInput) {
+      receiptFileInput.value = "";
+      // Reset upload text
+      const uploadTextElement = document.querySelector(".upload-text");
+      if (uploadTextElement) {
+        uploadTextElement.textContent = "Choose File";
+      }
+    }
 
     // If going back to newGroupMembersView, ensure the title is correct
     if (previousView === "newGroupMembersView") {
@@ -3697,8 +3873,6 @@ async function fetchWeatherData() {
 
 // Document ready function
 document.addEventListener("DOMContentLoaded", function () {
-  console.log("DOM fully loaded");
-
   // Initialize dishes array if it doesn't exist
   if (typeof dishes === "undefined") {
     window.dishes = [];
@@ -4164,10 +4338,36 @@ function copyToClipboard(url) {
     .catch((err) => alert("Failed to copy link."));
 }
 
+// Function to reset scanning overlay state
+function resetScanningOverlay() {
+  const scanOverlay = document.querySelector(".scan-receipt-overlay");
+  const scanningText = document.querySelector(".scanning-text");
+  const scanButton = document.getElementById("scanReceiptBtn");
+
+  if (scanOverlay) {
+    scanOverlay.classList.remove("active");
+    scanOverlay.style.transition = "";
+    scanOverlay.style.opacity = "";
+  }
+
+  if (scanningText) {
+    scanningText.textContent = "Scanning your receipt...";
+    scanningText.style.animation = "";
+    scanningText.style.color = "";
+  }
+
+  if (scanButton) {
+    scanButton.disabled = false;
+    scanButton.textContent = "Scan Receipt";
+  }
+}
+
 // Scan item button handler
 const scanItemBtn = document.querySelector(".scan-item-btn");
 if (scanItemBtn) {
   scanItemBtn.addEventListener("click", function () {
+    // Reset scanning overlay state before showing modal
+    resetScanningOverlay();
     // Show the scan receipt modal
     showModal("scanReceiptModal");
   });
@@ -4241,8 +4441,9 @@ async function updateLastCreatedGroup() {
         avatarGroup.innerHTML = '<p class="empty-state-message">Create a group when you settle</p>';
       }
 
-      // Remove loading state
+      // Remove loading state and show the element
       groupCard.classList.remove("loading");
+      groupCard.style.display = "block";
     }, 2000);
     return;
   }
@@ -4297,8 +4498,9 @@ async function updateLastCreatedGroup() {
       }
     }
 
-    // Remove loading state
+    // Remove loading state and show the element
     groupCard.classList.remove("loading");
+    groupCard.style.display = "block";
   }, 2000);
 }
 
@@ -4326,8 +4528,9 @@ function updateLastSettle() {
     .then((data) => {
       // Add slight delay to show the loading animation
       setTimeout(() => {
-        // Remove loading state
+        // Remove loading state and show the element
         settleCard.classList.remove("loading");
+        settleCard.style.display = "block";
 
         // If no bill found
         if (!data || !data.bill) {
@@ -4372,6 +4575,7 @@ function updateLastSettle() {
     .catch((error) => {
       console.error("Error fetching latest settlement:", error);
       settleCard.classList.remove("loading");
+      settleCard.style.display = "block";
 
       // Show error state
       const settleInfo = settleCard.querySelector(".settle-info");
@@ -4564,26 +4768,26 @@ function addBillToHistory(id, data) {
 
   // No need to store in localStorage anymore as data is already in Firebase
   // The bill data is saved to Firebase in the /calculate endpoint
-  console.log(`Bill ${id} added to history in Firebase`);
+  // console.log(`Bill ${id} added to history in Firebase`);
 }
 
 // Update this function for handling bill history loading
 function loadBillHistory() {
   // No need to load from localStorage anymore
   // Data will be fetched directly from Firebase when needed
-  console.log("Bill history will be loaded from Firebase when needed");
+  // console.log("Bill history will be loaded from Firebase when needed");
 }
 
 // Function to synchronize data from Firebase to localStorage on page load
 async function syncDataFromFirebase() {
   try {
     // Show subtle loading indicator or handle in a non-blocking way
-    console.log("Syncing data from Firebase...");
+    // console.log("Syncing data from Firebase...");
 
     // Fetch groups from Firebase
     await fetchGroupsFromFirebase();
 
-    console.log("Firebase sync complete");
+    // console.log("Firebase sync complete");
   } catch (error) {
     console.error("Error syncing data from Firebase:", error);
   }
@@ -4855,10 +5059,12 @@ function updateBirthdayPersonButton() {
     // Update button state based on whether birthday person is selected
     if (birthdayPerson) {
       birthdayBtn.classList.add("has-birthday-person");
-      birthdayBtn.querySelector(".birthday-text").textContent = `🎂 ${birthdayPerson} (Birthday)`;
+      birthdayBtn.querySelector(
+        ".birthday-text"
+      ).innerHTML = `<span class="birthday-icon">🎂</span> ${birthdayPerson} (Birthday)`;
     } else {
       birthdayBtn.classList.remove("has-birthday-person");
-      birthdayBtn.querySelector(".birthday-text").textContent = "Birthday Person";
+      birthdayBtn.querySelector(".birthday-text").innerHTML = "<span class='birthday-icon'>🎂</span> Someone Birthday?";
     }
   } else {
     birthdayBtn.style.display = "none";

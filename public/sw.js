@@ -7,7 +7,7 @@ self.addEventListener("install", (event) => {
     caches
       .open(CACHE_NAME)
       .then((cache) => {
-        console.log("Opened cache");
+        // console.log("Opened cache");
         return cache.add(new Request(OFFLINE_URL, { cache: "reload" })).catch((err) => {
           console.warn("Failed to cache offline page:", err);
           // Continue even if offline page caching fails

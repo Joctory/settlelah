@@ -23,7 +23,7 @@
     <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
     <link rel="apple-touch-startup-image" href="icons/splash-screen.png" />
 
-    <link rel="stylesheet" type="text/css" href="styles.css" />
+    <link rel="stylesheet" type="text/css" href="/styles.min.css" />
     <script src="https://raw.githack.com/SortableJS/Sortable/master/Sortable.js"></script>
     <script>
       // Service Worker Registration
@@ -167,7 +167,7 @@
         </div>
 
         <!-- Last Created Group -->
-        <div id="lastCreatedGroup" class="group-card card-widget">
+        <div id="lastCreatedGroup" class="group-card card-widget" style="display: none">
           <div class="card-header">
             <h3>Last Created Group</h3>
             <p>Friends</p>
@@ -176,7 +176,7 @@
         </div>
 
         <!-- Last Settle -->
-        <a id="lastSettle" href="" class="group-card card-widget">
+        <a id="lastSettle" href="" class="group-card card-widget" style="display: none">
           <div class="card-header">
             <h3>Last settle</h3>
             <span class="arrow-icon">→</span>
@@ -272,8 +272,7 @@
               </div>
             </div>
 
-            <a href="https://www.joasisweb.com" target="_blank" class="settings-item">
-              <!-- <div class="settings-icon"></div> -->
+            <a href="https://www.settlelah.app" target="_blank" class="settings-item">
               <div class="settings-info">
                 <p>Visit My Website</p>
               </div>
@@ -345,7 +344,7 @@
               <div class="new-group-error-message">
                 <p>Please add at least two members.</p>
               </div>
-              <div class="edit-group-name-container" style="display: none;">
+              <div class="edit-group-name-container" style="display: none">
                 <div class="input-field">
                   <label for="editGroupName">Group name</label>
                   <input type="text" id="editGroupName" placeholder="Group name" />
@@ -359,7 +358,14 @@
                 <div class="add-member-label">New Member</div>
               </div>
               <div class="member-list"></div>
-
+              <div class="save-group-section" style="display: none">
+                <button class="save-group-btn">
+                  <div class="save-group-icon">
+                    <img class="save-group-icon-img" src="assets/tick-circle.svg" alt="save group" />
+                  </div>
+                  <div class="save-group-label">Save as Group</div>
+                </button>
+              </div>
               <div class="btn-container">
                 <button class="next-btn new-group-next-btn">Next</button>
               </div>
@@ -448,7 +454,6 @@
               </div>
               <div id="groupMembers" class="group-members"></div>
               <button id="birthdayPersonBtn" class="birthday-person-btn" style="display: none">
-                <span class="birthday-icon">🎂</span>
                 <span class="birthday-text">Birthday Person</span>
               </button>
               <div class="drag-instructions">Drag members to assign them to the dish</div>
@@ -1150,7 +1155,7 @@
 
     <script src="https://hammerjs.github.io/dist/hammer.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mindee@3.9.1/dist/mindee.min.js"></script>
-    <script type="text/javascript" src="script.js"></script>
+    <script type="text/javascript" src="/script.min.js"></script>
     <script>
       // PWA Installation Banner
       let deferredPrompt;
@@ -1350,7 +1355,7 @@
               if (preloader && preloader.parentNode) {
                 preloader.parentNode.removeChild(preloader);
               }
-            }, 5000);
+            }, 4000);
           }
         }
 

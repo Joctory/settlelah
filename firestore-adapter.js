@@ -28,7 +28,7 @@ class FirestoreAdapter {
       }
 
       await firestore.setDoc(firestore.doc(this.db, "bills", id), data);
-      console.log(`Bill ${id} saved successfully`);
+      // Bill saved successfully (silent mode)
     } catch (error) {
       // Detailed error logging
       console.error(`Error saving bill ${id}:`, error);
@@ -53,7 +53,7 @@ class FirestoreAdapter {
 
           try {
             await firestore.setDoc(firestore.doc(this.db, "bills", id), minimalData);
-            console.log(`Bill ${id} saved with fallback method`);
+            // Bill saved with fallback method (silent mode)
           } catch (fallbackError) {
             console.error("Fallback save also failed:", fallbackError);
             throw fallbackError;
@@ -123,7 +123,7 @@ class FirestoreAdapter {
       });
 
       await batch.commit();
-      console.log(`Deleted ${validIds.length} bills`);
+      // Deleted bills successfully (silent mode)
     } catch (error) {
       console.error("Error deleting bills:", error);
 

@@ -1,0 +1,35 @@
+# Development files
+.env
+.env.local
+.env.example
+.DS_Store
+*.log
+
+# Package manager files
+yarn.lock
+yarn-error.log
+
+# Source files are needed for build process
+# public/script.js
+# public/result.js
+# public/login.js
+# public/styles.css
+# public/result.css
+# public/login.css
+
+# Development tools
+dev-mode.sh
+setup-security.sh
+generate-splash-screens.js
+
+# Documentation
+README.md
+firebase-security-setup.md
+
+# Testing
+test-security-rules.js
+node_modules/@firebase/rules-unit-testing
+
+# Build tools
+node_modules/terser
+node_modules/clean-css-cli

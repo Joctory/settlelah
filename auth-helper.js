@@ -20,7 +20,7 @@ function initializeAuth(existingApp) {
   firebaseApp = existingApp;
   authInitialized = true;
 
-  console.log("Firebase Auth initialized successfully");
+  // Silent initialization - no logs for cleaner console
 }
 
 /**
