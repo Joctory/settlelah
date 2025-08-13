@@ -24,6 +24,17 @@ jobs:
     - name: Install dependencies
       run: npm ci
       
+    - name: Install ESLint and Prettier
+      run: npm install --save-dev eslint prettier eslint-config-prettier
+      
+    - name: Run ESLint (code quality)
+      run: npx eslint . --ext .js --max-warnings 10
+      continue-on-error: true
+      
+    - name: Check Prettier formatting
+      run: npx prettier --check "**/*.{js,json,md,css,html}"
+      continue-on-error: true
+      
     - name: Run basic tests (skip security rules for now)
       run: echo "Basic tests passed - security rules need emulator setup"
       
