@@ -95,10 +95,18 @@ app.use((req, res, next) => {
       return next();
     }
 
-    // For API requests, check for JWT authorization header
-    if (req.headers.authorization) {
-      const token = jwtAuth.extractTokenFromHeader(req.headers.authorization);
+    // Determine if this is an API request based on path or Accept header
+    const isApiRequest = req.path.startsWith('/api/') || 
+                        req.headers.accept?.includes('application/json') ||
+                        req.headers['content-type']?.includes('application/json');
 
+    if (isApiRequest) {
+      // API requests must have authorization header
+      if (!req.headers.authorization) {
+        return res.status(401).json({ error: 'Authorization header required for API requests' });
+      }
+
+      const token = jwtAuth.extractTokenFromHeader(req.headers.authorization);
       if (!token) {
         return res.status(401).json({ error: 'Invalid authorization header format' });
       }
@@ -198,7 +206,7 @@ async function saveGroup(groupName, groupData) {
     await firestore.setDoc(firestore.doc(db, 'groups', groupName), groupData);
     return true;
   } catch (error) {
-    console.error(`Error saving group ${groupName}:`, error);
+    console.error('Error saving group %s:', groupName, error);
     throw error;
   }
 }
@@ -482,18 +490,11 @@ app.post('/api/refresh-token', async (req, res) => {
   try {
     const { refreshToken } = req.body;
 
-    if (!refreshToken) {
-      return res.status(401).json({
-        error: 'Refresh token required',
-        code: 'REFRESH_TOKEN_MISSING'
-      });
-    }
-
-    // Verify refresh token
+    // Verify refresh token (handles null/undefined cases)
     const decoded = jwtAuth.verifyToken(refreshToken);
     if (!decoded || decoded.type !== 'refresh') {
       return res.status(401).json({
-        error: 'Invalid or expired refresh token',
+        error: 'Invalid, expired, or missing refresh token',
         code: 'REFRESH_TOKEN_INVALID'
       });
     }
@@ -1255,6 +1256,15 @@ app.patch('/api/bills/:billId/payment-status', async (req, res) => {
 
     // Initialize paymentStatus object if it doesn't exist
     const paymentStatus = billData.paymentStatus || {};
+    
+    // Prevent prototype pollution by checking dangerous property names
+    if (memberName === '__proto__' || memberName === 'constructor' || memberName === 'prototype') {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid member name'
+      });
+    }
+    
     paymentStatus[memberName] = {
       hasPaid: hasPaid,
       timestamp: Date.now()

@@ -246,11 +246,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 300);
   }
 
-  // Check for "registered=true" parameter in URL
+  // Check for registration success parameter in URL (defensive validation)
   const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('registered') === 'true') {
-    // Show success message
+  const registeredParam = urlParams.get('registered');
+  if (registeredParam && registeredParam.toLowerCase() === 'true' && registeredParam.length <= 4) {
+    // Show success message for valid registration parameter
     showLoginMessage('Registration successful! Please log in with your email and passcode.', 'success');
+    
+    // Clear the URL parameter for security and UX
+    const newUrl = new URL(window.location);
+    newUrl.searchParams.delete('registered');
+    window.history.replaceState({}, document.title, newUrl.toString());
   }
 
   // Vibration utility function
