@@ -42,7 +42,11 @@ jobs:
         echo "## Main Page Performance" >> performance-report.md
         node -e "
           const report = require('./production-lighthouse.json');
-          const scores = report.lhr.categories;
+          const scores = report.categories || report.lhr?.categories;
+          if (!scores) {
+            console.log('Error: Unable to find categories in Lighthouse report');
+            process.exit(1);
+          }
           console.log('Performance:', Math.round(scores.performance.score * 100));
           console.log('Accessibility:', Math.round(scores.accessibility.score * 100));
           console.log('Best Practices:', Math.round(scores['best-practices'].score * 100));
