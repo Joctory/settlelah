@@ -10,6 +10,10 @@ const security = require('./enhanced-security');
 const session = require('express-session');
 const app = express();
 
+// Trust proxy configuration for accurate IP detection
+// Use '1' to only trust the first proxy (most secure for single proxy setups like Vercel)
+app.set('trust proxy', 1);
+
 app.use(express.json());
 
 // Session configuration for CSRF protection
