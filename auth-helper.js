@@ -4,7 +4,7 @@
  */
 
 const firebase = require('firebase/app');
-require('firebase/auth');
+const { getAuth, signInAnonymously: firebaseSignInAnonymously, onAuthStateChanged } = require('firebase/auth');
 
 // Initialize Firebase auth
 let authInitialized = false;
@@ -34,7 +34,7 @@ async function getAuthToken() {
   }
 
   try {
-    const auth = firebase.auth(firebaseApp);
+    const auth = getAuth(firebaseApp);
     const currentUser = auth.currentUser;
 
     if (!currentUser) {
@@ -61,8 +61,8 @@ async function signInAnonymously() {
   }
 
   try {
-    const auth = firebase.auth(firebaseApp);
-    return await auth.signInAnonymously();
+    const auth = getAuth(firebaseApp);
+    return await firebaseSignInAnonymously(auth);
   } catch (error) {
     console.error('Error signing in anonymously:', error);
     throw error;
