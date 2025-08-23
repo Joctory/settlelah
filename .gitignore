@@ -48,5 +48,36 @@ serviceAccountKey-prod.json
 # User data files
 users.json
 
-# Specific sensitive files
+# Firebase debug logs
+firebase-debug.log
+firestore-debug.log
+.firebase/
+.claude
+
+# Logs
+logs
+*.log
+
+# Development and testing files (not for public)
+start-vercel.js
+vercel-dev.sh
+test-*.js
+*-test.js
+test/
+tests/
+migrate-passwords.js
+
+# Internal documentation and setup files
+firebase-security-setup.md
+VERCEL_DEPLOYMENT.md
+deploy-rules.sh
+dev-mode.sh
+
+# Development API endpoints
+api/security/stats-dev.js
+
+# Database configuration
+firestore.indexes.json
+
+# Specific sensitive files (keep at end)
 *.json

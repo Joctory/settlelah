@@ -1,0 +1,97 @@
+name: Auto-merge Dependabot PRs
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+jobs:
+  auto-merge:
+    name: Auto-merge safe dependency updates
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run full test suite
+      run: |
+        npm run quality
+        npm run build
+        npm test
+      continue-on-error: false
+      
+    - name: Check if PR is safe to auto-merge
+      id: check-pr
+      run: |
+        # Get PR title and check if it's a safe update
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        
+        # Safe patterns for auto-merge
+        if [[ "$PR_TITLE" =~ ^chore\(deps\): ]]; then
+          # Development dependencies
+          if [[ "$PR_TITLE" =~ (eslint|prettier|mocha|chai|nodemon) ]]; then
+            echo "safe=true" >> $GITHUB_OUTPUT
+            echo "reason=dev-dependency" >> $GITHUB_OUTPUT
+          # Patch updates for any dependency
+          elif [[ "$PR_TITLE" =~ "patch" ]]; then
+            echo "safe=true" >> $GITHUB_OUTPUT
+            echo "reason=patch-update" >> $GITHUB_OUTPUT
+          # Security updates
+          elif [[ "$PR_TITLE" =~ "security" ]]; then
+            echo "safe=true" >> $GITHUB_OUTPUT
+            echo "reason=security-update" >> $GITHUB_OUTPUT
+          else
+            echo "safe=false" >> $GITHUB_OUTPUT
+            echo "reason=requires-review" >> $GITHUB_OUTPUT
+          fi
+        else
+          echo "safe=false" >> $GITHUB_OUTPUT
+          echo "reason=not-dependabot" >> $GITHUB_OUTPUT
+        fi
+        
+    - name: Add comment for safe updates
+      if: steps.check-pr.outputs.safe == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🤖 **Auto-merge eligible** ✅\n\nReason: ${{ steps.check-pr.outputs.reason }}\n\nThis PR will be automatically merged after CI passes.'
+          })
+          
+    - name: Enable auto-merge for safe PRs
+      if: steps.check-pr.outputs.safe == 'true'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.pulls.createReview({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            pull_number: context.issue.number,
+            event: 'APPROVE',
+            body: '✅ Automatically approved safe dependency update'
+          });
+          
+    - name: Add comment for manual review
+      if: steps.check-pr.outputs.safe == 'false'
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '👀 **Manual review required**\n\nReason: ${{ steps.check-pr.outputs.reason }}\n\nThis PR requires manual review before merging.'
+          })

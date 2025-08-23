@@ -1,0 +1,10 @@
+node_modules/
+.vercel/
+public/*.min.js
+public/*.min.css
+package-lock.json
+*.log
+firebase-debug.log
+firestore-debug.log
+.firebase/
+.DS_Store

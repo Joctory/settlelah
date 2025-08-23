@@ -1,0 +1,96 @@
+name: Production Monitoring
+
+on:
+  schedule:
+    # Monitor production every 6 hours
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  production-lighthouse:
+    name: Production Performance Monitor
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install Lighthouse CLI
+      run: npm install -g lighthouse
+      
+    - name: Run Lighthouse on Production
+      run: |
+        lighthouse https://settlelah.app \
+          --chrome-flags="--headless --no-sandbox" \
+          --output json \
+          --output-path ./production-lighthouse.json
+          
+        lighthouse https://settlelah.app/login.html \
+          --chrome-flags="--headless --no-sandbox" \
+          --output json \
+          --output-path ./production-login-lighthouse.json
+      
+    - name: Generate Performance Report
+      run: |
+        echo "# Production Performance Report - $(date)" > performance-report.md
+        echo "" >> performance-report.md
+        echo "## Main Page Performance" >> performance-report.md
+        node -e "
+          const report = require('./production-lighthouse.json');
+          const scores = report.categories || report.lhr?.categories;
+          if (!scores) {
+            console.log('Error: Unable to find categories in Lighthouse report');
+            process.exit(1);
+          }
+          console.log('Performance:', Math.round(scores.performance.score * 100));
+          console.log('Accessibility:', Math.round(scores.accessibility.score * 100));
+          console.log('Best Practices:', Math.round(scores['best-practices'].score * 100));
+          console.log('SEO:', Math.round(scores.seo.score * 100));
+        " >> performance-report.md
+        
+    - name: Upload production reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: production-performance-${{ github.run_number }}
+        path: |
+          production-lighthouse.json
+          production-login-lighthouse.json
+          performance-report.md
+
+  uptime-check:
+    name: Uptime & Health Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check main site availability
+      run: |
+        response=$(curl -s -o /dev/null -w "%{http_code}" https://settlelah.app)
+        if [ $response -eq 200 ]; then
+          echo "✅ Main site is UP (HTTP $response)"
+        else
+          echo "❌ Main site is DOWN (HTTP $response)"
+          exit 1
+        fi
+        
+    - name: Check API health
+      run: |
+        # Test a basic API endpoint if available
+        echo "🔍 Checking API health..."
+        # Add your API health check here
+        
+    - name: Response time check
+      run: |
+        start_time=$(date +%s%N)
+        curl -s https://settlelah.app > /dev/null
+        end_time=$(date +%s%N)
+        duration=$(( (end_time - start_time) / 1000000 ))
+        echo "⏱️ Response time: ${duration}ms"
+        
+        if [ $duration -gt 3000 ]; then
+          echo "⚠️ Warning: Response time over 3 seconds"
+        fi
