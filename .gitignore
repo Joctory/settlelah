@@ -37,3 +37,16 @@ Thumbs.db
 *.swp
 *.swo
 .vercel
+
+# Environment variables (all variations)
+.env*
+
+# Firebase JSON
+serviceAccountKey.json
+serviceAccountKey-prod.json
+
+# User data files
+users.json
+
+# Specific sensitive files
+*.json

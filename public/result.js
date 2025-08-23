@@ -73,7 +73,7 @@
             <path fill-rule="evenodd" clip-rule="evenodd" d="M12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16ZM12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" fill="currentColor"/>
             <path fill-rule="evenodd" clip-rule="evenodd" d="M11 0H13V4.06189C12.6724 4.02104 12.3387 4 12 4C11.6613 4 11.3276 4.02104 11 4.06189V0ZM7.0943 5.68018L4.22173 2.80761L2.80752 4.22183L5.68008 7.09439C6.07016 6.55685 6.55674 6.07027 7.0943 5.68018ZM4.06189 11H0V13H4.06189C4.02104 12.6724 4 12.3387 4 12C4 11.6613 4.02104 11.3276 4.06189 11ZM5.68008 16.9056L2.80751 19.7782L4.22173 21.1924L7.0943 18.3198C6.55674 17.9297 6.07016 17.4431 5.68008 16.9056ZM11 19.9381V24H13V19.9381C12.6724 19.979 12.3387 20 12 20C11.6613 20 11.3276 19.979 11 19.9381ZM16.9056 18.3199L19.7781 21.1924L21.1923 19.7782L18.3198 16.9057C17.9297 17.4432 17.4431 17.9298 16.9056 18.3199ZM19.9381 13H24V11H19.9381C19.979 11.3276 20 11.6613 20 12C20 12.3387 19.979 12.6724 19.9381 13ZM18.3198 7.0943L21.1923 4.22183L19.7781 2.80762L16.9056 5.68008C17.4431 6.07016 17.9297 6.55674 18.3198 7.0943Z" fill="currentColor"/>
            </svg>`
-          : `<img src="/assets/moon.svg" alt="Moon" width="20" height="20">`;
+          : '<img src="/assets/moon.svg" alt="Moon" width="20" height="20">';
     }
 
     // Add click event to toggle theme
@@ -330,11 +330,11 @@ function showShareModal(memberName) {
                   <img src="https://www.sgqrcode.com/paynow?mobile=${
                     data.paymentInfo.phoneNumber
                   }&uen=&editable=1&amount=${data.paymentInfo.amount.replace("$", "")}&expiry=${new Date()
-                      .toISOString()
-                      .split("T")[0]
-                      .replace(/-/g, "%2F")}%2023%3A59&ref_id=SettleLah-${
-                      data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
-                    }&company=" alt="PayNow QR Code" class="desktop-qr-code">
+                    .toISOString()
+                    .split("T")[0]
+                    .replace(/-/g, "%2F")}%2023%3A59&ref_id=SettleLah-${
+                    data.paymentInfo.name + "%20" + data.paymentInfo.settleMatter || "SettleLah"
+                  }&company=" alt="PayNow QR Code" class="desktop-qr-code">
                 </div>
                 <button id="downloadQRBtn" class="download-qr-btn">
                   <svg xmlns="http://www.w3.org/2000/svg" fill="#ffffff" width="800px" height="800px" viewBox="0 0 24 24" id="download-5" class="icon line"><polyline id="primary" points="15 14 12 17 9 14" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/><path id="primary-2" data-name="primary" d="M12,17V3M4,17v3a1,1,0,0,0,1,1H19a1,1,0,0,0,1-1V17" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/></svg>
@@ -342,8 +342,8 @@ function showShareModal(memberName) {
                 </button>
                 <div class="paynow-instructions">
                   <p>Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name">${
-                      data.paymentInfo.name
-                    } (${data.paymentInfo.phoneNumber})</b>.</p>
+                    data.paymentInfo.name
+                  } (${data.paymentInfo.phoneNumber})</b>.</p>
                   <p>Scan the QR code to complete transfer or copy the phone number to start transfer.</p>
                 </div>
                 <div class="bill-result-button-div">
@@ -379,7 +379,7 @@ function showShareModal(memberName) {
             </div>
             `
                 : data.isBirthdayPerson
-                ? `
+                  ? `
             <div class="birthday-celebration-panel modal-fade-in">
               <div style="text-align: center; padding: 20px;">
                 <h2 class="celebration-title">🎂 Happy Birthday!</h2>
@@ -389,8 +389,8 @@ function showShareModal(memberName) {
               </div>
             </div>
             `
-                : data.totalAmount === "$0.00"
-                ? `
+                  : data.totalAmount === "$0.00"
+                    ? `
             <div class="payer-tracking-section modal-fade-in">
               <div class="payment-summary-compact">
                 <div class="summary-stats">
@@ -422,7 +422,7 @@ function showShareModal(memberName) {
               </div>
             </div>
             `
-                : `
+                    : `
             
             
             <div class="payer-tracking-section modal-fade-in">
@@ -702,13 +702,13 @@ function showShareModal(memberName) {
             }
           `
               : data.isBirthdayPerson
-              ? `
+                ? `
             <div class="birthday-celebration-message modal-fade-in" style="animation-delay: 0.3s; text-align: center; padding: 20px;">
               <h3>🎂 Happy Birthday!</h3>
               <p>Your friends are treating you today!</p>
             </div>
           `
-              : `
+                : `
             <button id="showPayerStatsBtn" class="action-button primary-button modal-fade-in" style="animation-delay: 0.3s;">
               View Payment Tracking
             </button>
@@ -771,7 +771,9 @@ function showShareModal(memberName) {
 // Function to show PayNow QR code (used only in mobile mode)
 function showPayNowQR(memberName) {
   // Skip if desktop mode
-  if (isDesktopMode()) return;
+  if (isDesktopMode()) {
+    return;
+  }
 
   const modalBody = document.querySelector(".member-bill-modal-body");
   const modalHeader = document.querySelector(".member-bill-modal .modal-header h2");
@@ -802,11 +804,11 @@ function showPayNowQR(memberName) {
           <img src="https://www.sgqrcode.com/paynow?mobile=${
             data.paymentInfo.phoneNumber
           }&uen=&editable=1&amount=${data.paymentInfo.amount.replace("$", "")}&expiry=${new Date()
-                .toISOString()
-                .split("T")[0]
-                .replace(/-/g, "%2F")}%2023%3A59&ref_id=${
-                memberName + "%20-%20SettleLah!%20Bill"
-              }&company=" alt="PayNow QR Code">
+            .toISOString()
+            .split("T")[0]
+            .replace(/-/g, "%2F")}%2023%3A59&ref_id=${
+            memberName + "%20-%20SettleLah!%20Bill"
+          }&company=" alt="PayNow QR Code">
         </div>
         <button id="downloadQRBtn" class="download-qr-btn modal-fade-in" style="animation-delay: 0.4s;">
           <svg xmlns="http://www.w3.org/2000/svg" fill="#ffffff" width="800px" height="800px" viewBox="0 0 24 24" id="download-5" class="icon line"><polyline id="primary" points="15 14 12 17 9 14" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/><path id="primary-2" data-name="primary" d="M12,17V3M4,17v3a1,1,0,0,0,1,1H19a1,1,0,0,0,1-1V17" style="fill: none; stroke: rgb(255, 255, 255); stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.5;"/></svg>
@@ -814,8 +816,8 @@ function showPayNowQR(memberName) {
         </button>
         <div class="paynow-instructions" style="animation-delay: 0.2s;">
           <p> Please pay <b class="paynow-amount">${data.paymentInfo.amount}</b> to <b class="paynow-name" >${
-                data.paymentInfo.name
-              } (${data.paymentInfo.phoneNumber})</b>.</p>
+            data.paymentInfo.name
+          } (${data.paymentInfo.phoneNumber})</b>.</p>
           <p>Scan the QR code to complete transfer or copy the phone number to start transfer.</p>
         </div>
         <div class="bill-result-button-div">
@@ -1095,7 +1097,9 @@ function updateMemberAvatarStatus(memberName, hasPaid) {
 
 // Function to refresh all payment statuses
 function refreshAllPaymentStatuses() {
-  if (!billData.members) return;
+  if (!billData.members) {
+    return;
+  }
 
   billData.members.forEach((member) => {
     const hasPaid = paymentStatus[member.name]?.hasPaid || false;
@@ -1105,25 +1109,41 @@ function refreshAllPaymentStatuses() {
 
 // Payer dashboard helper functions
 function getPaidMembersCount() {
-  if (!billData.members) return 0;
+  if (!billData.members) {
+    return 0;
+  }
   // Don't count the payer or birthday person in the paid count
   const nonPayerMembers = billData.members.filter(
     (member) => member.name !== payerName && member.name !== billData.birthdayPerson
   );
-  return nonPayerMembers.filter((member) => paymentStatus[member.name]?.hasPaid).length;
+  // Also filter out members with $0.00 amounts
+  const membersWithAmount = nonPayerMembers.filter((member) => {
+    const memberTotal = billData.totals[member.name] || 0;
+    return memberTotal > 0;
+  });
+  return membersWithAmount.filter((member) => paymentStatus[member.name]?.hasPaid).length;
 }
 
 function getPendingMembersCount() {
-  if (!billData.members) return 0;
+  if (!billData.members) {
+    return 0;
+  }
   // Don't count the payer or birthday person in the pending count
   const nonPayerMembers = billData.members.filter(
     (member) => member.name !== payerName && member.name !== billData.birthdayPerson
   );
-  return nonPayerMembers.filter((member) => !paymentStatus[member.name]?.hasPaid).length;
+  // Also filter out members with $0.00 amounts
+  const membersWithAmount = nonPayerMembers.filter((member) => {
+    const memberTotal = billData.totals[member.name] || 0;
+    return memberTotal > 0;
+  });
+  return membersWithAmount.filter((member) => !paymentStatus[member.name]?.hasPaid).length;
 }
 
 function getOutstandingAmount() {
-  if (!billData.members || !billData.totals) return "$0.00";
+  if (!billData.members || !billData.totals) {
+    return "$0.00";
+  }
 
   let totalOutstanding = 0;
   const nonPayerMembers = billData.members.filter(
@@ -1131,8 +1151,8 @@ function getOutstandingAmount() {
   );
 
   nonPayerMembers.forEach((member) => {
-    if (!paymentStatus[member.name]?.hasPaid) {
-      const memberTotal = billData.totals[member.name] || 0;
+    const memberTotal = billData.totals[member.name] || 0;
+    if (memberTotal > 0 && !paymentStatus[member.name]?.hasPaid) {
       totalOutstanding += memberTotal;
     }
   });
@@ -1141,24 +1161,39 @@ function getOutstandingAmount() {
 }
 
 function getPaymentProgress() {
-  if (!billData.members) return 0;
+  if (!billData.members) {
+    return 0;
+  }
   const nonPayerMembers = billData.members.filter(
     (member) => member.name !== payerName && member.name !== billData.birthdayPerson
   );
-  if (nonPayerMembers.length === 0) return 100;
+  // Also filter out members with $0.00 amounts
+  const membersWithAmount = nonPayerMembers.filter((member) => {
+    const memberTotal = billData.totals[member.name] || 0;
+    return memberTotal > 0;
+  });
+  if (membersWithAmount.length === 0) {
+    return 100;
+  }
 
-  const paidCount = nonPayerMembers.filter((member) => paymentStatus[member.name]?.hasPaid).length;
-  return Math.round((paidCount / nonPayerMembers.length) * 100);
+  const paidCount = membersWithAmount.filter((member) => paymentStatus[member.name]?.hasPaid).length;
+  return Math.round((paidCount / membersWithAmount.length) * 100);
 }
 
 function getMembersStatusList() {
-  if (!billData.members || !billData.totals) return "";
+  if (!billData.members || !billData.totals) {
+    return "";
+  }
 
   const nonPayerMembers = billData.members.filter(
     (member) => member.name !== payerName && member.name !== billData.birthdayPerson
   );
 
   return nonPayerMembers
+    .filter((member) => {
+      const memberTotal = billData.totals[member.name] || 0;
+      return memberTotal > 0;
+    })
     .map((member) => {
       const memberName = member.name;
       const memberTotal = billData.totals[memberName] || 0;
@@ -1265,12 +1300,16 @@ function closeCompletionCelebration(button) {
 
 // Check if all payments are complete
 function checkPaymentCompletion() {
-  if (!billData.members) return false;
+  if (!billData.members) {
+    return false;
+  }
 
   const nonPayerMembers = billData.members.filter(
     (member) => member.name !== payerName && member.name !== billData.birthdayPerson
   );
-  if (nonPayerMembers.length === 0) return false;
+  if (nonPayerMembers.length === 0) {
+    return false;
+  }
 
   const allPaid = nonPayerMembers.every((member) => paymentStatus[member.name]?.hasPaid);
   return allPaid;
@@ -1476,7 +1515,9 @@ function renderBillData(data) {
 
   // Get the receipt container
   const receiptContainer = document.getElementById("successReceipt");
-  if (!receiptContainer) return;
+  if (!receiptContainer) {
+    return;
+  }
 
   // Find all detail elements by their class names
   const settleMatterEl = document.querySelector(".successSettleMatter");
@@ -1500,16 +1541,24 @@ function renderBillData(data) {
   const originalAmountRow = document.querySelector(".originalAmountRow");
 
   // Update the text content if elements exist
-  if (settleMatterEl) settleMatterEl.textContent = data.settleMatter ? data.settleMatter : "No One Ask!";
-  if (dateTimeEl) dateTimeEl.textContent = dateString + " " + timeString;
-  if (itemCountEl) itemCountEl.textContent = data.dishes ? data.dishes.length : 0;
-  if (subtotalEl) subtotalEl.textContent = formatCurrency(data.breakdown.subtotal);
+  if (settleMatterEl) {
+    settleMatterEl.textContent = data.settleMatter ? data.settleMatter : "No One Ask!";
+  }
+  if (dateTimeEl) {
+    dateTimeEl.textContent = dateString + " " + timeString;
+  }
+  if (itemCountEl) {
+    itemCountEl.textContent = data.dishes ? data.dishes.length : 0;
+  }
+  if (subtotalEl) {
+    subtotalEl.textContent = formatCurrency(data.breakdown.subtotal);
+  }
 
   // Set page title based on URL parameters
   if (data.settleMatter) {
     document.title = `SettleLah - ${data.settleMatter} Bill Details`;
   } else {
-    document.title = `SettleLah - No One Ask! Bill Details`;
+    document.title = "SettleLah - No One Ask! Bill Details";
   }
 
   // Handle Service Charge
@@ -1604,7 +1653,7 @@ function renderBillData(data) {
   // Update group members display
   if (data.members && Array.isArray(data.members)) {
     // Create a copy of members array to avoid modifying original data
-    let membersToDisplay = [...data.members];
+    const membersToDisplay = [...data.members];
 
     // Check if the payer is in the members list, if not add them
     if (payerName && !membersToDisplay.some((member) => member.name === payerName)) {
@@ -1631,7 +1680,9 @@ function renderBillData(data) {
 function createMemberData(data) {
   memberData = {};
 
-  if (!data.members || !data.perPersonBreakdown || !data.dishes) return;
+  if (!data.members || !data.perPersonBreakdown || !data.dishes) {
+    return;
+  }
 
   // Format currency values
   const formatCurrency = (value, isFinalTotal = false, shouldRound = false) => {
@@ -1651,7 +1702,9 @@ function createMemberData(data) {
     const name = member.name;
     const breakdown = data.perPersonBreakdown[name];
 
-    if (!breakdown) return;
+    if (!breakdown) {
+      return;
+    }
 
     // Get dishes for this member
     const memberItems = data.dishes
@@ -1734,10 +1787,27 @@ function createMemberData(data) {
 // Function to update group members
 function updateGroupMembers(members) {
   const groupMembersContainer = document.getElementById("groupMembers");
-  if (!groupMembersContainer) return;
+  if (!groupMembersContainer) {
+    return;
+  }
 
   // Clear existing members
   groupMembersContainer.innerHTML = "";
+
+  // Filter out members who have $0.00 to pay, but keep the payer and birthday person
+  const membersToShow = members.filter((member) => {
+    const memberDataEntry = memberData[member.name];
+    if (!memberDataEntry) return true; // Show if no data (fallback)
+
+    // Always show the payer (they coordinate payments)
+    if (member.name === payerName) return true;
+
+    // Always show the birthday person (they get special treatment)
+    if (billData?.birthdayPerson === member.name) return true;
+
+    // Hide members with $0.00 total amount
+    return memberDataEntry.totalAmount !== "$0.00";
+  });
 
   // Hide the entire container initially
   const groupSection = document.querySelector(".favourite-group-section");
@@ -1746,10 +1816,10 @@ function updateGroupMembers(members) {
   }
 
   // Track image loading
-  let imagesLoading = members.length;
+  let imagesLoading = membersToShow.length;
 
   // Add member avatars with proper data attributes
-  members.forEach((member, index) => {
+  membersToShow.forEach((member, index) => {
     const memberAvatar = document.createElement("div");
     memberAvatar.className = "member-avatar-wrapper";
     memberAvatar.setAttribute("data-name", member.name);
@@ -1770,8 +1840,8 @@ function updateGroupMembers(members) {
         ${isPaid ? '<div class="paid-indicator">✓</div><span class="paid-label">Paid</span>' : ""}
       </div>
       <div class="member-name ${isBirthdayPerson ? "birthday-person" : ""}">${member.name === payerName ? "💸 " : ""}${
-      isBirthdayPerson ? "🎂 " : ""
-    }${member.name}</div>
+        isBirthdayPerson ? "🎂 " : ""
+      }${member.name}</div>
     `;
 
     // Preload the image to track when it's loaded

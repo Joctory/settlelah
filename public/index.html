@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -57,7 +57,9 @@
         justify-content: center;
         align-items: center;
         z-index: 9999;
-        transition: opacity 0.5s ease-out, visibility 0.5s ease-out;
+        transition:
+          opacity 0.5s ease-out,
+          visibility 0.5s ease-out;
       }
 
       #preloader.fade-out {
@@ -233,31 +235,54 @@
             <h3>Account Settings</h3>
           </div>
           <div class="settings-list">
-            <div class="settings-item">
-              <!-- <div class="settings-icon"></div> -->
+            <div class="settings-item tax-profile-container">
               <div class="settings-info">
                 <p>Tax Profile</p>
-              </div>
-              <div class="settings-action">
-                <select id="taxProfile" class="settings-select">
-                  <option value="singapore" selected>Singapore</option>
-                  <option value="malaysia">Malaysia</option>
-                </select>
+                <span class="tax-profile-description">Choose your country's tax settings</span>
               </div>
             </div>
 
-            <div class="settings-item tax-info">
-              <div class="settings-info tax-rates">
-                <div class="tax-rate-item">
-                  <span class="tax-label">Service Charge:</span>
-                  <span id="serviceRate" class="tax-value">10%</span>
+            <div class="tax-profile-selector">
+              <div class="tax-profile-option" data-profile="singapore">
+                <div class="country-flag-container">
+                  <div class="country-flag sg-flag">🇸🇬</div>
                 </div>
-                <div class="tax-rate-item">
-                  <span class="tax-label">GST/VAT:</span>
-                  <span id="gstRate" class="tax-value">9%</span>
+                <div class="country-info">
+                  <h4 class="country-name">Singapore</h4>
+                  <div class="tax-details">
+                    <span class="tax-rate">GST: 9%</span>
+                    <span class="tax-separator">•</span>
+                    <span class="tax-rate">Service: 10%</span>
+                  </div>
+                </div>
+                <div class="selection-indicator">
+                  <div class="selection-checkmark">✓</div>
+                </div>
+              </div>
+
+              <div class="tax-profile-option" data-profile="malaysia">
+                <div class="country-flag-container">
+                  <div class="country-flag my-flag">🇲🇾</div>
+                </div>
+                <div class="country-info">
+                  <h4 class="country-name">Malaysia</h4>
+                  <div class="tax-details">
+                    <span class="tax-rate">GST: 6%</span>
+                    <span class="tax-separator">•</span>
+                    <span class="tax-rate">Service: 10%</span>
+                  </div>
+                </div>
+                <div class="selection-indicator">
+                  <div class="selection-checkmark">✓</div>
                 </div>
               </div>
             </div>
+
+            <!-- Hidden select for backward compatibility -->
+            <select id="taxProfile" class="settings-select" style="display: none">
+              <option value="singapore" selected>Singapore</option>
+              <option value="malaysia">Malaysia</option>
+            </select>
 
             <div class="settings-item">
               <!-- <div class="settings-icon"></div> -->
@@ -290,7 +315,8 @@
         </div>
         <div class="settings-footer">
           <p>
-            App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span>
+            App Version <span id="appVersion">1.0.0</span>. Copyright ©
+            <span id="copyrightYear">2025</span>
             <a href="https://www.joasisweb.com" target="_blank">Joasis Web</a>
           </p>
           <p>Developed with 💗 by Joel Lee.</p>
@@ -547,7 +573,17 @@
                 <input type="checkbox" id="gstCheckbox" />
                 <label for="gstCheckbox">Add 9% GST</label>
               </div>
-              <p class="helper-text">GST profile can change at Setting</p>
+              <div class="country-gst-helper">
+                <div class="helper-text">
+                  GST rates based on your country profile:
+                  <div class="CountryDisplayCon">
+                    <span id="currentCountryDisplay">Singapore</span>
+                    <button type="button" class="change-country-btn" id="changeCountryBtn">
+                      <img class="group-action-btn-img" src="assets/edit.svg" alt="edit" />
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <hr class="divider" />
 
@@ -570,8 +606,6 @@
                   id="paynowPhone"
                   placeholder="Enter phone number (e.g., 8XXX XXXX)"
                   value=""
-                  pattern="[89]\d{7}"
-                  maxlength="8"
                   inputmode="numeric"
                   title="Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits"
                   required
@@ -580,7 +614,7 @@
               </div>
             </div>
           </div>
-          <button class="settle-lah-btn">Settle Lah</button>
+          <button class="settle-lah-btn">SettleLah!</button>
           <p class="swipe-instructions">Swipe up to open bill summary</p>
         </div>
       </div>
@@ -1380,5 +1414,44 @@
         }, 10000); // 10 second maximum loading time
       });
     </script>
+
+    <!-- Country Selection Modal -->
+    <div id="countryModal" class="country-modal">
+      <div class="country-modal-content">
+        <div class="modal-header">
+          <h2>Change Country for This Bill</h2>
+          <div class="modal-close-button">
+            <button class="close-modal">×</button>
+          </div>
+        </div>
+        <div class="country-modal-header">
+          <p class="country-modal-subtitle">This will only apply to this bill, not your general settings</p>
+        </div>
+        <div class="country-options">
+          <div class="country-option" data-country="singapore">
+            <div class="country-info">
+              <div class="country-name">Singapore</div>
+              <div class="country-gst-rate">GST: 9%</div>
+            </div>
+            <div class="country-flag">🇸🇬</div>
+          </div>
+
+          <div class="country-option" data-country="malaysia">
+            <div class="country-info">
+              <div class="country-name">Malaysia</div>
+              <div class="country-gst-rate">GST: 6%</div>
+            </div>
+            <div class="country-flag">🇲🇾</div>
+          </div>
+        </div>
+
+        <div class="country-modal-footer">
+          <button class="country-modal-btn modal-action-btn cancel-btn" id="cancelCountryBtn">Cancel</button>
+          <button class="country-modal-btn modal-action-btn confirm-btn back-confirm-btn" id="confirmCountryBtn">
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
   </body>
 </html>
