@@ -10,28 +10,28 @@ module.exports = async (req, res) => {
   // Check for JWT authorization
   const authHeader = req.headers.authorization;
   const token = jwtAuth.extractTokenFromHeader(authHeader);
-  
+
   if (!token) {
-    return res.status(401).json({ 
-      error: "Access token required",
-      code: "TOKEN_MISSING"
+    return res.status(401).json({
+      error: 'Access token required',
+      code: 'TOKEN_MISSING'
     });
   }
 
   // Verify JWT token
   const decoded = jwtAuth.verifyToken(token);
   if (!decoded || decoded.type !== 'access') {
-    return res.status(401).json({ 
-      error: "Invalid or expired token",
-      code: "TOKEN_INVALID"
+    return res.status(401).json({
+      error: 'Invalid or expired token',
+      code: 'TOKEN_INVALID'
     });
   }
 
   // Check if user is admin
   if (decoded.email !== process.env.ADMIN_EMAIL) {
-    return res.status(403).json({ 
-      error: "Admin access required",
-      code: "ADMIN_ONLY"
+    return res.status(403).json({
+      error: 'Admin access required',
+      code: 'ADMIN_ONLY'
     });
   }
 
@@ -41,6 +41,6 @@ module.exports = async (req, res) => {
     ...stats,
     adminUser: decoded.email,
     timestamp: new Date().toISOString(),
-    message: "Security monitoring dashboard - admin access"
+    message: 'Security monitoring dashboard - admin access'
   });
 };
