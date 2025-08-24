@@ -25,6 +25,19 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - `npm run build:dev` - Build HTML files only for development
 - `npm run vercel-build` - Vercel-specific build command (auto-runs on deploy)
 
+### Code Quality Commands
+- `npm run lint` - Run ESLint on all JavaScript files
+- `npm run lint:fix` - Run ESLint with automatic fixes
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting without making changes
+- `npm run quality` - Run both linting and format checking
+- `npm run quality:fix` - Run linting with fixes and format code
+
+### Deployment Commands
+- `npm run deploy` - Full deployment flow with quality checks, build, and git push
+- `npm run quick-deploy` - Quick deployment with automatic commit message
+- `npm run dev-deploy` - Prepare for deployment but require manual commit
+
 ### Vercel Development Commands
 - `npm run dev:vercel` - Start Vercel dev with clear URL display
 - `npm run dev:silent` - Start Vercel dev silently on port 3000
@@ -47,16 +60,22 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 - **index.js** - Main Express server with authentication middleware, rate limiting, and API endpoints
 - **firestore-adapter.js** - Abstraction layer for Firestore operations with error handling
 - **auth-helper.js** - Firebase authentication utilities and token management
-- **server.js** - Server entry point (if different from index.js)
+- **enhanced-security.js** - Advanced security features including rate limiting, CSRF protection, and account lockout
+- **jwt-auth.js** - JWT token management and validation utilities
+- **build-html.js** - Build script for processing HTML files with environment-specific configurations
 
 ### Frontend Structure
 - **public/** - Static assets and client-side code
   - **index.html** - Main application entry point
   - **bill.html** - Bill result display page
   - **login.html** - Authentication page
+  - **admin.html** - Administrative interface
   - **script.js** - Main application JavaScript
   - **styles.css** - Application styles
   - **result.js** - Bill result page functionality
+  - **login.js** - Authentication page JavaScript
+  - **sw.js** - Service worker for PWA functionality
+  - **assets/** - Static images and SVG files
 
 ### Key Features
 - **Authentication**: 6-digit passcode system with session management
@@ -111,4 +130,18 @@ SettleLah is a Node.js web application for splitting bills with secure passcode 
 
 ## Code Conventions
 
+- **ESLint Configuration**: Project uses ESLint with specific rules (2-space indentation, single quotes, semicolons required)
+- **Prettier Integration**: Automated code formatting with Prettier
 - **Commented Functions**: When a function is commented out in the codebase, it indicates that the function is not currently active or used in the webapp. These functions should be considered inactive/disabled features.
+- **Minification**: Production builds minify JS/CSS files with `.min.js` and `.min.css` extensions
+- **File Naming**: Static assets use kebab-case, JavaScript uses camelCase
+
+## Build Process
+
+The build system uses several tools:
+- **Terser** - JavaScript minification and compression
+- **CleanCSS** - CSS minification and optimization  
+- **build-html.js** - Custom HTML processing script that handles environment-specific file references
+- **ESLint + Prettier** - Code quality and formatting validation
+
+Production builds automatically switch between minified (.min) and development versions of assets based on NODE_ENV.

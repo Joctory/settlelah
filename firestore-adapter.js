@@ -3,9 +3,7 @@
  * Provides a consistent interface for Firestore operations with error handling and authentication
  */
 
-const firebase = require('firebase/app');
-const firestore = require('firebase/firestore');
-const { getAuthToken } = require('./auth-helper');
+// No client SDK imports needed - using admin.firestore() directly
 
 // FirestoreAdapter class to handle Firestore operations
 class FirestoreAdapter {
@@ -21,13 +19,8 @@ class FirestoreAdapter {
    */
   async saveBill(id, data) {
     try {
-      // Add auth token if available
-      const authToken = await getAuthToken();
-      if (authToken) {
-        data.createdBy = authToken;
-      }
-
-      await firestore.setDoc(firestore.doc(this.db, 'bills', id), data);
+      // Using Admin SDK - no auth token needed
+      await this.db.collection('bills').doc(id).set(data);
       // Bill saved successfully (silent mode)
     } catch (error) {
       // Detailed error logging
@@ -52,7 +45,7 @@ class FirestoreAdapter {
           };
 
           try {
-            await firestore.setDoc(firestore.doc(this.db, 'bills', id), minimalData);
+            await this.db.collection('bills').doc(id).set(minimalData);
             // Bill saved with fallback method (silent mode)
           } catch (fallbackError) {
             console.error('Fallback save also failed:', fallbackError);
@@ -74,8 +67,8 @@ class FirestoreAdapter {
    */
   async getBill(id) {
     try {
-      const billDoc = await firestore.getDoc(firestore.doc(this.db, 'bills', id));
-      return billDoc.exists() ? billDoc.data() : null;
+      const billDoc = await this.db.collection('bills').doc(id).get();
+      return billDoc.exists ? billDoc.data() : null;
     } catch (error) {
       console.error(`Error getting bill ${id}:`, error);
 
@@ -115,10 +108,10 @@ class FirestoreAdapter {
         return;
       }
 
-      const batch = firestore.writeBatch(this.db);
+      const batch = this.db.batch();
 
       validIds.forEach((id) => {
-        const billRef = firestore.doc(this.db, 'bills', id);
+        const billRef = this.db.collection('bills').doc(id);
         batch.delete(billRef);
       });
 

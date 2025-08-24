@@ -1,12 +1,15 @@
+// Load environment variables first
+require('dotenv').config();
+
 const express = require('express');
-const firebase = require('firebase/app');
-const firestore = require('firebase/firestore');
+const admin = require('firebase-admin');
 const path = require('path');
 const crypto = require('crypto');
 const validator = require('validator');
 const bcrypt = require('bcrypt');
 const jwtAuth = require('./jwt-auth');
 const security = require('./enhanced-security');
+const enhancedDevAuth = require('./enhanced-dev-auth');
 const session = require('express-session');
 const app = express();
 
@@ -146,22 +149,94 @@ app.use((req, res, next) => {
   next();
 });
 
-const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY,
-  authDomain: 'settlelah-1da97.firebaseapp.com',
-  projectId: 'settlelah-1da97'
-  // Add the rest from Firebase Console > Project Settings > General > Your Apps
-};
-const firebaseApp = firebase.initializeApp(firebaseConfig);
-const db = firestore.getFirestore(firebaseApp);
+// Dynamic Firebase configuration based on environment
+const isDevMode = process.env.SETTLELAH_DEV_MODE === 'true' || process.env.NODE_ENV === 'development';
+const projectId = isDevMode ? 'settlelah-dev' : 'settlelah-1da97';
+
+// Debug logging for Firebase project
+console.log(`🔥 Firebase Project: ${projectId} ${isDevMode ? '(development)' : '(production)'}`);
+
+// Initialize Firebase Admin SDK
+let adminApp;
+const useEmulator = process.env.USE_EMULATOR === 'true';
+
+if (isDevMode && useEmulator) {
+  // Use emulator for local development
+  console.log('🔧 Development mode: Using Firebase emulator');
+  process.env['FIRESTORE_EMULATOR_HOST'] = 'localhost:8081';
+  process.env['FIREBASE_AUTH_EMULATOR_HOST'] = 'localhost:9098';
+  adminApp = admin.initializeApp({
+    projectId: projectId
+  });
+  console.log('📱 Using Firebase emulator for development');
+} else if (isDevMode && !useEmulator) {
+  // Use real Firebase dev project with service account
+  console.log('🔧 Development mode: Using real Firebase dev project');
+  try {
+    // Use different service account keys for dev vs prod
+    const serviceAccountPath = isDevMode 
+      ? './serviceAccountKey.json' 
+      : './serviceAccountKey-prod.json';
+    const fs = require('fs');
+    if (fs.existsSync(serviceAccountPath)) {
+      const serviceAccount = require(serviceAccountPath);
+      adminApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: projectId
+      });
+      console.log('✅ Using service account key file');
+    } else {
+      throw new Error('Service account key not found');
+    }
+  } catch (error) {
+    console.warn('⚠️ Service account key not found, using application default credentials');
+    // Fallback to application default credentials (gcloud auth)
+    adminApp = admin.initializeApp({
+      credential: admin.credential.applicationDefault(),
+      projectId: projectId
+    });
+    console.log('✅ Using application default credentials');
+  }
+} else {
+  // Production mode
+  console.log('🚀 Production mode: Initializing Firebase');
+  try {
+    // Try environment variables first (recommended for production)
+    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      const serviceAccount = {
+        projectId: projectId,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+      };
+      adminApp = admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: projectId
+      });
+      console.log('✅ Production: Using environment variable credentials');
+    } else {
+      // Fallback to application default credentials (GCP, etc.)
+      adminApp = admin.initializeApp({
+        credential: admin.credential.applicationDefault(),
+        projectId: projectId
+      });
+      console.log('✅ Production: Using application default credentials');
+    }
+  } catch (error) {
+    console.error('❌ Production Firebase initialization failed:', error.message);
+    process.exit(1);
+  }
+}
+const db = admin.firestore();
 
 // Add this after your Firebase initialization
 const FirestoreAdapter = require('./firestore-adapter');
 const firebaseAdapter = new FirestoreAdapter(db);
 const authHelper = require('./auth-helper');
 
-// Initialize auth with your Firebase app
-authHelper.initializeAuth(firebaseApp);
+// Initialize auth helper with the Firebase app
+authHelper.initializeAuth(adminApp);
+
+// Note: auth-helper is now legacy - using Admin SDK directly
 
 // Install multer for file uploads
 // npm install multer
@@ -207,7 +282,7 @@ async function deleteBills(ids) {
 // New function to save a group to Firebase
 async function saveGroup(groupName, groupData) {
   try {
-    await firestore.setDoc(firestore.doc(db, 'groups', groupName), groupData);
+    await db.collection('groups').doc(groupName).set(groupData);
     return true;
   } catch (error) {
     console.error('Error saving group %s:', groupName, error);
@@ -281,9 +356,9 @@ app.post('/api/verify-email',
         }
       }
       
-      const usersRef = firestore.collection(db, 'users');
-      const emailQuery = firestore.query(usersRef, firestore.where('email', '==', email.toLowerCase().trim()));
-      const emailSnapshot = await firestore.getDocs(emailQuery);
+      const usersRef = db.collection('users');
+      const emailQuery = usersRef.where('email', '==', email.toLowerCase().trim());
+      const emailSnapshot = await emailQuery.get();
 
       if (emailSnapshot.empty) {
         // Email doesn't exist - record failed attempt but don't reveal this information
@@ -316,66 +391,100 @@ app.post('/api/verify-email',
   }
 );
 
-// User registration endpoint
+// Enhanced User registration endpoint
 app.post('/api/register', async (req, res) => {
   try {
+    enhancedDevAuth.log('Registration attempt started');
+    
+    // Enhanced security checks
+    const securityCheck = enhancedDevAuth.performSecurityChecks(req);
+    if (!securityCheck.passed && process.env.ENABLE_ENHANCED_SECURITY === 'true') {
+      enhancedDevAuth.log('Security checks failed for registration', 'error');
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Security validation failed',
+        debug: enhancedDevAuth.isDevMode ? securityCheck.checks : undefined
+      });
+    }
+
     const { name, email, passcode } = req.body;
 
-    // Validate inputs
-    if (!name || !email || !passcode) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
+    // Enhanced validation using the new auth system
+    if (!enhancedDevAuth.validateName(name)) {
+      return res.status(400).json({ success: false, message: 'Name must be between 2-100 characters' });
     }
 
-    if (passcode.length !== 6 || !/^\d{6}$/.test(passcode)) {
-      return res.status(400).json({ success: false, message: 'Passcode must be exactly 6 digits' });
-    }
-
-    // Validate email format
-    if (!validator.isEmail(email)) {
+    if (!enhancedDevAuth.validateEmail(email)) {
       return res.status(400).json({ success: false, message: 'Invalid email format' });
     }
 
-    // Check if email already exists
-    // Try to authenticate before making the query
-    try {
-      await authHelper.getAuthToken();
-    } catch (authError) {
-      // In development mode, skip authentication if Firebase is not properly configured
-      if (process.env.SETTLELAH_DEV_MODE === 'true') {
-        console.warn('Skipping Firebase auth in dev mode due to missing/invalid API key');
-      } else {
-        throw authError;
+    if (!enhancedDevAuth.validatePasscode(passcode)) {
+      return res.status(400).json({ success: false, message: 'Passcode must be exactly 6 digits' });
+    }
+
+    // Sanitize input data
+    const sanitizedData = enhancedDevAuth.sanitizeUserData({ name, email, passcode });
+    enhancedDevAuth.log(`Registration for email: ${sanitizedData.email}`);
+
+    // Check if email already exists (with enhanced Firebase handling)
+    if (process.env.SETTLELAH_DEV_MODE !== 'true') {
+      try {
+        await authHelper.getAuthToken();
+      } catch (authError) {
+        enhancedDevAuth.log(`Auth error during registration: ${authError.message}`, 'error');
+        return res.status(500).json({ success: false, message: 'Authentication service unavailable' });
       }
+    } else {
+      enhancedDevAuth.log('Development mode: Enhanced auth active, skipping Firebase auth dependency');
     }
     
-    const usersRef = firestore.collection(db, 'users');
-    const emailQuery = firestore.query(usersRef, firestore.where('email', '==', email));
-    const emailSnapshot = await firestore.getDocs(emailQuery);
+    const usersRef = db.collection('users');
+    const emailQuery = usersRef.where('email', '==', sanitizedData.email);
+    const emailSnapshot = await emailQuery.get();
 
     if (!emailSnapshot.empty) {
+      enhancedDevAuth.log(`Registration failed: Email already exists - ${sanitizedData.email}`, 'error');
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
-    // Hash the passcode with bcrypt (salt rounds: 12 for security)
-    const hashedPasscode = await bcrypt.hash(passcode, 12);
+    // Hash the passcode using enhanced auth system
+    const hashedPasscode = await enhancedDevAuth.hashPasscode(sanitizedData.passcode);
 
-    // Create a new user
-    const userId = crypto.randomBytes(16).toString('hex');
+    // Create a new user with enhanced security
+    const userId = enhancedDevAuth.createSecureUserId();
     const user = {
-      name: validator.escape(name.trim()),
-      email: email.toLowerCase().trim(),
-      passcode: hashedPasscode, // Now properly hashed
+      name: sanitizedData.name,
+      email: sanitizedData.email,
+      passcode: hashedPasscode,
       created_at: Date.now(),
-      last_login: null
+      last_login: Date.now(), // Set to current time on registration (auto-login)
+      last_login_ip: req.ip || req.connection.remoteAddress,
+      security_level: process.env.ENABLE_ENHANCED_SECURITY === 'true' ? 'enhanced' : 'standard'
     };
 
-    await firestore.setDoc(firestore.doc(usersRef, userId), user);
+    enhancedDevAuth.log(`Attempting to create user with data: ${JSON.stringify(user, null, 2)}`);
+    await usersRef.doc(userId).set(user);
+    enhancedDevAuth.log(`User created successfully: ${userId}`);
 
-    // Return success with userId (but not the passcode for security)
+    // Generate JWT tokens for immediate login
+    const tokens = enhancedDevAuth.generateTokens({
+      userId,
+      email: sanitizedData.email,
+      name: sanitizedData.name
+    });
+
+    // Return success with tokens for immediate login
     res.status(201).json({
       success: true,
       message: 'Registration successful',
-      userId
+      userId,
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      user: {
+        userId,
+        name: sanitizedData.name,
+        email: sanitizedData.email
+      }
     });
   } catch (error) {
     console.error('Registration error:', error);
@@ -408,13 +517,10 @@ app.post('/api/validate-passcode',
           });
         }
 
-        const usersRef = firestore.collection(db, 'users');
-        const query = firestore.query(
-          usersRef,
-          firestore.where('email', '==', email.toLowerCase().trim())
-        );
+        const usersRef = db.collection('users');
+        const query = usersRef.where('email', '==', email.toLowerCase().trim());
 
-        const snapshot = await firestore.getDocs(query);
+        const snapshot = await query.get();
 
         if (snapshot.empty) {
         // Record failed attempt for IP and user
@@ -452,7 +558,7 @@ app.post('/api/validate-passcode',
         security.handleLoginSuccess(ip, email);
 
         // Update last login timestamp
-        await firestore.updateDoc(firestore.doc(usersRef, userDoc.id), {
+        await usersRef.doc(userDoc.id).update({
           last_login: Date.now(),
           last_login_ip: ip
         });
@@ -528,10 +634,10 @@ app.post('/api/refresh-token', async (req, res) => {
     }
 
     // Get user data from database
-    const usersRef = firestore.collection(db, 'users');
-    const userDoc = await firestore.getDoc(firestore.doc(usersRef, decoded.userId));
+    const usersRef = db.collection('users');
+    const userDoc = await usersRef.doc(decoded.userId).get();
 
-    if (!userDoc.exists()) {
+    if (!userDoc.exists) {
       return res.status(401).json({
         error: 'User not found',
         code: 'USER_NOT_FOUND'
@@ -574,23 +680,21 @@ app.get('/api/history', async (req, res) => {
     const userId = req.headers['x-user-id'];
 
     // Query Firestore for bills
-    const billsRef = firestore.collection(db, 'bills');
+    const billsRef = db.collection('bills');
     let query = billsRef;
 
     // If user is authenticated, filter by their bills
     if (userId) {
-      query = firestore.query(
-        billsRef,
-        firestore.where('userId', '==', userId),
-        firestore.orderBy('timestamp', 'desc'),
-        firestore.limit(20)
-      );
+      query = billsRef
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc')
+        .limit(20);
     } else {
       // For unauthenticated users, just get the most recent bills (limited number)
-      query = firestore.query(billsRef, firestore.orderBy('timestamp', 'desc'), firestore.limit(10));
+      query = billsRef.orderBy('timestamp', 'desc').limit(10);
     }
 
-    const snapshot = await firestore.getDocs(query);
+    const snapshot = await query.get();
 
     // Convert snapshot to array of bills with IDs
     const bills = [];
@@ -615,23 +719,21 @@ app.get('/api/history/latest', async (req, res) => {
     const userId = req.headers['x-user-id'];
 
     // Query Firestore for bills
-    const billsRef = firestore.collection(db, 'bills');
+    const billsRef = db.collection('bills');
     let query = billsRef;
 
     // If user is authenticated, filter by their bills
     if (userId) {
-      query = firestore.query(
-        billsRef,
-        firestore.where('userId', '==', userId),
-        firestore.orderBy('timestamp', 'desc'),
-        firestore.limit(1)
-      );
+      query = billsRef
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc')
+        .limit(1);
     } else {
       // For unauthenticated users, get the most recent bill
-      query = firestore.query(billsRef, firestore.orderBy('timestamp', 'desc'), firestore.limit(1));
+      query = billsRef.orderBy('timestamp', 'desc').limit(1);
     }
 
-    const snapshot = await firestore.getDocs(query);
+    const snapshot = await query.get();
 
     if (snapshot.empty) {
       return res.json({ bill: null });
@@ -658,19 +760,19 @@ app.delete('/api/history/clear', async (req, res) => {
     const userId = req.headers['x-user-id'];
 
     // Query Firestore for bills
-    const billsRef = firestore.collection(db, 'bills');
+    const billsRef = db.collection('bills');
     let query = billsRef;
 
     // If user is authenticated, filter by their bills
     if (userId) {
-      query = firestore.query(billsRef, firestore.where('userId', '==', userId), firestore.limit(100));
+      query = billsRef.where('userId', '==', userId).limit(100);
     } else {
       // For unauthenticated users, get the most recent bills
-      query = firestore.query(billsRef, firestore.orderBy('timestamp', 'desc'), firestore.limit(50));
+      query = billsRef.orderBy('timestamp', 'desc').limit(50);
     }
 
     // Get the bills to delete
-    const snapshot = await firestore.getDocs(query);
+    const snapshot = await query.get();
 
     // If no bills found, return success
     if (snapshot.empty) {
@@ -678,7 +780,7 @@ app.delete('/api/history/clear', async (req, res) => {
     }
 
     // Delete the bills in batches (Firestore limits batch operations to 500)
-    const batch = firestore.writeBatch(db);
+    const batch = db.batch();
     let count = 0;
 
     snapshot.forEach((doc) => {
@@ -712,10 +814,10 @@ app.delete('/api/history/:id', async (req, res) => {
     }
 
     // First, try to get the bill to verify it exists and check ownership
-    const billRef = firestore.doc(db, 'bills', billId);
-    const billDoc = await firestore.getDoc(billRef);
+    const billRef = db.collection('bills').doc(billId);
+    const billDoc = await billRef.get();
 
-    if (!billDoc.exists()) {
+    if (!billDoc.exists) {
       return res.status(404).json({ error: 'Bill not found' });
     }
 
@@ -727,7 +829,7 @@ app.delete('/api/history/:id', async (req, res) => {
     }
 
     // Delete the bill
-    await firestore.deleteDoc(billRef);
+    await billRef.delete();
 
     res.json({
       success: true,
@@ -752,10 +854,10 @@ function sanitizeInput(req, res, next) {
     req.body.paynowID = validator.escape(req.body.paynowID.trim());
   }
   if (req.body.members && Array.isArray(req.body.members)) {
-    req.body.members = req.body.members.map((member) => ({
-      ...member,
-      name: validator.escape(member.name.trim())
-    }));
+     req.body.members = req.body.members.map((member) => ({
+       ...member,
+     name: validator.escape(member.name.trim())
+  }));
   }
   if (req.body.dishes && Array.isArray(req.body.dishes)) {
     req.body.dishes = req.body.dishes.map((dish) => ({
@@ -1038,6 +1140,12 @@ app.get('/bill/:id', resultViewLimiter, async (req, res) => {
   //   return res.status(410).json({ error: "Bill has expired" });
   // }
 
+  // Set CSP headers to allow confetti workers for bill page
+  res.setHeader(
+    'Content-Security-Policy',
+    'default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https: https://vercel.live; worker-src \'self\' blob:; connect-src \'self\' https:; img-src \'self\' data: https:; style-src \'self\' \'unsafe-inline\' https:; font-src \'self\' https:;'
+  );
+  
   // Serve the bill.html page
   res.sendFile(path.join(__dirname, 'public', 'bill.html'));
 });
@@ -1162,22 +1270,20 @@ app.get('/api/groups', async (req, res) => {
     const userId = req.headers['x-user-id'];
 
     // Query Firestore for groups
-    const groupsRef = firestore.collection(db, 'groups');
+    const groupsRef = db.collection('groups');
     let query;
 
     // If user is authenticated, filter by their groups
     if (userId) {
-      query = firestore.query(
-        groupsRef,
-        firestore.where('userId', '==', userId),
-        firestore.orderBy('timestamp', 'desc')
-      );
+      query = groupsRef
+        .where('userId', '==', userId)
+        .orderBy('timestamp', 'desc');
     } else {
       // For unauthenticated users, return empty array
       return res.json({ groups: [] });
     }
 
-    const snapshot = await firestore.getDocs(query);
+    const snapshot = await query.get();
 
     // Convert snapshot to array of groups with IDs
     const groups = {};
@@ -1208,10 +1314,10 @@ app.delete('/api/groups/:groupName', async (req, res) => {
 
     // Check if the group exists and belongs to the user (optional in development mode)
     if (userId) {
-      const groupRef = firestore.doc(db, 'groups', groupName);
-      const groupDoc = await firestore.getDoc(groupRef);
+      const groupRef = db.collection('groups').doc(groupName);
+      const groupDoc = await groupRef.get();
 
-      if (groupDoc.exists() && groupDoc.data().userId && groupDoc.data().userId !== userId) {
+      if (groupDoc.exists && groupDoc.data().userId && groupDoc.data().userId !== userId) {
         return res.status(403).json({
           success: false,
           message: 'Not authorized to delete this group'
@@ -1220,7 +1326,7 @@ app.delete('/api/groups/:groupName', async (req, res) => {
     }
 
     // Delete the group
-    await firestore.deleteDoc(firestore.doc(db, 'groups', groupName));
+    await db.collection('groups').doc(groupName).delete();
 
     res.json({
       success: true,
@@ -1261,10 +1367,10 @@ app.patch('/api/bills/:billId/payment-status', async (req, res) => {
     }
 
     // Get the bill document
-    const billRef = firestore.doc(db, 'bills', billId);
-    const billDoc = await firestore.getDoc(billRef);
+    const billRef = db.collection('bills').doc(billId);
+    const billDoc = await billRef.get();
 
-    if (!billDoc.exists()) {
+    if (!billDoc.exists) {
       return res.status(404).json({
         success: false,
         message: 'Bill not found'
@@ -1299,7 +1405,7 @@ app.patch('/api/bills/:billId/payment-status', async (req, res) => {
     };
 
     // Update the bill document
-    await firestore.updateDoc(billRef, {
+    await billRef.update({
       paymentStatus: paymentStatus,
       lastUpdated: Date.now()
     });

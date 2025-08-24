@@ -1,29 +1,48 @@
 // Vercel API route for email verification
-const firebase = require('firebase/app');
-const firestore = require('firebase/firestore');
-const { getAuth, signInAnonymously } = require('firebase/auth');
+const admin = require('firebase-admin');
 const validator = require('validator');
 const security = require('../enhanced-security');
 
-// Initialize Firebase if not already initialized
-let db, auth;
+// Initialize Firebase Admin if not already initialized
+let db;
 try {
-  const { getFirestore } = require('firebase/firestore');
-
-  if (!firebase.getApps().length) {
-    const firebaseConfig = {
-      apiKey: process.env.FIREBASE_API_KEY,
-      authDomain: 'settlelah-1da97.firebaseapp.com',
-      projectId: 'settlelah-1da97'
-    };
-
-    firebase.initializeApp(firebaseConfig);
+  if (!admin.apps.length) {
+    // Use service account from individual environment variables (easier approach)
+    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+      const serviceAccount = {
+        type: "service_account",
+        project_id: process.env.FIREBASE_PROJECT_ID || "settlelah-1da97",
+        private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        client_email: process.env.FIREBASE_CLIENT_EMAIL
+      };
+      
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id
+      });
+      console.log('✅ Firebase Admin initialized with individual env vars');
+    } 
+    // Fallback to JSON key if individual vars not available
+    else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
+      const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+        projectId: serviceAccount.project_id || 'settlelah-1da97'
+      });
+      console.log('✅ Firebase Admin initialized with service account key');
+    } else {
+      // Fallback initialization - this should work in Vercel with proper env vars
+      console.log('⚠️ FIREBASE_SERVICE_ACCOUNT_KEY not found, trying application default');
+      admin.initializeApp({
+        projectId: 'settlelah-1da97'
+      });
+    }
   }
 
-  db = getFirestore();
-  auth = getAuth();
+  db = admin.firestore();
 } catch (error) {
-  console.error('Firebase initialization error:', error);
+  console.error('❌ Firebase Admin initialization error:', error);
+  throw error; // Re-throw to see the full error
 }
 
 module.exports = async (req, res) => {
@@ -81,18 +100,14 @@ module.exports = async (req, res) => {
     }
 
     // Check if email exists in database
-    if (!db || !auth) {
+    if (!db) {
       throw new Error('Database connection not available');
     }
 
-    // Ensure we're authenticated before making the query
-    if (!auth.currentUser) {
-      await signInAnonymously(auth);
-    }
-
-    const usersRef = firestore.collection(db, 'users');
-    const emailQuery = firestore.query(usersRef, firestore.where('email', '==', email.toLowerCase().trim()));
-    const emailSnapshot = await firestore.getDocs(emailQuery);
+    // Use Admin SDK to query users collection
+    const usersRef = db.collection('users');
+    const emailQuery = usersRef.where('email', '==', email.toLowerCase().trim());
+    const emailSnapshot = await emailQuery.get();
 
     if (emailSnapshot.empty) {
       // Email doesn't exist - record failed attempt but don't reveal this information
