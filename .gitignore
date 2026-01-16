@@ -52,7 +52,6 @@ firebase-debug.log
 *-debug.log
 
 # Development and test files
-enhanced-dev-auth.js
 setup-dev-env.js
 migrate-passwords.js
 test*.js
