@@ -94,7 +94,6 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "SETTLELAH_AUTH_TOKEN": "9a7d8ebd31b4d8dd96be51fee8cd7929fbac4a3ca05220bb1ee0b54cb169d72d"
+    "NODE_ENV": "production"
   }
 }
