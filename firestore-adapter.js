@@ -90,6 +90,34 @@ class FirestoreAdapter {
   }
 
   /**
+   * Update an existing bill in Firestore with error handling
+   * @param {string} id - Bill ID
+   * @param {Object} data - Updated bill data
+   * @returns {Promise<void>}
+   */
+  async updateBill(id, data) {
+    try {
+      const billRef = this.db.collection('bills').doc(id);
+      const billDoc = await billRef.get();
+
+      if (!billDoc.exists) {
+        throw new Error(`Bill ${id} not found`);
+      }
+
+      await billRef.update(data);
+    } catch (error) {
+      console.error(`Error updating bill ${id}:`, error);
+
+      if (process.env.SETTLELAH_DEV_MODE === 'true' && error.code === 'permission-denied') {
+        console.warn('Simulating successful update in development mode');
+        return;
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * Delete bills from Firestore with error handling
    * @param {Array<string>} ids - Array of bill IDs to delete
    * @returns {Promise<void>}

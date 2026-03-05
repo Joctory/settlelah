@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>SettleLah! - Settle Bill Easily</title>
     <meta name="description" content="The easiest way to settle your bills" />
     <link rel="icon" href="icons/favicon.png" />
@@ -15,10 +14,7 @@
     <meta name="description" content="The easiest way to settle your bills" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta
-      name="apple-mobile-web-app-status-bar-style"
-      content="black-translucent"
-    />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="SettleLah!" />
 
     <!-- PWA Icons and Manifest -->
@@ -37,10 +33,7 @@
             navigator.serviceWorker
               .register("/sw.js")
               .then((registration) => {
-                console.log(
-                  "Service Worker registered with scope:",
-                  registration.scope
-                );
+                console.log("Service Worker registered with scope:", registration.scope);
               })
               .catch((error) => {
                 console.error("Service Worker registration failed:", error);
@@ -111,9 +104,7 @@
         </div>
         <div class="pwa-banner-text">
           <h3 class="pwa-banner-title">SettleLah!</h3>
-          <p class="pwa-banner-description">
-            Install app for a better experience
-          </p>
+          <p class="pwa-banner-description">Install app for a better experience</p>
         </div>
       </div>
       <div class="pwa-banner-actions">
@@ -167,27 +158,17 @@
           </div>
           <div class="settle-content">
             <div class="cat-image">
-              <img
-                class="start-cat-image"
-                src="assets/start-card.svg"
-                alt="cat"
-              />
+              <img class="start-cat-image" src="assets/start-card.svg" alt="cat" />
             </div>
             <div class="settle-message">
               <p>Don't only know how to talk, settle now lah!</p>
-              <button class="settle-now-btn">
-                Settle Now <span class="arrow">→</span>
-              </button>
+              <button class="settle-now-btn">Settle Now <span class="arrow">→</span></button>
             </div>
           </div>
         </div>
 
         <!-- Last Created Group -->
-        <div
-          id="lastCreatedGroup"
-          class="group-card card-widget"
-          style="display: none"
-        >
+        <div id="lastCreatedGroup" class="group-card card-widget" style="display: none">
           <div class="card-header">
             <h3>Last Created Group</h3>
             <p>Friends</p>
@@ -196,12 +177,7 @@
         </div>
 
         <!-- Last Settle -->
-        <a
-          id="lastSettle"
-          href=""
-          class="group-card card-widget"
-          style="display: none"
-        >
+        <a id="lastSettle" href="" class="group-card card-widget" style="display: none">
           <div class="card-header">
             <h3>Last settle</h3>
             <span class="arrow-icon">→</span>
@@ -231,11 +207,7 @@
         <div class="welcome-section">
           <h1>Settlement History</h1>
           <button id="clearHistoryBtn" class="clear-history-btn">
-            <img
-              class="group-action-btn-img"
-              src="assets/bin.svg"
-              alt="Delete"
-            />
+            <img class="group-action-btn-img" src="assets/bin.svg" alt="Delete" />
           </button>
         </div>
 
@@ -265,9 +237,7 @@
             <div class="settings-item tax-profile-container">
               <div class="settings-info">
                 <p>Tax Profile</p>
-                <span class="tax-profile-description"
-                  >Choose your country's tax settings</span
-                >
+                <span class="tax-profile-description">Choose your country's tax settings</span>
               </div>
             </div>
 
@@ -308,11 +278,7 @@
             </div>
 
             <!-- Hidden select for backward compatibility -->
-            <select
-              id="taxProfile"
-              class="settings-select"
-              style="display: none"
-            >
+            <select id="taxProfile" class="settings-select" style="display: none">
               <option value="singapore" selected>Singapore</option>
               <option value="malaysia">Malaysia</option>
             </select>
@@ -324,21 +290,13 @@
               </div>
               <div class="settings-action">
                 <label class="toggle-switch">
-                  <input
-                    type="checkbox"
-                    id="darkModeToggle"
-                    onclick="toggleDarkMode()"
-                  />
+                  <input type="checkbox" id="darkModeToggle" onclick="toggleDarkMode()" />
                   <span class="slider round"></span>
                 </label>
               </div>
             </div>
 
-            <a
-              href="https://www.settlelah.app"
-              target="_blank"
-              class="settings-item"
-            >
+            <a href="https://www.settlelah.app" target="_blank" class="settings-item">
               <div class="settings-info">
                 <p>Visit My Website</p>
               </div>
@@ -357,7 +315,7 @@
         <div class="settings-footer">
           <p>
             App Version <span id="appVersion">1.0.0</span>. Copyright ©
-            <span id="copyrightYear">2025</span>
+            <span class="copyrightYear">2025</span>
             <a href="https://www.joasisweb.com" target="_blank">Joasis Web</a>
           </p>
           <p>Developed with 💗 by Joel Lee.</p>
@@ -384,11 +342,7 @@
             </div>
             <div class="settle-choice-container">
               <div class="saved-group-option">
-                <img
-                  class="saved-group-bg"
-                  src="assets/saved-group-img.svg"
-                  alt="saved group"
-                />
+                <img class="saved-group-bg" src="assets/saved-group-img.svg" alt="saved group" />
                 <div class="group-label">Saved Group</div>
               </div>
 
@@ -399,11 +353,7 @@
               </div>
 
               <div class="new-group-option">
-                <img
-                  class="new-group-bg"
-                  src="assets/new-group-img.svg"
-                  alt="new group"
-                />
+                <img class="new-group-bg" src="assets/new-group-img.svg" alt="new group" />
                 <div class="group-label">New Group</div>
               </div>
             </div>
@@ -422,11 +372,7 @@
               <div class="edit-group-name-container" style="display: none">
                 <div class="input-field">
                   <label for="editGroupName">Group name</label>
-                  <input
-                    type="text"
-                    id="editGroupName"
-                    placeholder="Group name"
-                  />
+                  <input type="text" id="editGroupName" placeholder="Group name" />
                   <div class="error-message">Please enter group's name</div>
                 </div>
               </div>
@@ -435,8 +381,7 @@
                   <img
                     class="add-member-icon-img"
                     src="assets/add-member-img.svg"
-                    alt="add member"
-                  />
+                    alt="add member" />
                 </div>
                 <div class="add-member-label">New Member</div>
               </div>
@@ -447,8 +392,7 @@
                     <img
                       class="save-group-icon-img"
                       src="assets/tick-circle.svg"
-                      alt="save group"
-                    />
+                      alt="save group" />
                   </div>
                   <div class="save-group-label">Save as Group</div>
                 </button>
@@ -537,25 +481,15 @@
               </button>
               <div class="group-success-message">
                 <span class="success-icon">
-                  <img
-                    class="checkmark-img"
-                    src="assets/tick-circle.svg"
-                    alt="loading"
-                  />
+                  <img class="checkmark-img" src="assets/tick-circle.svg" alt="loading" />
                 </span>
                 <span class="group-name-display"></span>
               </div>
               <div id="groupMembers" class="group-members"></div>
-              <button
-                id="birthdayPersonBtn"
-                class="birthday-person-btn"
-                style="display: none"
-              >
+              <button id="birthdayPersonBtn" class="birthday-person-btn" style="display: none">
                 <span class="birthday-text">Birthday Person</span>
               </button>
-              <div class="drag-instructions">
-                Drag members to assign them to the dish
-              </div>
+              <div class="drag-instructions">Drag members to assign them to the dish</div>
             </div>
 
             <div class="item-details-section">
@@ -572,11 +506,8 @@
                   placeholder="Item Name"
                   value=""
                   autocomplete="off"
-                  inputmode="text"
-                />
-                <div id="itemNameError" class="error-message">
-                  Please enter item's name
-                </div>
+                  inputmode="text" />
+                <div id="itemNameError" class="error-message">Please enter item's name</div>
               </div>
 
               <div class="input-field">
@@ -589,11 +520,8 @@
                   autocomplete="off"
                   inputmode="decimal"
                   min="0"
-                  step="0.01"
-                />
-                <div id="itemPriceError" class="error-message">
-                  Please enter item's price
-                </div>
+                  step="0.01" />
+                <div id="itemPriceError" class="error-message">Please enter item's price</div>
               </div>
             </div>
 
@@ -605,13 +533,9 @@
                   <label for="settleEqually">Settle equally?</label>
                 </div>
                 <div id="assignedMembers" class="assigned-members"></div>
-                <div class="remove-instructions">
-                  Double tap to remove member
-                </div>
+                <div class="remove-instructions">Double tap to remove member</div>
               </div>
-              <div class="member-required-message">
-                Please don't forget your member
-              </div>
+              <div class="member-required-message">Please don't forget your member</div>
             </div>
 
             <button class="add-item-btn">Add Item</button>
@@ -625,12 +549,7 @@
             <div class="input-section">
               <div class="input-field">
                 <label for="settleMatter">Settle Matter</label>
-                <input
-                  type="text"
-                  id="settleMatter"
-                  placeholder="Enter settle matter"
-                  value=""
-                />
+                <input type="text" id="settleMatter" placeholder="Enter settle matter" value="" />
               </div>
 
               <div class="input-field">
@@ -641,11 +560,8 @@
                   placeholder="Enter discount value (e.g. 5, 10%)"
                   value=""
                   autocomplete="off"
-                  maxlength="8"
-                />
-                <p class="helper-text">
-                  Enter discount value (5 for $5, 10% for 10%)
-                </p>
+                  maxlength="8" />
+                <p class="helper-text">Enter discount value (5 for $5, 10% for 10%)</p>
               </div>
 
               <hr class="divider" />
@@ -661,8 +577,7 @@
                     class="inline-input"
                     inputmode="decimal"
                     min="0"
-                    step="0.01"
-                  />% Service Charge</label
+                    step="0.01" />% Service Charge</label
                 >
               </div>
 
@@ -675,16 +590,8 @@
                   GST rates based on your country profile:
                   <div class="CountryDisplayCon">
                     <span id="currentCountryDisplay">Singapore</span>
-                    <button
-                      type="button"
-                      class="change-country-btn"
-                      id="changeCountryBtn"
-                    >
-                      <img
-                        class="group-action-btn-img"
-                        src="assets/edit.svg"
-                        alt="edit"
-                      />
+                    <button type="button" class="change-country-btn" id="changeCountryBtn">
+                      <img class="group-action-btn-img" src="assets/edit.svg" alt="edit" />
                     </button>
                   </div>
                 </div>
@@ -695,24 +602,13 @@
               <div class="input-field">
                 <label for="paynowName">PayNow Name</label>
                 <div class="paynow-name-selection">
-                  <button
-                    id="selectPaynowMemberBtn"
-                    class="select-paynow-member-btn"
-                  >
+                  <button id="selectPaynowMemberBtn" class="select-paynow-member-btn">
                     <span class="btn-text">Select Member</span>
                     <span class="btn-icon">→</span>
                   </button>
-                  <input
-                    type="text"
-                    id="paynowName"
-                    placeholder="Enter name"
-                    value=""
-                    required
-                  />
+                  <input type="text" id="paynowName" placeholder="Enter name" value="" required />
                 </div>
-                <div id="paynowNameError" class="error-message">
-                  Please enter Payee name
-                </div>
+                <div id="paynowNameError" class="error-message">Please enter Payee name</div>
               </div>
 
               <div class="input-field">
@@ -724,8 +620,7 @@
                   value=""
                   inputmode="numeric"
                   title="Please enter a valid Singapore phone number starting with 8 or 9, followed by 7 digits"
-                  required
-                />
+                  required />
                 <div id="paynowPhoneError" class="error-message">
                   Please enter a valid phone number
                 </div>
@@ -750,11 +645,7 @@
             <div class="success-icon-container">
               <div class="success-icon">
                 <div class="checkmark">
-                  <img
-                    class="checkmark-img"
-                    src="assets/tick-circle.svg"
-                    alt="loading"
-                  />
+                  <img class="checkmark-img" src="assets/tick-circle.svg" alt="loading" />
                 </div>
               </div>
             </div>
@@ -787,8 +678,7 @@
               </div>
               <div class="detail-row serviceChargeRow" style="display: none">
                 <span class="detail-label"
-                  >Service Charge (<span class="serviceChargeRate"></span
-                  >)</span
+                  >Service Charge (<span class="serviceChargeRate"></span>)</span
                 >
                 <span class="detail-value successServiceCharge"></span>
               </div>
@@ -797,9 +687,7 @@
                 <span class="detail-value successAfterService"></span>
               </div>
               <div class="detail-row discountRow" style="display: none">
-                <span class="detail-label"
-                  >Discount <span class="discount-rate"></span
-                ></span>
+                <span class="detail-label">Discount <span class="discount-rate"></span></span>
                 <span class="detail-value successDiscount"></span>
               </div>
               <div class="detail-row afterDiscountRow" style="display: none">
@@ -807,9 +695,7 @@
                 <span class="detail-value successAfterDiscount"></span>
               </div>
               <div class="detail-row gstRow" style="display: none">
-                <span class="detail-label"
-                  >GST (<span class="gstRate"></span>)</span
-                >
+                <span class="detail-label">GST (<span class="gstRate"></span>)</span>
                 <span class="detail-value successGST"></span>
               </div>
               <div class="detail-row originalAmountRow" style="display: none">
@@ -836,11 +722,7 @@
             <div class="success-icon-container">
               <div class="success-icon">
                 <div class="checkmark">
-                  <img
-                    class="checkmark-img"
-                    src="assets/tick-circle.svg"
-                    alt="loading"
-                  />
+                  <img class="checkmark-img" src="assets/tick-circle.svg" alt="loading" />
                 </div>
               </div>
             </div>
@@ -873,8 +755,7 @@
               </div>
               <div class="detail-row serviceChargeRow" style="display: none">
                 <span class="detail-label"
-                  >Service Charge (<span class="serviceChargeRate"></span
-                  >)</span
+                  >Service Charge (<span class="serviceChargeRate"></span>)</span
                 >
                 <span class="detail-value successServiceCharge"></span>
               </div>
@@ -883,9 +764,7 @@
                 <span class="detail-value successAfterService"></span>
               </div>
               <div class="detail-row discountRow" style="display: none">
-                <span class="detail-label"
-                  >Discount <span class="discount-rate"></span
-                ></span>
+                <span class="detail-label">Discount <span class="discount-rate"></span></span>
                 <span class="detail-value successDiscount"></span>
               </div>
               <div class="detail-row afterDiscountRow" style="display: none">
@@ -893,9 +772,7 @@
                 <span class="detail-value successAfterDiscount"></span>
               </div>
               <div class="detail-row gstRow" style="display: none">
-                <span class="detail-label"
-                  >GST (<span class="gstRate"></span>)</span
-                >
+                <span class="detail-label">GST (<span class="gstRate"></span>)</span>
                 <span class="detail-value successGST"></span>
               </div>
               <div class="detail-row originalAmountRow" style="display: none">
@@ -915,18 +792,20 @@
         </div>
         <div class="success-footer">
           <h2>Settle Completed</h2>
-          <p>
-            Share the bill to your friend or open the link to reveal the bill
-          </p>
+          <p>Share the bill to your friend or open the link to reveal the bill</p>
           <div class="avatar-group"></div>
           <div class="share-action-buttons">
             <button class="share-bill-btn">Share Bill</button>
             <button class="reveal-bill-btn">Reveal Bill</button>
           </div>
-          <div class="share-action-buttons back-home-btn-container">
-            <button onclick="window.location.href = '/'" class="back-home-btn">
-              Back to Home
+          <div class="share-action-buttons edit-btn-container">
+            <button class="edit-bill-btn" style="display: none">
+              <img src="assets/edit.svg" alt="edit" />
+              Edit Bill
             </button>
+          </div>
+          <div class="share-action-buttons back-home-btn-container">
+            <button onclick="window.location.href = '/'" class="back-home-btn">Back to Home</button>
           </div>
         </div>
       </div>
@@ -1019,16 +898,9 @@
             </div>
           </div>
           <div class="modal-body">
-            <p class="scan-receipt-helper-text">
-              Upload a receipt image to scan for items:
-            </p>
+            <p class="scan-receipt-helper-text">Upload a receipt image to scan for items:</p>
             <div class="input-field file-upload-container">
-              <input
-                type="file"
-                id="receiptImage"
-                accept="image/*"
-                class="hidden-file-input"
-              />
+              <input type="file" id="receiptImage" accept="image/*" class="hidden-file-input" />
               <label for="receiptImage" class="file-upload-button">
                 <span class="upload-icon">📤</span>
                 <span class="upload-text">Choose Receipt Image</span>
@@ -1046,16 +918,13 @@
                   src="assets/receipt-icon.svg"
                   alt="Receipt"
                   class="receipt-icon"
-                  onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cpath%20d%3D%22M0%200h48v48H0z%22%2F%3E%3Cpath%20d%3D%22M10%204h28a2%202%200%20012%202v36a2%202%200%2001-2%202H10a2%202%200%2001-2-2V6a2%202%200%20012-2z%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M16%2016h16M16%2024h16M16%2032h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E';"
-                />
+                  onerror="this.src='data:image/svg+xml;charset=UTF-8,%3Csvg%20width%3D%2248%22%20height%3D%2248%22%20viewBox%3D%220%200%2048%2048%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cpath%20d%3D%22M0%200h48v48H0z%22%2F%3E%3Cpath%20d%3D%22M10%204h28a2%202%200%20012%202v36a2%202%200%2001-2%202H10a2%202%200%2001-2-2V6a2%202%200%20012-2z%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M16%2016h16M16%2024h16M16%2032h8%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E';" />
               </div>
               <p class="scanning-text">Scanning your receipt...</p>
             </div>
 
             <div class="modal-actions">
-              <button class="modal-action-btn confirm-btn" id="scanReceiptBtn">
-                Scan Receipt
-              </button>
+              <button class="modal-action-btn confirm-btn" id="scanReceiptBtn">Scan Receipt</button>
             </div>
           </div>
         </div>
@@ -1071,16 +940,10 @@
             </div>
           </div>
           <div class="modal-body">
-            <p class="group-save-message">
-              The group has been successfully updated.
-            </p>
+            <p class="group-save-message">The group has been successfully updated.</p>
 
             <div class="modal-actions">
-              <button
-                class="modal-action-btn confirm-btn group-updated-confirm-btn"
-              >
-                OK
-              </button>
+              <button class="modal-action-btn confirm-btn group-updated-confirm-btn">OK</button>
             </div>
           </div>
         </div>
@@ -1096,15 +959,11 @@
             </div>
           </div>
           <div class="modal-body">
-            <p class="group-save-message">
-              Are you sure you want to delete this group?
-            </p>
+            <p class="group-save-message">Are you sure you want to delete this group?</p>
 
             <div class="modal-actions">
               <button class="modal-action-btn cancel-btn">Cancel</button>
-              <button class="modal-action-btn delete-confirm-btn">
-                Delete
-              </button>
+              <button class="modal-action-btn delete-confirm-btn">Delete</button>
             </div>
           </div>
         </div>
@@ -1121,16 +980,12 @@
           </div>
           <div class="modal-body">
             <p class="group-save-message">
-              Are you sure you want to clear all settlement history? This action
-              cannot be undone.
+              Are you sure you want to clear all settlement history? This action cannot be undone.
             </p>
 
             <div class="modal-actions">
               <button class="modal-action-btn cancel-btn">Cancel</button>
-              <button
-                class="modal-action-btn delete-confirm-btn"
-                id="confirmClearHistoryBtn"
-              >
+              <button class="modal-action-btn delete-confirm-btn" id="confirmClearHistoryBtn">
                 Clear All
               </button>
             </div>
@@ -1154,9 +1009,7 @@
 
             <div class="modal-actions">
               <button class="modal-action-btn cancel-btn">Cancel</button>
-              <button class="modal-action-btn confirm-btn back-confirm-btn">
-                Confirm
-              </button>
+              <button class="modal-action-btn confirm-btn back-confirm-btn">Confirm</button>
             </div>
           </div>
         </div>
@@ -1185,25 +1038,19 @@
               <div class="birthday-selected-member">
                 <span class="birthday-cake-icon">🎂</span>
                 <span class="birthday-member-name"></span>
-                <span class="birthday-status-text"
-                  >is the birthday person!</span
-                >
+                <span class="birthday-status-text">is the birthday person!</span>
               </div>
             </div>
             <div class="modal-actions">
               <button
                 class="modal-action-btn secondary-btn"
                 id="clearBirthdayPersonBtn"
-                style="display: none"
-              >
+                style="display: none">
                 Remove Birthday Person
               </button>
               <div class="birthday-button-two">
                 <button class="modal-action-btn cancel-btn">Cancel</button>
-                <button
-                  class="modal-action-btn confirm-btn"
-                  id="confirmBirthdayPersonBtn"
-                >
+                <button class="modal-action-btn confirm-btn" id="confirmBirthdayPersonBtn">
                   Confirm
                 </button>
               </div>
@@ -1235,20 +1082,13 @@
 
               <div class="input-field">
                 <label for="customPaynowName">Custom PayNow Name</label>
-                <input
-                  type="text"
-                  id="customPaynowName"
-                  placeholder="Enter custom name"
-                />
+                <input type="text" id="customPaynowName" placeholder="Enter custom name" />
               </div>
             </div>
 
             <div class="modal-actions">
               <button class="modal-action-btn cancel-btn">Cancel</button>
-              <button
-                class="modal-action-btn confirm-btn"
-                id="confirmPaynowMemberBtn"
-              >
+              <button class="modal-action-btn confirm-btn" id="confirmPaynowMemberBtn">
                 Confirm
               </button>
             </div>
@@ -1271,19 +1111,13 @@
       <div id="navbar">
         <div id="bubbleWrapper">
           <div id="bubble1" class="bubble">
-            <span class="icon"
-              ><img class="nav-icon" src="assets/nav_history.svg"
-            /></span>
+            <span class="icon"><img class="nav-icon" src="assets/nav_history.svg" /></span>
           </div>
           <div id="bubble2" class="bubble bubble-home">
-            <span class="icon"
-              ><img class="nav-icon" src="assets/nav_home_active.svg"
-            /></span>
+            <span class="icon"><img class="nav-icon" src="assets/nav_home_active.svg" /></span>
           </div>
           <div id="bubble3" class="bubble">
-            <span class="icon"
-              ><img class="nav-icon" src="assets/nav_setting.svg"
-            /></span>
+            <span class="icon"><img class="nav-icon" src="assets/nav_setting.svg" /></span>
           </div>
         </div>
         <div id="menuWrapper">
@@ -1364,9 +1198,7 @@
         <div class="toast-icon">!</div>
         <div class="toast-message">
           <p class="toast-title">Sync Error</p>
-          <p class="toast-error-message">
-            Unable to sync with cloud. Using local data.
-          </p>
+          <p class="toast-error-message">Unable to sync with cloud. Using local data.</p>
         </div>
       </div>
 
@@ -1375,8 +1207,7 @@
         <div class="toast-content">
           <span class="toast-icon">⚠️</span>
           <span class="toast-message"
-            >Permission denied. Please check your permissions and try
-            again.</span
+            >Permission denied. Please check your permissions and try again.</span
           >
         </div>
       </div>
@@ -1409,9 +1240,7 @@
         const pwaInstallBanner = document.getElementById("pwaInstallBanner");
         const pwaInstallBtn = document.getElementById("pwaInstallBtn");
         const pwaDismissBtn = document.getElementById("pwaDismissBtn");
-        const pwaDescription = document.querySelector(
-          ".pwa-banner-description"
-        );
+        const pwaDescription = document.querySelector(".pwa-banner-description");
 
         // Check if app is installed - hide banner if already installed
         if (
@@ -1423,20 +1252,18 @@
         }
 
         // Detect iOS
-        const isIOS =
-          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
         // Update text for iOS devices
         if (isIOS && pwaDescription) {
-          pwaDescription.textContent =
-            'Tap share icon and "Add to Home Screen"';
+          pwaDescription.textContent = 'Tap share icon and "Add to Home Screen"';
           // Change install button text for iOS
           if (pwaInstallBtn) {
             pwaInstallBtn.textContent = "How to Install";
             // For iOS we'll show instructions instead of triggering install
             pwaInstallBtn.addEventListener("click", () => {
               alert(
-                'To install this app on your iOS device:\n\n1. Tap the share icon in Safari (box with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right corner'
+                'To install this app on your iOS device:\n\n1. Tap the share icon in Safari (box with arrow)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right corner',
               );
               // Hide the banner after showing instructions
               if (pwaInstallBanner) pwaInstallBanner.classList.remove("show");
@@ -1470,10 +1297,7 @@
 
             // Mark as dismissed and store current time
             localStorage.setItem("pwa-banner-dismissed", "true");
-            localStorage.setItem(
-              "pwa-banner-dismissed-time",
-              Date.now().toString()
-            );
+            localStorage.setItem("pwa-banner-dismissed-time", Date.now().toString());
           });
         }
       });
@@ -1490,9 +1314,7 @@
 
         // Check if user has previously dismissed the banner
         const bannerDismissed = localStorage.getItem("pwa-banner-dismissed");
-        const lastDismissed = parseInt(
-          localStorage.getItem("pwa-banner-dismissed-time") || "0"
-        );
+        const lastDismissed = parseInt(localStorage.getItem("pwa-banner-dismissed-time") || "0");
         const now = Date.now();
         const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
@@ -1509,23 +1331,19 @@
       // since beforeinstallprompt doesn't fire on iOS
       window.addEventListener("load", () => {
         // Detect iOS
-        const isIOS =
-          /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
         if (isIOS) {
           // Check if installed already
           const isInstalled = window.navigator.standalone === true;
 
           if (!isInstalled) {
-            const pwaInstallBanner =
-              document.getElementById("pwaInstallBanner");
+            const pwaInstallBanner = document.getElementById("pwaInstallBanner");
 
             // Check if user has previously dismissed the banner
-            const bannerDismissed = localStorage.getItem(
-              "pwa-banner-dismissed"
-            );
+            const bannerDismissed = localStorage.getItem("pwa-banner-dismissed");
             const lastDismissed = parseInt(
-              localStorage.getItem("pwa-banner-dismissed-time") || "0"
+              localStorage.getItem("pwa-banner-dismissed-time") || "0",
             );
             const now = Date.now();
             const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
@@ -1676,16 +1494,12 @@
         </div>
 
         <div class="country-modal-footer">
-          <button
-            class="country-modal-btn modal-action-btn cancel-btn"
-            id="cancelCountryBtn"
-          >
+          <button class="country-modal-btn modal-action-btn cancel-btn" id="cancelCountryBtn">
             Cancel
           </button>
           <button
             class="country-modal-btn modal-action-btn confirm-btn back-confirm-btn"
-            id="confirmCountryBtn"
-          >
+            id="confirmCountryBtn">
             Apply
           </button>
         </div>

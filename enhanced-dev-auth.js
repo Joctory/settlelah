@@ -63,9 +63,9 @@ class EnhancedDevAuth {
 
   generateTokens(user) {
     this.log(`Generating tokens for user: ${user.email}`);
-    
+
     const jwtSecret = process.env.JWT_SECRET || 'fallback_dev_secret';
-    
+
     const accessTokenPayload = {
       userId: user.userId,
       email: user.email,
@@ -82,7 +82,7 @@ class EnhancedDevAuth {
     const accessToken = jwt.sign(
       accessTokenPayload,
       jwtSecret,
-      { 
+      {
         expiresIn: this.isDevMode ? '24h' : '15m', // Longer in dev for convenience
         issuer: 'settlelah',
         audience: 'settlelah-users'
@@ -92,7 +92,7 @@ class EnhancedDevAuth {
     const refreshToken = jwt.sign(
       refreshTokenPayload,
       jwtSecret,
-      { 
+      {
         expiresIn: '7d',
         issuer: 'settlelah',
         audience: 'settlelah-users'
@@ -146,9 +146,9 @@ class EnhancedDevAuth {
     };
 
     const passed = Object.values(checks).every(check => check);
-    
+
     this.log(`Security checks: ${JSON.stringify(checks)} - ${passed ? 'PASSED' : 'FAILED'}`);
-    
+
     return { passed, checks };
   }
 }

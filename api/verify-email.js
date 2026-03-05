@@ -10,18 +10,18 @@ try {
     // Use service account from individual environment variables (easier approach)
     if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
       const serviceAccount = {
-        type: "service_account",
-        project_id: process.env.FIREBASE_PROJECT_ID || "settlelah-1da97",
+        type: 'service_account',
+        project_id: process.env.FIREBASE_PROJECT_ID || 'settlelah-1da97',
         private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
         client_email: process.env.FIREBASE_CLIENT_EMAIL
       };
-      
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
         projectId: serviceAccount.project_id
       });
       console.log('✅ Firebase Admin initialized with individual env vars');
-    } 
+    }
     // Fallback to JSON key if individual vars not available
     else if (process.env.FIREBASE_SERVICE_ACCOUNT_KEY) {
       const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);

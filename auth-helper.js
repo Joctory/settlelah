@@ -1,72 +1,44 @@
 /**
  * Firebase Authentication Helper for SettleLah
- * This module provides simplified authentication handling for your application
+ * Uses Firebase Admin SDK - no client-side auth needed on the server
  */
 
-const firebase = require('firebase/app');
-const { getAuth, signInAnonymously: firebaseSignInAnonymously, onAuthStateChanged } = require('firebase/auth');
-
-// Initialize Firebase auth
+let adminApp = null;
 let authInitialized = false;
-let firebaseApp = null;
 
 /**
- * Initialize Firebase auth with your app's existing Firebase instance
- * @param {Object} existingApp - Your Firebase app instance
+ * Initialize auth with the Firebase Admin SDK app instance
+ * @param {Object} existingApp - Firebase Admin app instance
  */
 function initializeAuth(existingApp) {
   if (authInitialized) {return;}
 
-  firebaseApp = existingApp;
+  adminApp = existingApp;
   authInitialized = true;
-
-  // Silent initialization - no logs for cleaner console
 }
 
 /**
- * Get the current user's authentication token
- * @returns {Promise<string|null>} Authentication token or null if not signed in
+ * Get auth token - with Admin SDK, server already has full access.
+ * Returns a placeholder token to satisfy callers that expect a token.
+ * @returns {Promise<string|null>} A token string or null
  */
 async function getAuthToken() {
-  if (!authInitialized) {
+  if (!authInitialized || !adminApp) {
     console.warn('Auth not initialized. Call initializeAuth first.');
     return null;
   }
 
-  try {
-    const auth = getAuth(firebaseApp);
-    const currentUser = auth.currentUser;
-
-    if (!currentUser) {
-      // Auto sign in with anonymous auth for development convenience
-      await signInAnonymously();
-      return await getAuthToken(); // Try again after sign in
-    }
-
-    return await currentUser.getIdToken();
-  } catch (error) {
-    console.error('Error getting auth token:', error);
-    return null;
-  }
+  // Admin SDK has full privileges; no client auth token is needed.
+  // Return a truthy value so callers that check for a token proceed normally.
+  return 'admin-sdk-authenticated';
 }
 
 /**
- * Sign in anonymously (for development purposes)
- * @returns {Promise<Object>} User credential
+ * Sign in anonymously - no-op for Admin SDK (already has full access)
+ * @returns {Promise<null>}
  */
 async function signInAnonymously() {
-  if (!authInitialized) {
-    console.warn('Auth not initialized. Call initializeAuth first.');
-    return null;
-  }
-
-  try {
-    const auth = getAuth(firebaseApp);
-    return await firebaseSignInAnonymously(auth);
-  } catch (error) {
-    console.error('Error signing in anonymously:', error);
-    throw error;
-  }
+  return null;
 }
 
 /**

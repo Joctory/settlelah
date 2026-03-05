@@ -1,11 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>SettleLah! - Login</title>
     <meta name="description" content="Login to SettleLah!" />
     <link rel="icon" href="icons/favicon.png" />
@@ -21,7 +20,7 @@
               event.preventDefault();
             }
           },
-          { passive: false }
+          { passive: false },
         );
 
         var lastTouchEnd = 0;
@@ -34,7 +33,7 @@
             }
             lastTouchEnd = now;
           },
-          { passive: false }
+          { passive: false },
         );
       })();
     </script>
@@ -65,8 +64,7 @@
             name="email"
             placeholder="Enter your email"
             autocomplete="email"
-            autofocus
-          />
+            autofocus />
           <div class="email-instruction">Enter a valid email to proceed</div>
           <div class="error-message" id="email-error"></div>
         </div>
@@ -90,8 +88,7 @@
                 stroke="currentColor"
                 stroke-width="2"
                 stroke-linecap="round"
-                stroke-linejoin="round"
-              >
+                stroke-linejoin="round">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
               </svg>
@@ -142,8 +139,7 @@
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
+                  stroke-linejoin="round">
                   <path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
                   <line x1="18" y1="9" x2="12" y2="15"></line>
                   <line x1="12" y1="9" x2="18" y2="15"></line>
@@ -159,7 +155,10 @@
           <p>New to SettleLah? <a href="/register">Create an account</a></p>
         </div> -->
         <div class="login-footer">
-          <p>App Version <span id="appVersion">1.0.0</span>. Copyright © <span id="copyrightYear">2025</span></p>
+          <p>
+            App Version <span id="appVersion">1.0.0</span>. Copyright ©
+            <span id="copyrightYear">2025</span>
+          </p>
         </div>
       </div>
     </div>

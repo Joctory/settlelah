@@ -103,7 +103,7 @@ app.use((req, res, next) => {
     }
 
     // Determine if this is an API request based on path or Accept header
-    const isApiRequest = req.path.startsWith('/api/') || 
+    const isApiRequest = req.path.startsWith('/api/') ||
                         req.headers.accept?.includes('application/json') ||
                         req.headers['content-type']?.includes('application/json');
 
@@ -151,14 +151,13 @@ app.use((req, res, next) => {
 
 // Dynamic Firebase configuration based on environment
 const isDevMode = process.env.SETTLELAH_DEV_MODE === 'true' || process.env.NODE_ENV === 'development';
-const projectId = isDevMode ? 'settlelah-dev' : 'settlelah-1da97';
-
-// Debug logging for Firebase project
-console.log(`🔥 Firebase Project: ${projectId} ${isDevMode ? '(development)' : '(production)'}`);
+const defaultProjectId = isDevMode ? 'settlelah-dev' : 'settlelah-1da97';
 
 // Initialize Firebase Admin SDK
 let adminApp;
+let projectId = defaultProjectId;
 const useEmulator = process.env.USE_EMULATOR === 'true';
+const fs = require('fs');
 
 if (isDevMode && useEmulator) {
   // Use emulator for local development
@@ -169,63 +168,43 @@ if (isDevMode && useEmulator) {
     projectId: projectId
   });
   console.log('📱 Using Firebase emulator for development');
-} else if (isDevMode && !useEmulator) {
-  // Use real Firebase dev project with service account
-  console.log('🔧 Development mode: Using real Firebase dev project');
+} else if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+  // Use environment variable credentials (Vercel production)
+  const serviceAccount = {
+    projectId: projectId,
+    privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+  };
+  adminApp = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    projectId: projectId
+  });
+  console.log('✅ Using environment variable credentials');
+} else if (fs.existsSync('./serviceAccountKey.json')) {
+  // Use service account key file — use the project ID from the key itself
+  const serviceAccount = require('./serviceAccountKey.json');
+  projectId = serviceAccount.project_id || defaultProjectId;
+  adminApp = admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+    projectId: projectId
+  });
+  console.log('✅ Using service account key file');
+} else {
+  // Fallback to application default credentials (GCP, etc.)
   try {
-    // Use different service account keys for dev vs prod
-    const serviceAccountPath = isDevMode 
-      ? './serviceAccountKey.json' 
-      : './serviceAccountKey-prod.json';
-    const fs = require('fs');
-    if (fs.existsSync(serviceAccountPath)) {
-      const serviceAccount = require(serviceAccountPath);
-      adminApp = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: projectId
-      });
-      console.log('✅ Using service account key file');
-    } else {
-      throw new Error('Service account key not found');
-    }
-  } catch (error) {
-    console.warn('⚠️ Service account key not found, using application default credentials');
-    // Fallback to application default credentials (gcloud auth)
     adminApp = admin.initializeApp({
       credential: admin.credential.applicationDefault(),
       projectId: projectId
     });
     console.log('✅ Using application default credentials');
-  }
-} else {
-  // Production mode
-  console.log('🚀 Production mode: Initializing Firebase');
-  try {
-    // Try environment variables first (recommended for production)
-    if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
-      const serviceAccount = {
-        projectId: projectId,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
-        clientEmail: process.env.FIREBASE_CLIENT_EMAIL
-      };
-      adminApp = admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: projectId
-      });
-      console.log('✅ Production: Using environment variable credentials');
-    } else {
-      // Fallback to application default credentials (GCP, etc.)
-      adminApp = admin.initializeApp({
-        credential: admin.credential.applicationDefault(),
-        projectId: projectId
-      });
-      console.log('✅ Production: Using application default credentials');
-    }
   } catch (error) {
-    console.error('❌ Production Firebase initialization failed:', error.message);
+    console.error('❌ Firebase initialization failed:', error.message);
     process.exit(1);
   }
 }
+
+// Log final Firebase project info
+console.log(`🔥 Firebase Project: ${projectId} ${isDevMode ? '(development)' : '(production)'}`);
 const db = admin.firestore();
 
 // Add this after your Firebase initialization
@@ -266,6 +245,10 @@ function generateSecureBillId(settleMatter = '') {
   return `${timestamp}-${randomBytes}-${matterHash}`;
 }
 
+function generateGroupId() {
+  return crypto.randomBytes(12).toString('hex');
+}
+
 // Replace the existing database functions with adapter calls
 async function saveBill(id, data) {
   return await firebaseAdapter.saveBill(id, data);
@@ -275,17 +258,22 @@ async function getBill(id) {
   return await firebaseAdapter.getBill(id);
 }
 
+async function updateBill(id, data) {
+  return await firebaseAdapter.updateBill(id, data);
+}
+
 async function deleteBills(ids) {
   return await firebaseAdapter.deleteBills(ids);
 }
 
-// New function to save a group to Firebase
-async function saveGroup(groupName, groupData) {
+// Save a group to Firebase with UUID-based doc ID
+async function saveGroup(groupId, groupData) {
   try {
-    await db.collection('groups').doc(groupName).set(groupData);
-    return true;
+    const id = groupId || generateGroupId();
+    await db.collection('groups').doc(id).set(groupData);
+    return id;
   } catch (error) {
-    console.error('Error saving group %s:', groupName, error);
+    console.error('Error saving group %s:', groupId, error);
     throw error;
   }
 }
@@ -355,7 +343,7 @@ app.post('/api/verify-email',
           throw authError;
         }
       }
-      
+
       const usersRef = db.collection('users');
       const emailQuery = usersRef.where('email', '==', email.toLowerCase().trim());
       const emailSnapshot = await emailQuery.get();
@@ -395,13 +383,13 @@ app.post('/api/verify-email',
 app.post('/api/register', async (req, res) => {
   try {
     enhancedDevAuth.log('Registration attempt started');
-    
+
     // Enhanced security checks
     const securityCheck = enhancedDevAuth.performSecurityChecks(req);
     if (!securityCheck.passed && process.env.ENABLE_ENHANCED_SECURITY === 'true') {
       enhancedDevAuth.log('Security checks failed for registration', 'error');
-      return res.status(400).json({ 
-        success: false, 
+      return res.status(400).json({
+        success: false,
         message: 'Security validation failed',
         debug: enhancedDevAuth.isDevMode ? securityCheck.checks : undefined
       });
@@ -437,7 +425,7 @@ app.post('/api/register', async (req, res) => {
     } else {
       enhancedDevAuth.log('Development mode: Enhanced auth active, skipping Firebase auth dependency');
     }
-    
+
     const usersRef = db.collection('users');
     const emailQuery = usersRef.where('email', '==', sanitizedData.email);
     const emailSnapshot = await emailQuery.get();
@@ -854,10 +842,10 @@ function sanitizeInput(req, res, next) {
     req.body.paynowID = validator.escape(req.body.paynowID.trim());
   }
   if (req.body.members && Array.isArray(req.body.members)) {
-     req.body.members = req.body.members.map((member) => ({
-       ...member,
-     name: validator.escape(member.name.trim())
-  }));
+    req.body.members = req.body.members.map((member) => ({
+      ...member,
+      name: validator.escape(member.name.trim())
+    }));
   }
   if (req.body.dishes && Array.isArray(req.body.dishes)) {
     req.body.dishes = req.body.dishes.map((dish) => ({
@@ -871,6 +859,116 @@ function sanitizeInput(req, res, next) {
 // CSRF protection middleware
 const csrfMiddleware = security.createCSRFMiddleware();
 
+// Optimized bill calculation - extracted for reuse by /calculate and PUT /api/bills/:id
+function calculateBillBreakdown(dishes, members, options) {
+  const { serviceChargeValue, applyServiceCharge, discount, applyGst, taxProfile } = options;
+
+  const subtotal = dishes.reduce((sum, dish) => sum + parseFloat(dish.cost), 0);
+  const serviceRate = serviceChargeValue ? parseFloat(serviceChargeValue) / 100 : 0.1;
+  const gstRate = taxProfile === 'singapore' ? 0.09 : 0.06;
+
+  // Main calculations
+  const serviceCharge = applyServiceCharge ? subtotal * serviceRate : 0;
+  const afterService = subtotal + serviceCharge;
+
+  let discountAmount = 0;
+  if (discount) {
+    if (discount.includes('%')) {
+      discountAmount = afterService * (parseFloat(discount) / 100);
+    } else {
+      discountAmount = parseFloat(discount) || 0;
+    }
+  }
+
+  const afterDiscount = afterService - discountAmount;
+  const gst = applyGst ? afterDiscount * gstRate : 0;
+  const total = afterDiscount + gst;
+
+  // Per-person calculations using Map for better performance
+  const perPersonBreakdown = new Map();
+  const totals = {};
+
+  // Initialize breakdown for all members
+  members.forEach((member) => {
+    perPersonBreakdown.set(member.name, {
+      subtotal: 0,
+      serviceCharge: 0,
+      afterService: 0,
+      discountAmount: 0,
+      afterDiscount: 0,
+      gst: 0,
+      total: 0
+    });
+  });
+
+  // Calculate per-person costs
+  dishes.forEach((dish) => {
+    const share = dish.cost / dish.members.length;
+    dish.members.forEach((memberName) => {
+      const memberData = perPersonBreakdown.get(memberName);
+      if (memberData) {
+        memberData.subtotal += share;
+      }
+    });
+  });
+
+  const discountPerPerson = discountAmount / members.length;
+
+  // Finalize per-person calculations
+  perPersonBreakdown.forEach((memberData, memberName) => {
+    memberData.serviceCharge = applyServiceCharge ? memberData.subtotal * serviceRate : 0;
+    memberData.afterService = memberData.subtotal + memberData.serviceCharge;
+    memberData.discountAmount = discountPerPerson;
+    memberData.afterDiscount = memberData.afterService - discountPerPerson;
+    memberData.gst = applyGst ? memberData.afterDiscount * gstRate : 0;
+    memberData.total = memberData.afterDiscount + memberData.gst;
+    totals[memberName] = memberData.total;
+  });
+
+  return {
+    breakdown: { subtotal, serviceCharge, afterService, discountAmount, afterDiscount, gst, total },
+    perPersonBreakdown: Object.fromEntries(perPersonBreakdown),
+    totals
+  };
+}
+
+// Apply birthday person logic - redistribute their cost to other members
+function applyBirthdayRedistribution(totals, perPersonBreakdown, birthdayPerson) {
+  if (birthdayPerson && totals[birthdayPerson] !== undefined) {
+    const birthdayPersonTotal = totals[birthdayPerson];
+    const otherMembers = Object.keys(totals).filter((member) => member !== birthdayPerson);
+
+    if (otherMembers.length > 0) {
+      const redistributeAmount = birthdayPersonTotal / otherMembers.length;
+
+      otherMembers.forEach((member) => {
+        totals[member] += redistributeAmount;
+        perPersonBreakdown[member].total += redistributeAmount;
+        perPersonBreakdown[member].birthdayShare = redistributeAmount;
+      });
+
+      totals[birthdayPerson] = 0;
+      perPersonBreakdown[birthdayPerson].total = 0;
+      perPersonBreakdown[birthdayPerson].birthdayPerson = true;
+    }
+  }
+}
+
+// Helper to get base URL from request
+function getBaseUrl(req) {
+  return req.headers && req.headers.host
+    ? req.headers.host.includes('localhost') ||
+      req.headers.host.includes('[::1]') ||
+      req.headers.host.includes('127.0.0.1')
+      ? `http://${req.headers.host}`
+      : `https://${req.headers.host}`
+    : process.env.CUSTOM_DOMAIN
+      ? `https://${process.env.CUSTOM_DOMAIN}`
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : 'http://localhost:3000';
+}
+
 app.post('/calculate', billCreateLimiter, csrfMiddleware.generateToken, sanitizeInput, async (req, res) => {
   const {
     members,
@@ -883,97 +981,14 @@ app.post('/calculate', billCreateLimiter, csrfMiddleware.generateToken, sanitize
     paynowName,
     paynowID,
     serviceChargeValue,
-    birthdayPerson
+    birthdayPerson,
+    groupName,
+    groupId
   } = req.body;
 
   // Replace simple random ID with secure ID
   const id = generateSecureBillId(settleMatter);
-  // Get the host from request headers if available, otherwise fall back to environment variables
-  const baseUrl =
-    req.headers && req.headers.host
-      ? req.headers.host.includes('localhost') ||
-        req.headers.host.includes('[::1]') ||
-        req.headers.host.includes('127.0.0.1')
-        ? `http://${req.headers.host}`
-        : `https://${req.headers.host}`
-      : process.env.CUSTOM_DOMAIN
-        ? `https://${process.env.CUSTOM_DOMAIN}`
-        : process.env.VERCEL_URL
-          ? `https://${process.env.VERCEL_URL}`
-          : 'http://localhost:3000';
-
-  // Optimized bill calculation
-  const calculateBillBreakdown = (dishes, members, options) => {
-    const { serviceChargeValue, applyServiceCharge, discount, applyGst, taxProfile } = options;
-
-    const subtotal = dishes.reduce((sum, dish) => sum + parseFloat(dish.cost), 0);
-    const serviceRate = serviceChargeValue ? parseFloat(serviceChargeValue) / 100 : 0.1;
-    const gstRate = taxProfile === 'singapore' ? 0.09 : 0.06;
-
-    // Main calculations
-    const serviceCharge = applyServiceCharge ? subtotal * serviceRate : 0;
-    const afterService = subtotal + serviceCharge;
-
-    let discountAmount = 0;
-    if (discount) {
-      if (discount.includes('%')) {
-        discountAmount = afterService * (parseFloat(discount) / 100);
-      } else {
-        discountAmount = parseFloat(discount) || 0;
-      }
-    }
-
-    const afterDiscount = afterService - discountAmount;
-    const gst = applyGst ? afterDiscount * gstRate : 0;
-    const total = afterDiscount + gst;
-
-    // Per-person calculations using Map for better performance
-    const perPersonBreakdown = new Map();
-    const totals = {};
-
-    // Initialize breakdown for all members
-    members.forEach((member) => {
-      perPersonBreakdown.set(member.name, {
-        subtotal: 0,
-        serviceCharge: 0,
-        afterService: 0,
-        discountAmount: 0,
-        afterDiscount: 0,
-        gst: 0,
-        total: 0
-      });
-    });
-
-    // Calculate per-person costs
-    dishes.forEach((dish) => {
-      const share = dish.cost / dish.members.length;
-      dish.members.forEach((memberName) => {
-        const memberData = perPersonBreakdown.get(memberName);
-        if (memberData) {
-          memberData.subtotal += share;
-        }
-      });
-    });
-
-    const discountPerPerson = discountAmount / members.length;
-
-    // Finalize per-person calculations
-    perPersonBreakdown.forEach((memberData, memberName) => {
-      memberData.serviceCharge = applyServiceCharge ? memberData.subtotal * serviceRate : 0;
-      memberData.afterService = memberData.subtotal + memberData.serviceCharge;
-      memberData.discountAmount = discountPerPerson;
-      memberData.afterDiscount = memberData.afterService - discountPerPerson;
-      memberData.gst = applyGst ? memberData.afterDiscount * gstRate : 0;
-      memberData.total = memberData.afterDiscount + memberData.gst;
-      totals[memberName] = memberData.total;
-    });
-
-    return {
-      breakdown: { subtotal, serviceCharge, afterService, discountAmount, afterDiscount, gst, total },
-      perPersonBreakdown: Object.fromEntries(perPersonBreakdown),
-      totals
-    };
-  };
+  const baseUrl = getBaseUrl(req);
 
   const billCalculation = calculateBillBreakdown(dishes, members, {
     serviceChargeValue,
@@ -986,28 +1001,7 @@ app.post('/calculate', billCreateLimiter, csrfMiddleware.generateToken, sanitize
   const { breakdown, perPersonBreakdown, totals } = billCalculation;
 
   // Handle birthday person logic - redistribute their cost to other members
-  if (birthdayPerson && totals[birthdayPerson] !== undefined) {
-    const birthdayPersonTotal = totals[birthdayPerson];
-    const otherMembers = Object.keys(totals).filter((member) => member !== birthdayPerson);
-
-    if (otherMembers.length > 0) {
-      // Calculate how much each other member needs to pay extra
-      const redistributeAmount = birthdayPersonTotal / otherMembers.length;
-
-      // Add the redistributed amount to each other member
-      otherMembers.forEach((member) => {
-        totals[member] += redistributeAmount;
-        // Also update their breakdown for accurate display
-        perPersonBreakdown[member].total += redistributeAmount;
-        perPersonBreakdown[member].birthdayShare = redistributeAmount;
-      });
-
-      // Set birthday person's total to zero
-      totals[birthdayPerson] = 0;
-      perPersonBreakdown[birthdayPerson].total = 0;
-      perPersonBreakdown[birthdayPerson].birthdayPerson = true;
-    }
-  }
+  applyBirthdayRedistribution(totals, perPersonBreakdown, birthdayPerson);
 
   const billData = {
     members,
@@ -1024,6 +1018,11 @@ app.post('/calculate', billCreateLimiter, csrfMiddleware.generateToken, sanitize
     serviceChargeRate: `${parseFloat(serviceChargeValue || 10)}%`, // Include service charge rate
     gstRate: taxProfile === 'singapore' ? '9%' : '6%', // Include GST rate as a percentage
     birthdayPerson: birthdayPerson || null, // Include birthday person information
+    applyServiceCharge: !!applyServiceCharge,
+    applyGst: !!applyGst,
+    serviceChargeValue: serviceChargeValue || '10',
+    groupName: groupName || null,
+    groupId: groupId || null,
     // Add ownership information for security
     createdBy: req.headers['x-user-id'] || null,
     createdIP: req.ip || req.headers['x-forwarded-for'] || 'unknown',
@@ -1115,7 +1114,15 @@ app.get('/result/:id', resultViewLimiter, async (req, res) => {
     serviceChargeRate: bill.serviceChargeRate,
     gstRate: bill.gstRate,
     birthdayPerson: bill.birthdayPerson || null, // Include birthday person information
-    paymentStatus: bill.paymentStatus || {} // Include payment status
+    paymentStatus: bill.paymentStatus || {}, // Include payment status
+    // Extra fields for edit pre-population (backward-compatible)
+    applyServiceCharge: bill.applyServiceCharge !== undefined ? bill.applyServiceCharge : (bill.breakdown?.serviceCharge > 0),
+    applyGst: bill.applyGst !== undefined ? bill.applyGst : (bill.breakdown?.gst > 0),
+    serviceChargeValue: bill.serviceChargeValue || '10',
+    createdBy: bill.createdBy || null,
+    lastEditedAt: bill.lastEditedAt || null,
+    groupName: bill.groupName || null,
+    groupId: bill.groupId || null
   });
 });
 
@@ -1145,9 +1152,117 @@ app.get('/bill/:id', resultViewLimiter, async (req, res) => {
     'Content-Security-Policy',
     'default-src \'self\'; script-src \'self\' \'unsafe-inline\' \'unsafe-eval\' https: https://vercel.live; worker-src \'self\' blob:; connect-src \'self\' https:; img-src \'self\' data: https:; style-src \'self\' \'unsafe-inline\' https:; font-src \'self\' https:;'
   );
-  
+
   // Serve the bill.html page
   res.sendFile(path.join(__dirname, 'public', 'bill.html'));
+});
+
+// Edit an existing bill (same ID, preserves shared link)
+app.put('/api/bills/:id', billCreateLimiter, sanitizeInput, async (req, res) => {
+  const id = req.params.id;
+
+  if (!isValidBillId(id)) {
+    return res.status(400).json({ error: 'Invalid bill ID format' });
+  }
+
+  // Fetch existing bill to verify it exists and check authorization
+  const existingBill = await getBill(id);
+  if (!existingBill) {
+    return res.status(404).json({ error: 'Bill not found' });
+  }
+
+  // Authorization: only the creator can edit (if creator is stored)
+  const requestUserId = req.headers['x-user-id'] || null;
+  if (existingBill.createdBy && requestUserId && existingBill.createdBy !== requestUserId) {
+    return res.status(403).json({ error: 'Only the bill creator can edit this bill' });
+  }
+
+  const {
+    members,
+    settleMatter,
+    dishes,
+    discount,
+    applyServiceCharge,
+    applyGst,
+    taxProfile,
+    paynowName,
+    paynowID,
+    serviceChargeValue,
+    birthdayPerson,
+    groupName,
+    groupId
+  } = req.body;
+
+  const baseUrl = getBaseUrl(req);
+
+  // Re-run full calculation
+  const billCalculation = calculateBillBreakdown(dishes, members, {
+    serviceChargeValue,
+    applyServiceCharge,
+    discount,
+    applyGst,
+    taxProfile
+  });
+
+  const { breakdown, perPersonBreakdown, totals } = billCalculation;
+  applyBirthdayRedistribution(totals, perPersonBreakdown, birthdayPerson);
+
+  // Preserve payment status, clean up stale entries for removed members
+  const memberNames = members.map((m) => m.name);
+  const existingPaymentStatus = existingBill.paymentStatus || {};
+  const cleanedPaymentStatus = {};
+  for (const name of Object.keys(existingPaymentStatus)) {
+    if (memberNames.includes(name)) {
+      cleanedPaymentStatus[name] = existingPaymentStatus[name];
+    }
+  }
+
+  const updatedBillData = {
+    members,
+    settleMatter,
+    dishes,
+    totals,
+    perPersonBreakdown,
+    breakdown,
+    taxProfile,
+    timestamp: existingBill.timestamp, // Preserve original timestamp
+    paynowName,
+    paynowID,
+    discount,
+    serviceChargeRate: `${parseFloat(serviceChargeValue || 10)}%`,
+    gstRate: taxProfile === 'singapore' ? '9%' : '6%',
+    birthdayPerson: birthdayPerson && memberNames.includes(birthdayPerson) ? birthdayPerson : null,
+    applyServiceCharge: !!applyServiceCharge,
+    applyGst: !!applyGst,
+    serviceChargeValue: serviceChargeValue || '10',
+    groupName: groupName || existingBill.groupName || null,
+    groupId: groupId || existingBill.groupId || null,
+    // Preserve original ownership
+    createdBy: existingBill.createdBy || null,
+    createdIP: existingBill.createdIP || 'unknown',
+    createdDate: existingBill.createdDate || null,
+    userId: existingBill.userId || null,
+    // Audit trail
+    lastEditedAt: new Date().toISOString(),
+    lastEditedBy: requestUserId,
+    // Preserved & cleaned payment status
+    paymentStatus: cleanedPaymentStatus
+  };
+
+  // Verify totals match
+  const sumOfIndividualTotals = Object.values(totals).reduce((sum, personTotal) => sum + personTotal, 0);
+  const roundedBillTotal = parseFloat(breakdown.total.toFixed(2));
+  const roundedSum = parseFloat(sumOfIndividualTotals.toFixed(2));
+
+  if (Math.abs(roundedBillTotal - roundedSum) > 0.01) {
+    console.warn(
+      `Edited bill total (${roundedBillTotal}) does not match sum of individual totals (${roundedSum}).`
+    );
+  }
+
+  await updateBill(id, updatedBillData);
+  const link = `${baseUrl}/bill/${id}`;
+  res.json({ link, id, billData: updatedBillData });
 });
 
 app.post('/api/scan-receipt', upload.single('document'), async (req, res) => {
@@ -1229,10 +1344,10 @@ app.post('/api/scan-receipt', upload.single('document'), async (req, res) => {
   }
 });
 
-// New API endpoint to save a group to Firebase
+// API endpoint to save a group to Firebase (UUID-based)
 app.post('/api/groups/save', async (req, res) => {
   try {
-    const { groupName, groupData } = req.body;
+    const { groupId, groupName, groupData } = req.body;
 
     if (!groupName || !groupData) {
       return res.status(400).json({
@@ -1247,14 +1362,16 @@ app.post('/api/groups/save', async (req, res) => {
       groupData.userId = userId;
     }
 
-    // Save timestamp
+    // Ensure name is stored as a field
+    groupData.name = groupName;
     groupData.timestamp = Date.now();
 
-    await saveGroup(groupName, groupData);
+    const savedId = await saveGroup(groupId || null, groupData);
 
     res.json({
       success: true,
       message: `Group "${groupName}" saved successfully`,
+      groupId: savedId,
       groupName
     });
   } catch (error) {
@@ -1267,33 +1384,32 @@ app.post('/api/groups/save', async (req, res) => {
   }
 });
 
-// New API endpoint to get user's groups from Firebase
+// API endpoint to get user's groups from Firebase (returns array with id+name)
 app.get('/api/groups', async (req, res) => {
   try {
-    // Get user ID from session storage
     const userId = req.headers['x-user-id'];
 
-    // Query Firestore for groups
-    const groupsRef = db.collection('groups');
-    let query;
-
-    // If user is authenticated, filter by their groups
-    if (userId) {
-      query = groupsRef
-        .where('userId', '==', userId)
-        .orderBy('timestamp', 'desc');
-    } else {
-      // For unauthenticated users, return empty array
+    if (!userId) {
       return res.json({ groups: [] });
     }
 
+    const groupsRef = db.collection('groups');
+    const query = groupsRef
+      .where('userId', '==', userId)
+      .orderBy('timestamp', 'desc');
+
     const snapshot = await query.get();
 
-    // Convert snapshot to array of groups with IDs
-    const groups = {};
+    const groups = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
-      groups[doc.id] = data.members;
+      const isLegacy = doc.id === data.name;
+      groups.push({
+        id: doc.id,
+        name: data.name || doc.id,
+        members: data.members,
+        isLegacy
+      });
     });
 
     res.json({ groups });
@@ -1304,21 +1420,21 @@ app.get('/api/groups', async (req, res) => {
 });
 
 // API endpoint to delete a group from Firebase
-app.delete('/api/groups/:groupName', async (req, res) => {
+app.delete('/api/groups/:groupId', async (req, res) => {
   try {
-    const { groupName } = req.params;
+    const { groupId } = req.params;
     const userId = req.headers['x-user-id'];
 
-    if (!groupName) {
+    if (!groupId) {
       return res.status(400).json({
         success: false,
-        message: 'Group name is required'
+        message: 'Group ID is required'
       });
     }
 
-    // Check if the group exists and belongs to the user (optional in development mode)
+    // Check if the group exists and belongs to the user
     if (userId) {
-      const groupRef = db.collection('groups').doc(groupName);
+      const groupRef = db.collection('groups').doc(groupId);
       const groupDoc = await groupRef.get();
 
       if (groupDoc.exists && groupDoc.data().userId && groupDoc.data().userId !== userId) {
@@ -1330,12 +1446,12 @@ app.delete('/api/groups/:groupName', async (req, res) => {
     }
 
     // Delete the group
-    await db.collection('groups').doc(groupName).delete();
+    await db.collection('groups').doc(groupId).delete();
 
     res.json({
       success: true,
-      message: `Group "${groupName}" deleted successfully`,
-      groupName
+      message: 'Group deleted successfully',
+      groupId
     });
   } catch (error) {
     console.error('Error deleting group:', error);
@@ -1394,7 +1510,7 @@ app.patch('/api/bills/:billId/payment-status', async (req, res) => {
 
     // Initialize paymentStatus object if it doesn't exist
     const paymentStatus = billData.paymentStatus || {};
-    
+
     // Prevent prototype pollution by checking dangerous property names
     if (memberName === '__proto__' || memberName === 'constructor' || memberName === 'prototype') {
       return res.status(400).json({
@@ -1402,7 +1518,7 @@ app.patch('/api/bills/:billId/payment-status', async (req, res) => {
         message: 'Invalid member name'
       });
     }
-    
+
     paymentStatus[memberName] = {
       hasPaid: hasPaid,
       timestamp: Date.now()
